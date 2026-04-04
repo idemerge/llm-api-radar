@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Record a GIF demo of LLM Benchmark.
+# Record a GIF demo of LLM API Radar.
 #
 # This script:
 #   1. Starts the application (production build or dev mode)

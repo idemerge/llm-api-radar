@@ -31,7 +31,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
               <rect x="9" y="1" width="4" height="12" rx="1" fill="currentColor" opacity="0.9" />
             </svg>
           </div>
-          <span className="text-lg font-semibold text-text-primary">LLM Benchmark</span>
+          <span className="text-lg font-semibold text-text-primary">LLM API Radar</span>
         </div>
 
         {/* Login Card */}

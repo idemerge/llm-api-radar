@@ -1,4 +1,4 @@
-# Contributing to LLM Benchmark
+# Contributing to LLM API Radar
 
 Thanks for your interest in contributing! This guide will help you get started.
 
@@ -89,7 +89,7 @@ docker compose up -d
 
 ## Adding a New Provider Adapter
 
-LLM Benchmark supports adding custom LLM providers. To add one:
+LLM API Radar supports adding custom LLM providers. To add one:
 
 1. Create a new adapter in `backend/src/services/` following the existing pattern (see `openai-adapter` as reference)
 2. Implement the standard interface: `chat`, `chatStream`, `listModels`

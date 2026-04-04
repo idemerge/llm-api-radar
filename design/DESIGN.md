@@ -1,4 +1,4 @@
-# LLM Benchmark v2 — Design Document
+# LLM API Radar — Design Document
 
 > Version: v1.2.0 | Last updated: 2026-04-03
 
@@ -27,7 +27,7 @@
 
 ## 1. Overview
 
-LLM Benchmark v2 is a self-hosted web application for measuring and comparing LLM API performance. It supports OpenAI, Anthropic, Google Gemini, and any OpenAI-compatible endpoint. Users configure providers, create benchmark workflows, and view results with real-time charts and radar comparisons.
+LLM API Radar is a self-hosted web application for measuring and comparing LLM API performance. It supports OpenAI, Anthropic, Google Gemini, and any OpenAI-compatible endpoint. Users configure providers, create benchmark workflows, and view results with real-time charts and radar comparisons.
 
 **Key capabilities:**
 

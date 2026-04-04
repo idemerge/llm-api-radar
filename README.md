@@ -1,4 +1,4 @@
-# LLM Benchmark
+# LLM API Radar
 
 **English** | [中文](README-cn.md)
 
@@ -13,9 +13,9 @@ Benchmark, monitor, and compare LLM API providers in one place — measure laten
 
 ---
 
-## Why LLM Benchmark?
+## Why LLM API Radar?
 
-Running LLMs in production means juggling multiple providers, each with different latency profiles, rate limits, and reliability. Public benchmarks don't reflect **your** network, **your** prompts, or **your** traffic patterns. LLM Benchmark is a self-hosted tool that lets you:
+Running LLMs in production means juggling multiple providers, each with different latency profiles, rate limits, and reliability. Public benchmarks don't reflect **your** network, **your** prompts, or **your** traffic patterns. LLM API Radar is a self-hosted tool that lets you:
 
 - **Benchmark** — Compare providers head-to-head with identical prompts, configurable concurrency (1–50), and warmup runs
 - **Monitor** — Continuously health-check your providers with four-tier status (healthy / slow / very slow / down) and 24h history
@@ -26,7 +26,7 @@ Running LLMs in production means juggling multiple providers, each with differen
 ## Demo
 
 <p align="center">
-  <img src="docs/demo.gif" alt="LLM Benchmark Demo" width="960" />
+  <img src="docs/demo.gif" alt="LLM API Radar Demo" width="960" />
 </p>
 
 ## Screenshots

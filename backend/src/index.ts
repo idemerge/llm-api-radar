@@ -44,7 +44,7 @@ app.get('*', (_req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 LLM Benchmark API running on http://localhost:${PORT}`);
+  console.log(`🚀 LLM API Radar running on http://localhost:${PORT}`);
 
   // Start monitor scheduler
   startMonitorScheduler();

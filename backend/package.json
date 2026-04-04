@@ -1,7 +1,7 @@
 {
   "name": "llm-benchmark-backend",
-  "version": "1.0.0",
-  "description": "LLM Benchmark System - Backend",
+  "version": "1.0.1",
+  "description": "LLM API Radar - Backend",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",

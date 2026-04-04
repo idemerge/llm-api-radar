@@ -501,7 +501,7 @@ export function SettingsPage() {
         <div className="section-title !mb-0">About</div>
         <div className="space-y-1.5 text-[13px] text-text-secondary">
           <p>
-            <span className="text-text-primary font-medium">LLM Benchmark</span>
+            <span className="text-text-primary font-medium">LLM API Radar</span>
             <span className="text-text-tertiary ml-1.5 font-mono">{APP_VERSION}</span>
           </p>
           <p>A real-time benchmarking tool for comparing LLM provider performance across latency, throughput, and cost metrics.</p>
