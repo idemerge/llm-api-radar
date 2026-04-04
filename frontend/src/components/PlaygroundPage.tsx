@@ -429,7 +429,7 @@ function MetricsRow({ metrics, loading }: { metrics: PlaygroundMetrics | null; l
     },
     {
       label: 'First Token',
-      value: metrics ? `${metrics.firstTokenLatency.toLocaleString()} ms` : '--',
+      value: metrics ? (metrics.firstTokenLatency > 0 ? `${metrics.firstTokenLatency.toLocaleString()} ms` : 'N/A') : '--',
       icon: <ThunderboltOutlined />,
       color: 'text-accent-amber',
     },

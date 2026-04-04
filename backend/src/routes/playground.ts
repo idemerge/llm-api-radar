@@ -96,7 +96,7 @@ router.post('/run', async (req: Request, res: ExpressResponse) => {
 
   try {
     const provider = new DynamicProvider(config, model.name, apiKey);
-    const response = await provider.execute(prompt, systemPrompt, maxTokens, '', false);
+    const response = await provider.execute(prompt, systemPrompt, maxTokens, '', false, images);
 
     const tokensPerSecond = response.outputTokens > 0 && response.responseTime > 0
       ? Math.round((response.outputTokens / response.responseTime) * 1000)
@@ -163,9 +163,12 @@ router.post('/stream', async (req: Request, res: ExpressResponse) => {
       case 'anthropic':
         await streamAnthropic(config.endpoint, apiKey, model.name, prompt, systemPrompt, maxTokens, images, startTime, sendEvent, () => aborted);
         break;
+      case 'gemini':
+        await streamGemini(config.endpoint, model.name, apiKey, prompt, systemPrompt, maxTokens, images, startTime, sendEvent, () => aborted);
+        break;
       default:
-        // Gemini or unknown: fall back to non-streaming via DynamicProvider
-        await streamFallback(config, model.name, apiKey, prompt, systemPrompt, maxTokens, startTime, sendEvent, () => aborted);
+        // Unknown format: fall back to non-streaming via DynamicProvider
+        await streamFallback(config, model.name, apiKey, prompt, systemPrompt, maxTokens, images, startTime, sendEvent, () => aborted);
     }
   } catch (err: any) {
     if (!aborted) {
@@ -362,15 +365,108 @@ async function streamAnthropic(
   });
 }
 
+// ---- Stream: Gemini format ----
+
+function buildGeminiParts(prompt: string, images?: ImageInput[]): any[] {
+  const parts: any[] = [];
+  for (const img of images || []) {
+    if (img.type === 'base64' && img.data && img.mediaType) {
+      parts.push({ inline_data: { mime_type: img.mediaType, data: img.data } });
+    }
+  }
+  parts.push({ text: prompt });
+  return parts;
+}
+
+async function streamGemini(
+  endpoint: string, modelName: string, apiKey: string,
+  prompt: string, systemPrompt: string | undefined, maxTokens: number,
+  images: ImageInput[] | undefined,
+  startTime: number, sendEvent: (d: any) => void, isAborted: () => boolean
+) {
+  const contents: any[] = [];
+  if (systemPrompt) {
+    contents.push({ role: 'user', parts: [{ text: systemPrompt }] });
+    contents.push({ role: 'model', parts: [{ text: 'Understood.' }] });
+  }
+  contents.push({ role: 'user', parts: buildGeminiParts(prompt, images) });
+
+  const url = `${endpoint}/models/${modelName}:streamGenerateContent?key=${apiKey}&alt=sse`;
+
+  const response = await fetchWithTimeout(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents,
+      generationConfig: { maxOutputTokens: maxTokens },
+    }),
+  }, 180000);
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => '');
+    throw new Error(`Gemini API error ${response.status}: ${errText.slice(0, 300)}`);
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error('No response body for streaming');
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let firstTokenTime: number | null = null;
+  let fullText = '';
+  let inputTokens = 0;
+  let outputTokens = 0;
+
+  try {
+    while (true) {
+      if (isAborted()) break;
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith('data: ')) continue;
+
+        try {
+          const parsed = JSON.parse(trimmed.slice(6));
+          const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          if (text) {
+            if (firstTokenTime === null) firstTokenTime = Date.now();
+            fullText += text;
+            sendEvent({ type: 'chunk', text });
+          }
+          if (parsed.usageMetadata) {
+            inputTokens = parsed.usageMetadata.promptTokenCount || inputTokens;
+            outputTokens = parsed.usageMetadata.candidatesTokenCount || outputTokens;
+          }
+        } catch { /* skip */ }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  emitDone(sendEvent, isAborted, startTime, firstTokenTime, modelName, fullText, '', {
+    inputTokens,
+    outputTokens,
+    reasoningTokens: 0,
+  });
+}
+
 // ---- Fallback: non-streaming via DynamicProvider ----
 
 async function streamFallback(
   config: any, modelName: string, apiKey: string,
   prompt: string, systemPrompt: string | undefined, maxTokens: number,
+  images: ImageInput[] | undefined,
   startTime: number, sendEvent: (d: any) => void, isAborted: () => boolean
 ) {
   const provider = new DynamicProvider(config, modelName, apiKey);
-  const response = await provider.execute(prompt, systemPrompt, maxTokens, '', false);
+  const response = await provider.execute(prompt, systemPrompt, maxTokens, '', false, images);
 
   if (!isAborted()) {
     if (response.text) {
@@ -398,7 +494,7 @@ function emitDone(
 ) {
   if (isAborted()) return;
   const responseTime = Date.now() - startTime;
-  const firstTokenLatency = firstTokenTime ? firstTokenTime - startTime : Math.round(responseTime * 0.3);
+  const firstTokenLatency = firstTokenTime ? firstTokenTime - startTime : 0;
   const { inputTokens, outputTokens, reasoningTokens } = tokens;
 
   sendEvent({

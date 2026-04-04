@@ -5,6 +5,7 @@ node_modules/
 # Build output
 backend/dist/
 frontend/dist/
+backend/public/
 
 # Database
 backend/data/*.db

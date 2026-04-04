@@ -4,67 +4,50 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [1.4.0] - 2025-12-20
+## [1.1.0] - 2026-04-04
 
 ### Added
-- Docker deployment with multi-stage alpine build
-- One-click build script (`start.sh`)
-- Docker Compose with SQLite volume persistence
-- Single `.env` file in project root for all configuration
-- GitHub Actions workflow for Docker Hub auto-publish on tag push
+- Gemini streaming support (`streamGenerateContent` with `alt=sse`) for accurate TTFT measurement
+- Gemini streaming in Playground with real-time token output
+- History page refresh button for manual data reload
+- Auto-refresh History page every 30s when running workflows exist
+- Reload workflow data when navigating to History page
+
+### Fixed
+- Gemini TTFT always showing 0 due to missing streaming implementation
+- Playground non-streaming TTFT showing fabricated value (`responseTime * 0.3`) instead of N/A
+- Playground Gemini image input not being passed to API (images were silently dropped)
+- Playground Gemini format falling back to non-streaming instead of using native streaming
+- Frontend TTFT displaying `0ms` instead of `N/A` for non-streaming requests (WorkflowResults, ResultsPanel, PlaygroundPage)
+- Non-streaming `/run` endpoint not passing images parameter to provider
 
 ### Changed
-- Moved `.env` from `backend/` to project root for simpler configuration
+- `backend/public/` added to `.gitignore` (build artifact)
 
-## [1.3.0] - 2025-12-18
+## [1.0.3] - 2026-04-04
 
-### Added
-- JWT-based authentication with configurable credentials
-- Protected API routes and frontend routing
-- Auto-redirect to login page on session expiry
-- Login page UI
+### Changed
+- Renamed project from LLM Benchmark to LLM API Radar
+- Updated all UI references, branding, screenshots, and demo GIF
 
-### Improved
-- Monitor health status display with four-tier indicators
+## [1.0.0] - 2026-04-04
 
-## [1.2.0] - 2025-12-15
+Initial release.
 
-### Added
-- **Monitor page** — periodic health checks for provider/model combinations
-  - Rich metrics per probe: TTFT, output tokens, response validation
-  - Configurable health thresholds (latency, TTFT, min output tokens)
-  - Per-model check intervals (5 min – 6 hours)
-  - Provider-parallel, model-serial scheduling
-  - 24h history bar with color-coded health status
-  - Auto-refresh dashboard with summary stats
-- **Playground page** — interactive prompt testing
-  - Streaming and non-streaming modes
-  - Vision support with image URL and file upload
-  - Token counts, TTFT, TPS, and response time metrics
-  - Vision Benchmark template
-
-### Improved
-- Heading scale for clearer page hierarchy
-- Progress bar colors, nav tooltips, touch targets
-- Read app version from `package.json` instead of hardcoding
-
-## [1.1.0] - 2025-12-12
-
-### Added
-- Playground page with vision support and Vision Benchmark template
-
-## [1.0.0] - 2025-12-10
-
-### Added
+### Features
 - Multi-provider benchmark engine (OpenAI, Anthropic, Gemini, OpenAI-Compatible)
 - Workflow engine with multi-task sequential execution
 - Per-task prompt, concurrency, and iteration configuration
-- Quick presets (512 / 4K / 16K tokens, 1–10 concurrency)
 - Warmup runs to eliminate cold-start bias
 - Live streaming metrics with per-provider area charts
 - Radar comparison across all dimensions
 - Persistent run history with full result details
-- Side-by-side comparison of past runs
 - JSON and CSV export
+- Playground page with streaming, vision support, and image upload
+- Monitor page with periodic health checks, configurable thresholds, and 24h history
+- JWT-based authentication with configurable credentials
+- Docker deployment with multi-stage alpine build
+- One-click build script (`start.sh`) and Docker Compose
+- GitHub Actions workflow for Docker Hub auto-publish on tag push
 - Dark theme UI with Ant Design 5
 - SQLite storage with single-file database

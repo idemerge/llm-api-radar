@@ -95,7 +95,9 @@ export class DynamicProvider extends BaseLLMProvider {
           ? this.callAnthropicStreaming(prompt, systemPrompt, maxTokens, apiKey, images)
           : this.callAnthropic(prompt, systemPrompt, maxTokens, apiKey, images);
       case 'gemini':
-        return this.callGemini(prompt, systemPrompt, maxTokens, apiKey, images);
+        return streaming
+          ? this.callGeminiStreaming(prompt, systemPrompt, maxTokens, apiKey, images)
+          : this.callGemini(prompt, systemPrompt, maxTokens, apiKey, images);
       case 'custom':
         // Custom format defaults to OpenAI-compatible
         return streaming
@@ -155,7 +157,7 @@ export class DynamicProvider extends BaseLLMProvider {
       reasoningTokens,
       totalTokens: inputTokens + completionTokens,
       responseTime,
-      firstTokenLatency: 0, // Non-streaming — no real TTFT available
+      firstTokenLatency: 0, // Non-streaming: no TTFT available
       estimatedCost: 0,
       model: this.modelName,
     };
@@ -295,7 +297,7 @@ export class DynamicProvider extends BaseLLMProvider {
       reasoningTokens: 0,
       totalTokens: inputTokens + outputTokens,
       responseTime,
-      firstTokenLatency: 0, // Non-streaming — no real TTFT available
+      firstTokenLatency: 0, // Non-streaming: no TTFT available
       estimatedCost: 0,
       model: this.modelName,
     };
@@ -428,7 +430,94 @@ export class DynamicProvider extends BaseLLMProvider {
       reasoningTokens: 0,
       totalTokens: inputTokens + outputTokens,
       responseTime,
-      firstTokenLatency: 0, // Gemini non-streaming — no real TTFT available
+      firstTokenLatency: 0, // Non-streaming: no TTFT available
+      estimatedCost: 0,
+      model: this.modelName,
+    };
+  }
+
+  private async callGeminiStreaming(
+    prompt: string,
+    systemPrompt: string | undefined,
+    maxTokens: number,
+    apiKey: string,
+    images?: ImageInput[]
+  ): Promise<LLMResponse> {
+    const startTime = Date.now();
+
+    const contents: any[] = [];
+    if (systemPrompt) {
+      contents.push({ role: 'user', parts: [{ text: systemPrompt }] });
+      contents.push({ role: 'model', parts: [{ text: 'Understood.' }] });
+    }
+    contents.push({ role: 'user', parts: buildGeminiParts(prompt, images) });
+
+    const url = `${this.config.endpoint}/models/${this.modelName}:streamGenerateContent?key=${apiKey}&alt=sse`;
+
+    const response = await this.fetchWithTimeout(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents,
+        generationConfig: { maxOutputTokens: maxTokens },
+      }),
+    }, 180000);
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => '');
+      throw new Error(`Gemini API error ${response.status}: ${errText.slice(0, 200)}`);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error('No response body for streaming');
+
+    const decoder = new TextDecoder();
+    let firstTokenTime: number | null = null;
+    let buffer = '';
+    let inputTokens = 0;
+    let outputTokens = 0;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith('data: ')) continue;
+
+        try {
+          const parsed = JSON.parse(trimmed.slice(6));
+          // Detect first content token
+          if (firstTokenTime === null) {
+            const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) {
+              firstTokenTime = Date.now();
+            }
+          }
+          // Capture usage metadata from the final chunk
+          if (parsed.usageMetadata) {
+            inputTokens = parsed.usageMetadata.promptTokenCount || inputTokens;
+            outputTokens = parsed.usageMetadata.candidatesTokenCount || outputTokens;
+          }
+        } catch { /* skip */ }
+      }
+    }
+
+    const responseTime = Date.now() - startTime;
+    if (!inputTokens) inputTokens = Math.ceil(prompt.length / 4);
+
+    return {
+      text: '',
+      inputTokens,
+      outputTokens,
+      reasoningTokens: 0,
+      totalTokens: inputTokens + outputTokens,
+      responseTime,
+      firstTokenLatency: firstTokenTime ? firstTokenTime - startTime : 0,
       estimatedCost: 0,
       model: this.modelName,
     };

@@ -146,7 +146,7 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
       align: 'right' as const,
       render: (s: BenchmarkRun['results'][string]['summary']) => (
         <span className="data-value text-xs text-text-primary">
-          {s.p50FirstTokenLatency || s.avgFirstTokenLatency}ms
+          {(s.p50FirstTokenLatency || s.avgFirstTokenLatency) ? `${s.p50FirstTokenLatency || s.avgFirstTokenLatency}ms` : 'N/A'}
         </span>
       ),
     },
@@ -157,7 +157,7 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
       align: 'right' as const,
       render: (s: BenchmarkRun['results'][string]['summary']) => (
         <span className="data-value text-xs text-text-primary">
-          {s.p95FirstTokenLatency || '-'}ms
+          {s.p95FirstTokenLatency ? `${s.p95FirstTokenLatency}ms` : 'N/A'}
         </span>
       ),
     },
@@ -168,8 +168,7 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
       align: 'right' as const,
       render: (s: BenchmarkRun['results'][string]['summary']) => (
         <span className="data-value text-xs text-text-primary">
-          {s.p99FirstTokenLatency || '-'}ms
-        </span>
+          {s.p99FirstTokenLatency ? `${s.p99FirstTokenLatency}ms` : 'N/A'}
       ),
     },
     {
@@ -352,7 +351,7 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
                       <div className="p-2.5 rounded-md bg-bg-surface border border-border text-center">
                         <div className="text-text-secondary mb-1 text-[10px]">TTFT P50</div>
                         <div className="data-value text-text-primary text-xs">
-                          {s.p50FirstTokenLatency || s.avgFirstTokenLatency}ms
+                          {(s.p50FirstTokenLatency || s.avgFirstTokenLatency) ? `${s.p50FirstTokenLatency || s.avgFirstTokenLatency}ms` : 'N/A'}
                         </div>
                       </div>
                       <div className="p-2.5 rounded-md bg-bg-surface border border-border text-center">
@@ -367,7 +366,7 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
                       <div className="p-2.5 rounded-md bg-bg-surface border border-border text-center">
                         <div className="text-text-secondary mb-1 text-[10px]">TTFT P95</div>
                         <div className="data-value text-text-primary text-xs">
-                          {s.p95FirstTokenLatency || '-'}ms
+                          {s.p95FirstTokenLatency ? `${s.p95FirstTokenLatency}ms` : 'N/A'}
                         </div>
                       </div>
                       <div className="p-2.5 rounded-md bg-bg-surface border border-border text-center">

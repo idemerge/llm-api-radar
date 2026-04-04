@@ -112,7 +112,7 @@ export function WorkflowResults({ workflow, onExport }: WorkflowResultsProps) {
       dataIndex: 'avgFirstTokenLatency',
       key: 'avgFirstTokenLatency',
       align: 'right' as const,
-      render: (val: number) => `${formatNumber(val)}ms`,
+      render: (val: number) => val > 0 ? `${formatNumber(val)}ms` : 'N/A',
     },
     {
       title: 'TPS',
@@ -185,9 +185,11 @@ export function WorkflowResults({ workflow, onExport }: WorkflowResultsProps) {
             <MetricCard title="Avg Throughput" value={formatNumber(
               providers.reduce((acc, p) => acc + summary.providerSummaries[p].avgTokensPerSecond, 0) / providers.length
             )} unit="tok/s" color="#73bf69" delay={0.05} />
-            <MetricCard title="Avg TTFT" value={formatNumber(
-              providers.reduce((acc, p) => acc + summary.providerSummaries[p].avgFirstTokenLatency, 0) / providers.length
-            )} unit="ms" color="#a78bfa" delay={0.1} />
+            <MetricCard title="Avg TTFT" value={(() => {
+              const ttftProviders = providers.filter(p => summary.providerSummaries[p].avgFirstTokenLatency > 0);
+              if (ttftProviders.length === 0) return 'N/A';
+              return formatNumber(ttftProviders.reduce((acc, p) => acc + summary.providerSummaries[p].avgFirstTokenLatency, 0) / ttftProviders.length);
+            })()} unit="ms" color="#a78bfa" delay={0.1} />
             <MetricCard title="Success Rate" value={`${formatNumber(
               (providers.reduce((acc, p) => acc + summary.providerSummaries[p].overallSuccessRate, 0) / providers.length) * 100, 1
             )}%`} color="#73bf69" delay={0.15} />

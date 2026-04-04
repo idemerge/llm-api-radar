@@ -31,3 +31,13 @@ Key routing rules:
 
 - All code, scripts, comments, commit messages, and documentation must be written in **English**, unless explicitly requested otherwise by the user.
 - Design docs, PRDs, and plans live in `design/` directory.
+
+## CHANGELOG Rules
+
+- Follow [Keep a Changelog](https://keepachangelog.com/) format
+- Use real dates and version numbers only — never fabricate past entries
+- Group changes under: `Added`, `Changed`, `Fixed`, `Removed`, `Deprecated`, `Security`
+- Use `[Unreleased]` for changes not yet tagged/released; move to a versioned section on release
+- Each entry should be a concise, user-facing description of the change (not internal implementation details)
+- Reference actual git history (`git log`) to verify dates and scope — do not guess
+- Keep entries in reverse chronological order (newest first)

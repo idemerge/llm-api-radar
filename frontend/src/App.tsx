@@ -134,6 +134,16 @@ function App() {
     });
   }, [authed, fetchWorkflows, fetchTemplates, reconnectActiveWorkflow]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Reload workflows when navigating to history page; auto-refresh every 30s if any workflow is running
+  useEffect(() => {
+    if (!authed || activePage !== 'history') return;
+    fetchWorkflows();
+    const hasRunning = workflows.some(w => w.status === 'running');
+    if (!hasRunning) return;
+    const timer = setInterval(() => fetchWorkflows(), 30000);
+    return () => clearInterval(timer);
+  }, [authed, activePage, fetchWorkflows, workflows]);
+
   useEffect(() => {
     if (isWorkflowRunning && !prevRunningRef.current) {
       navigate('/workflow', { replace: true });
@@ -514,6 +524,7 @@ function App() {
                   onSelectWorkflow={handleHistorySelect}
                   onDeleteWorkflow={deleteWorkflow}
                   onDuplicateWorkflow={handleDuplicateWorkflow}
+                  onRefresh={fetchWorkflows}
                   loading={!workflowsLoaded}
                 />
               </motion.div>

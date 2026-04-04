@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Table, Tag, Empty, Popconfirm, Tooltip } from '../antdImports';
-import { CopyOutlined, DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { CopyOutlined, DeleteOutlined, InfoCircleOutlined, ReloadOutlined } from '@ant-design/icons';
 import { BenchmarkWorkflow, getProviderColor } from '../types';
 
 interface HistoryPanelProps {
@@ -9,6 +9,7 @@ interface HistoryPanelProps {
   onSelectWorkflow: (id: string) => void;
   onDeleteWorkflow: (id: string) => Promise<boolean>;
   onDuplicateWorkflow: (id: string) => void;
+  onRefresh?: () => void;
   selectedId?: string;
   loading?: boolean;
 }
@@ -28,7 +29,7 @@ function statusToTagColor(status: string): string {
   }
 }
 
-export function HistoryPanel({ workflows, onSelectWorkflow, onDeleteWorkflow, onDuplicateWorkflow, selectedId, loading }: HistoryPanelProps) {
+export function HistoryPanel({ workflows, onSelectWorkflow, onDeleteWorkflow, onDuplicateWorkflow, onRefresh, selectedId, loading }: HistoryPanelProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
 
@@ -90,6 +91,15 @@ export function HistoryPanel({ workflows, onSelectWorkflow, onDeleteWorkflow, on
             ({sorted.length})
           </span>
         </h2>
+        {onRefresh && (
+          <button
+            onClick={onRefresh}
+            className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-text-secondary hover:text-text-primary border border-border hover:border-accent-blue/30 rounded transition-all"
+          >
+            <ReloadOutlined style={{ fontSize: 12 }} />
+            Refresh
+          </button>
+        )}
       </div>
 
       {/* Table */}
