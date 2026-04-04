@@ -1,0 +1,327 @@
+import { Router, Request, Response } from 'express';
+import { v4 as uuidv4 } from 'uuid';
+import { BenchmarkWorkflow, WorkflowTask } from '../types';
+import { workflowStore } from '../services/workflowStore';
+import { executeWorkflow, subscribeWorkflow, cancelWorkflow } from '../services/workflowEngine';
+import { workflowTemplates } from '../services/workflowTemplates';
+import { store } from '../services/store';
+import { providerStore } from '../services/providerStore';
+
+const router = Router();
+
+// Create and start a workflow
+router.post('/', async (req: Request, res: Response) => {
+  try {
+    const { name, description, providers, apiKeys, tasks, options } = req.body;
+
+    if (!name) {
+      res.status(400).json({ error: 'Workflow name is required' });
+      return;
+    }
+    if (!providers || !providers.length) {
+      res.status(400).json({ error: 'At least one provider is required' });
+      return;
+    }
+    if (!tasks || !tasks.length) {
+      res.status(400).json({ error: 'At least one task is required' });
+      return;
+    }
+
+    const legacyProviders = ['openai', 'claude', 'gemini', 'zai'];
+    for (const p of providers) {
+      if (legacyProviders.includes(p)) continue;
+      if (p.includes(':')) continue;
+      const providerConfig = providerStore.get(p);
+      if (providerConfig) continue;
+      res.status(400).json({ error: `Invalid provider: ${p}` });
+      return;
+    }
+
+    // Build provider labels (snapshot at creation time)
+    const providerLabels: Record<string, string> = {};
+    for (const p of providers) {
+      if (p.includes(':')) {
+        const [configId, modelName] = p.split(':', 2);
+        const config = providerStore.get(configId);
+        if (config) {
+          const modelCfg = config.models.find(m => m.name === modelName || m.id === modelName);
+          providerLabels[p] = `${config.name}/${modelCfg?.displayName || modelCfg?.name || modelName}`;
+        } else {
+          providerLabels[p] = modelName;
+        }
+      } else {
+        providerLabels[p] = p;
+      }
+    }
+
+    // Build workflow tasks with IDs
+    const workflowTasks: WorkflowTask[] = tasks.map((t: any, index: number) => ({
+      id: `task_${uuidv4().slice(0, 8)}`,
+      name: t.name || `Task ${index + 1}`,
+      description: t.description,
+      order: index,
+      config: {
+        prompt: t.config.prompt || '',
+        systemPrompt: t.config.systemPrompt,
+        maxTokens: Math.min(t.config.maxTokens || 500, 32000),
+        concurrency: Math.min(t.config.concurrency || 1, 50),
+        iterations: Math.min(t.config.iterations || 5, 1000),
+        streaming: t.config.streaming ?? true,
+        warmupRuns: Math.min(t.config.warmupRuns || 0, 5),
+        requestInterval: Math.min(t.config.requestInterval || 0, 10000),
+        randomizeInterval: t.config.randomizeInterval ?? false,
+      },
+      providers: t.providers,
+      tags: t.tags,
+    }));
+
+    const workflow: BenchmarkWorkflow = {
+      id: `wf_${uuidv4().slice(0, 8)}`,
+      name,
+      description,
+      status: 'draft',
+      providers,
+      providerLabels,
+      tasks: workflowTasks,
+      options: {
+        executionMode: 'sequential',
+        stopOnFailure: options?.stopOnFailure ?? true,
+        cooldownBetweenTasks: options?.cooldownBetweenTasks ?? 3000,
+      },
+      taskResults: workflowTasks.map((t) => ({
+        taskId: t.id,
+        taskName: t.name,
+        benchmarkRunId: '',
+        status: 'pending' as const,
+      })),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    workflowStore.create(workflow);
+
+    // Start execution asynchronously
+    executeWorkflow(workflow, apiKeys || {}).catch((err) => {
+      console.error('Workflow execution error:', err);
+      workflowStore.update(workflow.id, { status: 'failed' });
+    });
+
+    res.status(201).json({
+      id: workflow.id,
+      status: 'running',
+      taskCount: workflow.tasks.length,
+      createdAt: workflow.createdAt,
+    });
+  } catch (error) {
+    console.error('Error creating workflow:', error);
+    res.status(500).json({ error: 'Failed to create workflow' });
+  }
+});
+
+// List all workflows
+router.get('/', (_req: Request, res: Response) => {
+  const workflows = workflowStore.getAll();
+  // Return without apiKeys
+  const safe = workflows.map(({ apiKeys, ...rest }) => rest);
+  res.json(safe);
+});
+
+// Get the currently running workflow (if any)
+router.get('/active', (_req: Request, res: Response) => {
+  const running = workflowStore.getAll().find(w => w.status === 'running');
+  if (!running) {
+    res.json(null);
+    return;
+  }
+  const { apiKeys, ...safe } = running;
+  res.json(safe);
+});
+
+// Get workflow templates
+router.get('/templates', (_req: Request, res: Response) => {
+  res.json(workflowTemplates);
+});
+
+// Get workflow by ID
+router.get('/:id', (req: Request, res: Response) => {
+  const workflow = workflowStore.get(req.params.id);
+  if (!workflow) {
+    res.status(404).json({ error: 'Workflow not found' });
+    return;
+  }
+  const { apiKeys, ...safe } = workflow;
+  res.json(safe);
+});
+
+// SSE stream for workflow progress
+router.get('/:id/stream', (req: Request, res: Response) => {
+  const workflow = workflowStore.get(req.params.id);
+  if (!workflow) {
+    res.status(404).json({ error: 'Workflow not found' });
+    return;
+  }
+
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+  });
+
+  // Send initial state
+  const { apiKeys, ...safe } = workflow;
+  res.write(`data: ${JSON.stringify({ type: 'workflow:init', data: safe })}\n\n`);
+
+  if (workflow.status === 'completed' || workflow.status === 'failed' || workflow.status === 'cancelled') {
+    res.write(`data: ${JSON.stringify({ type: 'workflow:complete', data: { workflowId: workflow.id, summary: workflow.summary, status: workflow.status } })}\n\n`);
+    res.end();
+    return;
+  }
+
+  const unsubscribe = subscribeWorkflow(workflow.id, (event) => {
+    res.write(`data: ${JSON.stringify(event)}\n\n`);
+
+    if (event.type === 'workflow:complete') {
+      setTimeout(() => res.end(), 100);
+    }
+  });
+
+  req.on('close', () => {
+    unsubscribe();
+  });
+});
+
+// Cancel a workflow
+router.post('/:id/cancel', (req: Request, res: Response) => {
+  const workflow = workflowStore.get(req.params.id);
+  if (!workflow) {
+    res.status(404).json({ error: 'Workflow not found' });
+    return;
+  }
+
+  if (workflow.status !== 'running') {
+    res.status(400).json({ error: 'Workflow is not running' });
+    return;
+  }
+
+  const cancelled = cancelWorkflow(workflow.id);
+  res.json({ success: cancelled, message: cancelled ? 'Workflow cancelled' : 'Already cancelled' });
+});
+
+// Export workflow results
+router.get('/:id/export', (req: Request, res: Response) => {
+  const workflow = workflowStore.get(req.params.id);
+  if (!workflow) {
+    res.status(404).json({ error: 'Workflow not found' });
+    return;
+  }
+
+  const format = req.query.format || 'json';
+
+  if (format === 'csv') {
+    const csvLines: string[] = [
+      'TaskName,TaskOrder,Provider,Model,Iteration,ResponseTime(ms),FirstTokenLatency(ms),TokensPerSecond,InputTokens,OutputTokens,TotalTokens,EstimatedCost($),Success,Error',
+    ];
+
+    for (const taskResult of workflow.taskResults) {
+      if (taskResult.status !== 'completed' || !taskResult.benchmarkRunId) continue;
+      const run = store.get(taskResult.benchmarkRunId);
+      if (!run) continue;
+
+      const task = workflow.tasks.find((t) => t.id === taskResult.taskId);
+
+      Object.values(run.results).forEach((providerResult) => {
+        providerResult.iterations.forEach((iter) => {
+          csvLines.push(
+            [
+              task?.name || '',
+              task?.order ?? '',
+              providerResult.provider,
+              providerResult.model,
+              iter.iteration,
+              iter.responseTime,
+              iter.firstTokenLatency,
+              iter.tokensPerSecond,
+              iter.inputTokens,
+              iter.outputTokens,
+              iter.totalTokens,
+              iter.estimatedCost,
+              iter.success,
+              iter.error || '',
+            ].join(',')
+          );
+        });
+      });
+    }
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=workflow-${workflow.id}.csv`);
+    res.send(csvLines.join('\n'));
+  } else {
+    // JSON: include workflow + all related benchmark runs
+    const runs: Record<string, any> = {};
+    for (const taskResult of workflow.taskResults) {
+      if (taskResult.benchmarkRunId) {
+        const run = store.get(taskResult.benchmarkRunId);
+        if (run) runs[taskResult.benchmarkRunId] = run;
+      }
+    }
+
+    const { apiKeys, ...safe } = workflow;
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename=workflow-${workflow.id}.json`);
+    res.json({ workflow: safe, benchmarkRuns: runs });
+  }
+});
+
+// Duplicate a workflow (config only, no results)
+router.post('/:id/duplicate', (req: Request, res: Response) => {
+  const workflow = workflowStore.get(req.params.id);
+  if (!workflow) {
+    res.status(404).json({ error: 'Workflow not found' });
+    return;
+  }
+
+  const dup: BenchmarkWorkflow = {
+    id: `wf_${uuidv4().slice(0, 8)}`,
+    name: `${workflow.name} (copy)`,
+    description: workflow.description,
+    status: 'draft',
+    providers: workflow.providers,
+    tasks: workflow.tasks.map((t, i) => ({
+      ...t,
+      id: `task_${uuidv4().slice(0, 8)}`,
+      order: i,
+    })),
+    options: workflow.options ? { ...workflow.options } : { executionMode: 'sequential', stopOnFailure: true, cooldownBetweenTasks: 3000 },
+    taskResults: workflow.tasks.map((t) => ({
+      taskId: t.id,
+      taskName: t.name,
+      benchmarkRunId: '',
+      status: 'pending' as const,
+    })),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  workflowStore.create(dup);
+  res.status(201).json({ id: dup.id, name: dup.name });
+});
+
+// Delete a workflow
+router.delete('/:id', (req: Request, res: Response) => {
+  const workflow = workflowStore.get(req.params.id);
+  if (!workflow) {
+    res.status(404).json({ error: 'Workflow not found' });
+    return;
+  }
+
+  if (workflow.status === 'running') {
+    res.status(400).json({ error: 'Cannot delete a running workflow' });
+    return;
+  }
+
+  workflowStore.delete(req.params.id);
+  res.json({ success: true });
+});
+
+export default router;

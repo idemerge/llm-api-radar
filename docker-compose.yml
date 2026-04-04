@@ -1,0 +1,10 @@
+services:
+  app:
+    build: .
+    ports:
+      - "${PORT:-3001}:3001"
+    volumes:
+      - ./data:/app/backend/data
+    env_file:
+      - .env
+    restart: unless-stopped

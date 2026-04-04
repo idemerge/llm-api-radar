@@ -1,0 +1,237 @@
+@import "tailwindcss";
+
+@source "../src/**/*.{tsx,ts,jsx,js}";
+
+@theme {
+  /* Ant Design dark theme palette */
+  --color-bg-primary: #000;
+  --color-bg-surface: #141414;
+  --color-bg-card: #1f1f1f;
+  --color-bg-elevated: #262626;
+
+  /* Accent colors — Grafana-inspired */
+  --color-accent-teal: #73bf69;
+  --color-accent-coral: #ff9830;
+  --color-accent-blue: #4096ff;
+  --color-accent-amber: #ff9830;
+  --color-accent-rose: #f2495c;
+  --color-accent-violet: #8a6dff;
+
+  /* Provider color compat aliases */
+  --color-neon-cyan: #5b9fff;
+  --color-neon-purple: #a78bfa;
+  --color-neon-green: #73bf69;
+  --color-neon-pink: #f2495c;
+  --color-neon-orange: #ff9830;
+
+  /* Text — Ant Design dark standard */
+  --color-text-primary: rgba(255, 255, 255, 0.88);
+  --color-text-secondary: rgba(255, 255, 255, 0.65);
+  --color-text-tertiary: rgba(255, 255, 255, 0.45);
+
+  /* Borders — Ant Design dark standard */
+  --color-border: #303030;
+  --color-border-hover: #424242;
+
+  /* Spacing */
+  --spacing-xs: 8px;
+  --spacing-sm: 12px;
+  --spacing-md: 20px;
+  --spacing-lg: 32px;
+  --spacing-xl: 48px;
+  --spacing-2xl: 64px;
+
+  /* Radii */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+
+  /* Fonts */
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Sidebar */
+  --sidebar-width: 200px;
+}
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.5;
+    font-size: 14px;
+  }
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Inter', sans-serif;
+  letter-spacing: -0.01em;
+}
+
+h1 { font-size: 24px; font-weight: 600; }
+h2 { font-size: 18px; font-weight: 600; }
+h3 { font-size: 15px; font-weight: 600; }
+h4 { font-size: 13px; font-weight: 500; }
+h5 { font-size: 12px; font-weight: 500; }
+h6 { font-size: 11px; font-weight: 500; }
+
+/* ==========================================
+   Cards — Grafana panel style
+   ========================================== */
+
+.glass-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  transition: border-color 0.15s ease;
+}
+
+.glass-card:hover {
+  border-color: var(--color-border-hover);
+}
+
+/* ==========================================
+   Typography & Data
+   ========================================== */
+
+.section-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 12px;
+}
+
+.data-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.data-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+}
+
+.app-topbar-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+}
+
+.app-content {
+  flex: 1;
+  padding: 24px;
+}
+
+/* ==========================================
+   Animations
+   ========================================== */
+
+.neon-pulse {
+  animation: breathe 2s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ==========================================
+   Focus & Interaction
+   ========================================== */
+
+button, [role="button"] {
+  cursor: pointer;
+}
+
+button:focus-visible,
+.ant-btn:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid rgba(64, 150, 255, 0.5) !important;
+  outline-offset: 2px !important;
+}
+
+/* ==========================================
+   History Table Row Highlights
+   ========================================== */
+
+.history-row-compare td {
+  background: rgba(64, 150, 255, 0.06) !important;
+}
+
+.history-row-selected td {
+  background: rgba(115, 191, 105, 0.04) !important;
+}
+
+/* ==========================================
+   Scrollbar — thin, Grafana-like
+   ========================================== */
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+/* ==========================================
+   Reduced Motion
+   ========================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition-duration: 0.01ms !important; }
+}
+
+/* ==========================================
+   Responsive
+   ========================================== */
+
+@media (max-width: 768px) {
+  .app-content {
+    padding: 16px;
+  }
+
+  .glass-card { border-radius: 4px; }
+
+  /* Collapse sidebar on mobile */
+  .ant-layout-sider {
+    display: none !important;
+  }
+
+  .app-layout-main {
+    margin-left: 0 !important;
+  }
+
+  /* Touch target minimum size */
+  .ant-btn {
+    min-height: 44px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .glass-card { border-radius: 4px; }
+}
