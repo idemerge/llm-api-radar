@@ -23,6 +23,10 @@ Key routing rules:
 - All screenshots in `docs/screenshots/` must be **1100×720** pixels
 - Use puppeteer with `defaultViewport: { width: 1100, height: 720 }`
 
+## GitHub Rules
+
+- Do NOT use the `gh` CLI to search GitHub content. Use web search tools instead.
+
 ## Language Rules
 
 - All code, scripts, comments, commit messages, and documentation must be written in **English**, unless explicitly requested otherwise by the user.
