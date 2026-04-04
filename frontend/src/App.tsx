@@ -46,7 +46,7 @@ const PAGE_ROUTES: Record<string, string> = {
 };
 
 const pageConfig: Record<string, { title: string; subtitle: string }> = {
-  workflow: { title: 'Workflow', subtitle: 'Configure and run LLM benchmarks' },
+  workflow: { title: 'Workflow', subtitle: 'Configure and run LLM API benchmarks' },
   history: { title: 'History', subtitle: 'Browse past workflow results' },
   'history-detail': { title: 'Workflow Detail', subtitle: 'View workflow results' },
   playground: { title: 'Playground', subtitle: 'Test model connections and view responses' },
@@ -349,7 +349,7 @@ function App() {
               </svg>
             </div>
             <div>
-              <div className="text-[13px] font-semibold text-text-primary leading-none">LLM Bench</div>
+              <div className="text-[13px] font-semibold text-text-primary leading-none">LLM API Radar</div>
               <div className="text-[9px] text-text-tertiary mt-0.5 font-mono">{APP_VERSION}</div>
             </div>
           </div>
