@@ -61,8 +61,8 @@ export function usePlayground() {
 
       const data = await res.json();
 
-      if (!data.success) {
-        setError(data.error || 'Request failed');
+      if (!res.ok || !data.success) {
+        setError(data.error || `HTTP ${res.status}`);
         return;
       }
 

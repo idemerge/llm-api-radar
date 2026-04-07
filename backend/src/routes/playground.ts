@@ -138,7 +138,7 @@ router.post('/run', async (req: Request, res: ExpressResponse) => {
       provider: config.name,
     });
   } catch (err: any) {
-    return res.json({
+    return res.status(502).json({
       success: false,
       error: err.message || 'Request failed',
       provider: config.name,
