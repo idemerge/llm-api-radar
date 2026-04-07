@@ -107,7 +107,7 @@ function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 180000)
 // ---- POST /api/playground/run (non-streaming) ----
 
 router.post('/run', async (req: Request, res: ExpressResponse) => {
-  const { providerId, modelName, prompt, systemPrompt, maxTokens = 512, images }: {
+  const { providerId, modelName, prompt, systemPrompt, maxTokens = 4096, images }: {
     providerId: string; modelName: string; prompt: string;
     systemPrompt?: string; maxTokens?: number; images?: ImageInput[];
   } = req.body;
@@ -150,7 +150,7 @@ router.post('/run', async (req: Request, res: ExpressResponse) => {
 // ---- POST /api/playground/stream (SSE streaming) ----
 
 router.post('/stream', async (req: Request, res: ExpressResponse) => {
-  const { providerId, modelName, prompt, systemPrompt, maxTokens = 512, images }: {
+  const { providerId, modelName, prompt, systemPrompt, maxTokens = 4096, images }: {
     providerId: string; modelName: string; prompt: string;
     systemPrompt?: string; maxTokens?: number; images?: ImageInput[];
   } = req.body;
