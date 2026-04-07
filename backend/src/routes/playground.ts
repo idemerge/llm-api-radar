@@ -415,21 +415,22 @@ async function streamGemini(
   startTime: number, sendEvent: (d: any) => void, isAborted: () => boolean
 ) {
   const contents: any[] = [];
-  if (systemPrompt) {
-    contents.push({ role: 'user', parts: [{ text: systemPrompt }] });
-    contents.push({ role: 'model', parts: [{ text: 'Understood.' }] });
-  }
   contents.push({ role: 'user', parts: await buildGeminiParts(prompt, images) });
 
   const url = `${endpoint}/models/${modelName}:streamGenerateContent?key=${apiKey}&alt=sse`;
 
+  const requestBody: Record<string, any> = {
+    contents,
+    generationConfig: { maxOutputTokens: maxTokens },
+  };
+  if (systemPrompt) {
+    requestBody.systemInstruction = { parts: [{ text: systemPrompt }] };
+  }
+
   const response = await fetchWithTimeout(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents,
-      generationConfig: { maxOutputTokens: maxTokens },
-    }),
+    body: JSON.stringify(requestBody),
   }, 180000);
 
   if (!response.ok) {
