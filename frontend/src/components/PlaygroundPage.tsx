@@ -15,8 +15,11 @@ import {
   CopyOutlined,
   CheckOutlined,
 } from '@ant-design/icons';
+import { HistoryOutlined } from '@ant-design/icons';
 import { useProviders } from '../hooks/useProviders';
 import { usePlayground, PlaygroundMetrics } from '../hooks/usePlayground';
+import { usePlaygroundHistory } from '../hooks/usePlaygroundHistory';
+import { PlaygroundHistorySidebar } from './PlaygroundHistorySidebar';
 import { ImageInput } from '../types';
 import { PRESET_PROMPTS, QUICK_MAX_TOKENS } from '../constants';
 
@@ -29,8 +32,9 @@ export function PlaygroundPage() {
   const { providers, fetchProviders } = useProviders();
   const {
     loading, streaming, responseText, reasoningText, metrics, error,
-    runPrompt, streamPrompt, abort, reset,
+    runPrompt, streamPrompt, abort, reset, restore,
   } = usePlayground();
+  const { items: historyItems, loading: historyLoading, fetchHistory, getDetail, deleteEntry, clearAll } = usePlaygroundHistory();
 
   const [providerId, setProviderId] = useState<string | null>(null);
   const [modelName, setModelName] = useState<string | null>(null);
@@ -44,9 +48,20 @@ export function PlaygroundPage() {
   const [showLongContext, setShowLongContext] = useState(false);
   const [copied, setCopied] = useState(false);
   const [enableThinking, setEnableThinking] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [selectedHistoryId, setSelectedHistoryId] = useState<string>();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const prevLoadingRef = useRef(false);
 
-  useEffect(() => { fetchProviders(); }, [fetchProviders]);
+  useEffect(() => { fetchProviders(); fetchHistory(); }, [fetchProviders, fetchHistory]);
+
+  // Auto-refresh history after a run completes
+  useEffect(() => {
+    if (prevLoadingRef.current && !loading) {
+      fetchHistory();
+    }
+    prevLoadingRef.current = loading;
+  }, [loading, fetchHistory]);
 
   const selectedProvider = useMemo(
     () => providers.find(p => p.id === providerId),
@@ -126,10 +141,46 @@ export function PlaygroundPage() {
     } catch { /* clipboard not available */ }
   };
 
+  const handleSelectHistory = async (id: string) => {
+    const detail = await getDetail(id);
+    if (!detail) return;
+    setSelectedHistoryId(id);
+    setProviderId(detail.providerId);
+    setModelName(detail.modelName);
+    setPrompt(detail.prompt);
+    setSystemPrompt(detail.systemPrompt || '');
+    setMaxTokens(detail.maxTokens);
+    setUseStreaming(detail.useStreaming);
+    setEnableThinking(detail.enableThinking);
+    setHasRun(true);
+    restore({
+      responseText: detail.responseText,
+      reasoningText: detail.reasoningText,
+      metrics: detail.metrics,
+    });
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="flex gap-4">
+      <div className="flex-1 min-w-0 space-y-4">
       {/* Config */}
       <div className="glass-card p-5 space-y-4">
+        {/* Header with History toggle */}
+        <div className="flex items-center justify-end -mt-1 -mb-2">
+          <button
+            onClick={() => setHistoryOpen(v => !v)}
+            className={`text-[12px] flex items-center gap-1.5 px-2 py-1 rounded transition-colors ${
+              historyOpen ? 'text-accent-blue' : 'text-text-tertiary hover:text-text-secondary'
+            }`}
+          >
+            <HistoryOutlined />
+            History
+            {historyItems.length > 0 && (
+              <span className="text-[10px] px-1 py-0 rounded bg-white/8 font-mono">{historyItems.length}</span>
+            )}
+          </button>
+        </div>
+
         {/* Provider & Model — stacks on mobile */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1">
@@ -465,6 +516,20 @@ export function PlaygroundPage() {
             />
           )}
         </div>
+      )}
+      </div>
+
+      {/* History Sidebar */}
+      {historyOpen && (
+        <PlaygroundHistorySidebar
+          items={historyItems}
+          loading={historyLoading}
+          onSelect={handleSelectHistory}
+          onDelete={deleteEntry}
+          onClearAll={clearAll}
+          onClose={() => setHistoryOpen(false)}
+          selectedId={selectedHistoryId}
+        />
       )}
     </div>
   );

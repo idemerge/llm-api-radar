@@ -175,6 +175,17 @@ export function usePlayground() {
     }
   }, [reset]);
 
+  const restore = useCallback((data: {
+    responseText?: string;
+    reasoningText?: string;
+    metrics?: PlaygroundMetrics | null;
+  }) => {
+    reset();
+    setResponseText(data.responseText || '');
+    setReasoningText(data.reasoningText || '');
+    setMetrics(data.metrics || null);
+  }, [reset]);
+
   return {
     loading,
     streaming,
@@ -186,5 +197,6 @@ export function usePlayground() {
     streamPrompt,
     abort,
     reset,
+    restore,
   };
 }

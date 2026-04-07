@@ -1,0 +1,72 @@
+import { useState, useCallback } from 'react';
+import { apiFetch } from '../services/api';
+import { PlaygroundMetrics } from './usePlayground';
+
+export interface PlaygroundHistoryItem {
+  id: string;
+  providerName: string;
+  providerId: string;
+  modelName: string;
+  promptSnippet: string;
+  createdAt: string;
+  responseTime?: number;
+  error?: string;
+}
+
+export interface PlaygroundHistoryDetail {
+  id: string;
+  providerId: string;
+  providerName: string;
+  modelName: string;
+  prompt: string;
+  systemPrompt?: string;
+  maxTokens: number;
+  useStreaming: boolean;
+  enableThinking: boolean;
+  responseText?: string;
+  reasoningText?: string;
+  metrics?: PlaygroundMetrics;
+  error?: string;
+  createdAt: string;
+}
+
+export function usePlaygroundHistory() {
+  const [items, setItems] = useState<PlaygroundHistoryItem[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchHistory = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await apiFetch('/api/playground/history');
+      if (res.ok) {
+        const data = await res.json();
+        setItems(data);
+      }
+    } catch { /* ignore */ }
+    finally { setLoading(false); }
+  }, []);
+
+  const getDetail = useCallback(async (id: string): Promise<PlaygroundHistoryDetail | null> => {
+    try {
+      const res = await apiFetch(`/api/playground/history/${id}`);
+      if (res.ok) return await res.json();
+    } catch { /* ignore */ }
+    return null;
+  }, []);
+
+  const deleteEntry = useCallback(async (id: string) => {
+    try {
+      await apiFetch(`/api/playground/history/${id}`, { method: 'DELETE' });
+      setItems(prev => prev.filter(i => i.id !== id));
+    } catch { /* ignore */ }
+  }, []);
+
+  const clearAll = useCallback(async () => {
+    try {
+      await apiFetch('/api/playground/history', { method: 'DELETE' });
+      setItems([]);
+    } catch { /* ignore */ }
+  }, []);
+
+  return { items, loading, fetchHistory, getDetail, deleteEntry, clearAll };
+}
