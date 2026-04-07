@@ -112,10 +112,11 @@ function HistoryBar({ history, providerId, modelName }: { history: PingResult[];
 }
 
 export function MonitorPage() {
-  const { statuses, history, targets, globalConfig, running, fetchAll, saveTargets, saveConfig, triggerRun } = useMonitor();
-  const { providers, fetchProviders } = useProviders();
+  const { statuses, history, targets, globalConfig, loading: monitorLoading, running, fetchAll, saveTargets, saveConfig, triggerRun } = useMonitor();
+  const { providers, loading: providersLoading, fetchProviders } = useProviders();
   const [lastChecked, setLastChecked] = useState<string>('');
   const [showConfig, setShowConfig] = useState(false);
+  const [initialLoaded, setInitialLoaded] = useState(false);
   const [draftInterval, setDraftInterval] = useState(globalConfig.defaultIntervalMinutes);
   const [thresholdTexts, setThresholdTexts] = useState<Record<keyof HealthThresholds, string>>({
     latencySlowMs: String(globalConfig.healthThresholds.latencySlowMs),
@@ -167,8 +168,7 @@ export function MonitorPage() {
   const refreshRef = useRef<ReturnType<typeof setInterval>>();
 
   useEffect(() => {
-    fetchProviders();
-    fetchAll();
+    Promise.all([fetchProviders(), fetchAll()]).then(() => setInitialLoaded(true));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-refresh every 60 seconds
@@ -482,7 +482,11 @@ export function MonitorPage() {
       )}
 
       {/* Status Cards Grid */}
-      {targets.length === 0 ? (
+      {!initialLoaded ? (
+        <div className="glass-card p-8 text-center">
+          <span className="text-text-tertiary text-[13px] animate-pulse">Loading...</span>
+        </div>
+      ) : targets.length === 0 ? (
         <div className="glass-card p-8 text-center">
           <p className="text-text-tertiary text-[13px]">
             {providers.length === 0
