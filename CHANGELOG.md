@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] - 2026-04-07
+
+### Added
+- Playground history with SQLite persistence, auto-save on every run
+- History sidebar with replay: click any past run to restore prompt, config, and response
+- Thinking/reasoning toggle for Anthropic extended thinking and OpenAI reasoning effort
+- Copy response button in Playground
+- Long Context presets (8K/16K/32K/64K/128K) in Playground
+- Backend image validation (size and count limits)
+
+### Fixed
+- Anthropic extended thinking not working (wrong API version, missing thinking params)
+- Anthropic required CLI headers accidentally removed
+- Playground upstream API calls not aborted when client disconnects (resource leak)
+- Gemini using fake conversation turns instead of native `systemInstruction`
+- Playground `/run` returning HTTP 200 on errors instead of 502
+- Image URLs silently dropped for Anthropic/Gemini (now fetched and converted to base64)
+- Backend `maxTokens` default misaligned (512 vs 4096)
+- Flash of empty state on Monitor, Config, and Workflow pages before data loads
+
+### Changed
+- History sidebar defaults to open for better discoverability
+- Playground design polish: label sizes, config row layout, mobile responsiveness
+
 ## [1.1.0] - 2026-04-04
 
 ### Added
