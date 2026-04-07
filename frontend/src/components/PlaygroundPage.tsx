@@ -48,7 +48,7 @@ export function PlaygroundPage() {
   const [showLongContext, setShowLongContext] = useState(false);
   const [copied, setCopied] = useState(false);
   const [enableThinking, setEnableThinking] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(true);
   const [selectedHistoryId, setSelectedHistoryId] = useState<string>();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const prevLoadingRef = useRef(false);
