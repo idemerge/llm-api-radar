@@ -97,11 +97,19 @@ function resolveProvider(providerId: string, modelName: string) {
   return { config, model, apiKey };
 }
 
-/** Fetch with timeout + AbortController, matching the adapter's pattern exactly */
-function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 180000): Promise<globalThis.Response> {
+/** Fetch with timeout + AbortController. Accepts optional external signal to abort on client disconnect. */
+function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 180000, externalSignal?: AbortSignal): Promise<globalThis.Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
-  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
+  const onExternalAbort = () => controller.abort();
+  if (externalSignal) {
+    if (externalSignal.aborted) { clearTimeout(timer); controller.abort(); }
+    else externalSignal.addEventListener('abort', onExternalAbort, { once: true });
+  }
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => {
+    clearTimeout(timer);
+    externalSignal?.removeEventListener('abort', onExternalAbort);
+  });
 }
 
 // ---- POST /api/playground/run (non-streaming) ----
@@ -179,7 +187,8 @@ router.post('/stream', async (req: Request, res: ExpressResponse) => {
   };
 
   let aborted = false;
-  res.on('close', () => { aborted = true; });
+  const upstreamAbort = new AbortController();
+  res.on('close', () => { aborted = true; upstreamAbort.abort(); });
 
   const startTime = Date.now();
 
@@ -187,13 +196,13 @@ router.post('/stream', async (req: Request, res: ExpressResponse) => {
     switch (config.format) {
       case 'openai':
       case 'custom':
-        await streamOpenAI(config.endpoint, model.name, apiKey, prompt, systemPrompt, maxTokens, images, startTime, sendEvent, () => aborted);
+        await streamOpenAI(config.endpoint, model.name, apiKey, prompt, systemPrompt, maxTokens, images, startTime, sendEvent, () => aborted, upstreamAbort.signal);
         break;
       case 'anthropic':
-        await streamAnthropic(config.endpoint, apiKey, model.name, prompt, systemPrompt, maxTokens, images, startTime, sendEvent, () => aborted);
+        await streamAnthropic(config.endpoint, apiKey, model.name, prompt, systemPrompt, maxTokens, images, startTime, sendEvent, () => aborted, upstreamAbort.signal);
         break;
       case 'gemini':
-        await streamGemini(config.endpoint, model.name, apiKey, prompt, systemPrompt, maxTokens, images, startTime, sendEvent, () => aborted);
+        await streamGemini(config.endpoint, model.name, apiKey, prompt, systemPrompt, maxTokens, images, startTime, sendEvent, () => aborted, upstreamAbort.signal);
         break;
       default:
         // Unknown format: fall back to non-streaming via DynamicProvider
@@ -218,7 +227,8 @@ async function streamOpenAI(
   endpoint: string, modelName: string, apiKey: string,
   prompt: string, systemPrompt: string | undefined, maxTokens: number,
   images: ImageInput[] | undefined,
-  startTime: number, sendEvent: (d: any) => void, isAborted: () => boolean
+  startTime: number, sendEvent: (d: any) => void, isAborted: () => boolean,
+  clientSignal?: AbortSignal
 ) {
   const messages: Array<{ role: string; content: string | ContentPart[] }> = [];
   if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
@@ -240,7 +250,8 @@ async function streamOpenAI(
         stream_options: { include_usage: true },
       }),
     },
-    180000
+    180000,
+    clientSignal
   );
 
   if (!response.ok) {
@@ -314,7 +325,8 @@ async function streamAnthropic(
   endpoint: string, apiKey: string, modelName: string,
   prompt: string, systemPrompt: string | undefined, maxTokens: number,
   images: ImageInput[] | undefined,
-  startTime: number, sendEvent: (d: any) => void, isAborted: () => boolean
+  startTime: number, sendEvent: (d: any) => void, isAborted: () => boolean,
+  clientSignal?: AbortSignal
 ) {
   const body: Record<string, any> = {
     model: modelName,
@@ -331,7 +343,8 @@ async function streamAnthropic(
       headers: buildAnthropicHeaders(apiKey),
       body: JSON.stringify(body),
     },
-    180000
+    180000,
+    clientSignal
   );
 
   if (!response.ok) {
@@ -429,7 +442,8 @@ async function streamGemini(
   endpoint: string, modelName: string, apiKey: string,
   prompt: string, systemPrompt: string | undefined, maxTokens: number,
   images: ImageInput[] | undefined,
-  startTime: number, sendEvent: (d: any) => void, isAborted: () => boolean
+  startTime: number, sendEvent: (d: any) => void, isAborted: () => boolean,
+  clientSignal?: AbortSignal
 ) {
   const contents: any[] = [];
   contents.push({ role: 'user', parts: await buildGeminiParts(prompt, images) });
@@ -448,7 +462,7 @@ async function streamGemini(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(requestBody),
-  }, 180000);
+  }, 180000, clientSignal);
 
   if (!response.ok) {
     const errText = await response.text().catch(() => '');
