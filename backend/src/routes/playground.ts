@@ -76,10 +76,6 @@ function buildAnthropicHeaders(apiKey: string): Record<string, string> {
     'Content-Type': 'application/json',
     'x-api-key': apiKey,
     'anthropic-version': '2023-06-01',
-    'x-app': 'cli',
-    'User-Agent': 'claude-cli/2.1.89 (external, sdk-cli)',
-    'X-Claude-Code-Session-Id': randomUUID(),
-    'x-client-request-id': randomUUID(),
   };
 }
 
@@ -404,7 +400,6 @@ async function streamAnthropic(
   let reasoningText = '';
   let inputTokens = 0;
   let outputTokens = 0;
-  let currentBlockType: string | null = null;
 
   try {
     while (true) {
@@ -426,21 +421,16 @@ async function streamAnthropic(
           if (parsed.type === 'message_start') {
             inputTokens = parsed.message?.usage?.input_tokens || 0;
           }
-          if (parsed.type === 'content_block_start') {
-            currentBlockType = parsed.content_block?.type || 'text';
-          }
-          if (parsed.type === 'content_block_stop') {
-            currentBlockType = null;
-          }
           if (parsed.type === 'content_block_delta') {
-            if (currentBlockType === 'thinking') {
+            const deltaType = parsed.delta?.type;
+            if (deltaType === 'thinking_delta') {
               const thinking = parsed.delta?.thinking || '';
               if (thinking) {
                 if (firstTokenTime === null) firstTokenTime = Date.now();
                 reasoningText += thinking;
                 sendEvent({ type: 'reasoning', text: thinking });
               }
-            } else {
+            } else if (deltaType === 'text_delta') {
               const text = parsed.delta?.text || '';
               if (text) {
                 if (firstTokenTime === null) firstTokenTime = Date.now();
@@ -448,6 +438,7 @@ async function streamAnthropic(
                 sendEvent({ type: 'chunk', text });
               }
             }
+            // signature_delta is ignored (integrity verification, not content)
           }
           if (parsed.type === 'message_delta') {
             outputTokens = parsed.usage?.output_tokens || 0;
