@@ -346,8 +346,10 @@ async function streamAnthropic(
   let buffer = '';
   let firstTokenTime: number | null = null;
   let fullText = '';
+  let reasoningText = '';
   let inputTokens = 0;
   let outputTokens = 0;
+  let currentBlockType: string | null = null;
 
   try {
     while (true) {
@@ -369,12 +371,27 @@ async function streamAnthropic(
           if (parsed.type === 'message_start') {
             inputTokens = parsed.message?.usage?.input_tokens || 0;
           }
+          if (parsed.type === 'content_block_start') {
+            currentBlockType = parsed.content_block?.type || 'text';
+          }
+          if (parsed.type === 'content_block_stop') {
+            currentBlockType = null;
+          }
           if (parsed.type === 'content_block_delta') {
-            const text = parsed.delta?.text || '';
-            if (text) {
-              if (firstTokenTime === null) firstTokenTime = Date.now();
-              fullText += text;
-              sendEvent({ type: 'chunk', text });
+            if (currentBlockType === 'thinking') {
+              const thinking = parsed.delta?.thinking || '';
+              if (thinking) {
+                if (firstTokenTime === null) firstTokenTime = Date.now();
+                reasoningText += thinking;
+                sendEvent({ type: 'reasoning', text: thinking });
+              }
+            } else {
+              const text = parsed.delta?.text || '';
+              if (text) {
+                if (firstTokenTime === null) firstTokenTime = Date.now();
+                fullText += text;
+                sendEvent({ type: 'chunk', text });
+              }
             }
           }
           if (parsed.type === 'message_delta') {
@@ -387,10 +404,10 @@ async function streamAnthropic(
     reader.releaseLock();
   }
 
-  emitDone(sendEvent, isAborted, startTime, firstTokenTime, modelName, fullText, '', {
+  emitDone(sendEvent, isAborted, startTime, firstTokenTime, modelName, fullText, reasoningText, {
     inputTokens,
     outputTokens,
-    reasoningTokens: 0,
+    reasoningTokens: reasoningText.length > 0 ? Math.ceil(reasoningText.length / 4) : 0,
   });
 }
 
