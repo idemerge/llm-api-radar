@@ -112,6 +112,23 @@ function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 180000,
   });
 }
 
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB per image
+
+function validateImages(images?: ImageInput[]): string | null {
+  if (!images) return null;
+  for (let i = 0; i < images.length; i++) {
+    const img = images[i];
+    if (img.type === 'base64' && img.data) {
+      const sizeBytes = Math.ceil(img.data.length * 3 / 4);
+      if (sizeBytes > MAX_IMAGE_SIZE_BYTES) {
+        return `Image ${i + 1} exceeds 10MB limit (${Math.round(sizeBytes / 1024 / 1024)}MB)`;
+      }
+    }
+  }
+  if (images.length > 10) return 'Maximum 10 images per request';
+  return null;
+}
+
 // ---- POST /api/playground/run (non-streaming) ----
 
 router.post('/run', async (req: Request, res: ExpressResponse) => {
@@ -123,6 +140,9 @@ router.post('/run', async (req: Request, res: ExpressResponse) => {
   if (!providerId || !modelName || !prompt) {
     return res.status(400).json({ error: 'providerId, modelName, and prompt are required' });
   }
+
+  const imageError = validateImages(images);
+  if (imageError) return res.status(400).json({ error: imageError });
 
   const resolved = resolveProvider(providerId, modelName);
   if ('error' in resolved) {
@@ -166,6 +186,9 @@ router.post('/stream', async (req: Request, res: ExpressResponse) => {
   if (!providerId || !modelName || !prompt) {
     return res.status(400).json({ error: 'providerId, modelName, and prompt are required' });
   }
+
+  const streamImageError = validateImages(images);
+  if (streamImageError) return res.status(400).json({ error: streamImageError });
 
   const resolved = resolveProvider(providerId, modelName);
   if ('error' in resolved) {
