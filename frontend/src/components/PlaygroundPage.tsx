@@ -12,6 +12,8 @@ import {
   PlusOutlined,
   DeleteOutlined,
   LinkOutlined,
+  CopyOutlined,
+  CheckOutlined,
 } from '@ant-design/icons';
 import { useProviders } from '../hooks/useProviders';
 import { usePlayground, PlaygroundMetrics } from '../hooks/usePlayground';
@@ -19,6 +21,9 @@ import { ImageInput } from '../types';
 import { PRESET_PROMPTS, QUICK_MAX_TOKENS } from '../constants';
 
 const { TextArea } = Input;
+
+const STANDARD_PRESETS = PRESET_PROMPTS.filter(p => !p.label.startsWith('Long Context'));
+const LONG_CONTEXT_PRESETS = PRESET_PROMPTS.filter(p => p.label.startsWith('Long Context'));
 
 export function PlaygroundPage() {
   const { providers, fetchProviders } = useProviders();
@@ -36,6 +41,8 @@ export function PlaygroundPage() {
   const [hasRun, setHasRun] = useState(false);
   const [images, setImages] = useState<ImageInput[]>([]);
   const [imageUrlInput, setImageUrlInput] = useState('');
+  const [showLongContext, setShowLongContext] = useState(false);
+  const [copied, setCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { fetchProviders(); }, [fetchProviders]);
@@ -108,14 +115,23 @@ export function PlaygroundPage() {
     setImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleCopyResponse = async () => {
+    if (!responseText) return;
+    try {
+      await navigator.clipboard.writeText(responseText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard not available */ }
+  };
+
   return (
     <div className="space-y-4">
       {/* Config */}
       <div className="glass-card p-5 space-y-4">
-        {/* Provider & Model */}
-        <div className="flex gap-3">
+        {/* Provider & Model — stacks on mobile */}
+        <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1">
-            <label className="block text-[11px] text-text-tertiary mb-1.5 uppercase tracking-wider">Provider</label>
+            <label className="block text-[12px] text-text-tertiary mb-1.5 uppercase tracking-wider">Provider</label>
             <Select
               className="w-full"
               placeholder="Select provider"
@@ -126,14 +142,14 @@ export function PlaygroundPage() {
                 label: (
                   <span className="flex items-center gap-2">
                     <span>{p.name}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/8 text-text-tertiary font-mono">{p.format}</span>
+                    <span className="text-[11px] px-1.5 py-0.5 rounded bg-white/8 text-text-tertiary font-mono">{p.format}</span>
                   </span>
                 ),
               }))}
             />
           </div>
           <div className="flex-1">
-            <label className="block text-[11px] text-text-tertiary mb-1.5 uppercase tracking-wider">Model</label>
+            <label className="block text-[12px] text-text-tertiary mb-1.5 uppercase tracking-wider">Model</label>
             <Select
               className="w-full"
               placeholder={providerId ? 'Select model' : 'Select provider first'}
@@ -145,9 +161,9 @@ export function PlaygroundPage() {
                 label: (
                   <span className="flex items-center gap-2">
                     <span className="font-mono text-[13px]">{m.displayName || m.name}</span>
-                    <span className="text-[10px] text-text-tertiary">{Math.round(m.contextSize / 1000)}K</span>
-                    {m.supportsVision && <span className="text-[9px] px-1 rounded bg-accent-teal/15 text-accent-teal">V</span>}
-                    {m.supportsTools && <span className="text-[9px] px-1 rounded bg-accent-blue/15 text-accent-blue">T</span>}
+                    <span className="text-[11px] text-text-tertiary">{Math.round(m.contextSize / 1000)}K</span>
+                    {m.supportsVision && <span className="text-[10px] px-1 rounded bg-accent-teal/15 text-accent-teal">V</span>}
+                    {m.supportsTools && <span className="text-[10px] px-1 rounded bg-accent-blue/15 text-accent-blue">T</span>}
                   </span>
                 ),
               }))}
@@ -175,7 +191,7 @@ export function PlaygroundPage() {
 
         {/* Prompt */}
         <div>
-          <label className="block text-[11px] text-text-tertiary mb-1.5 uppercase tracking-wider">Prompt</label>
+          <label className="block text-[12px] text-text-tertiary mb-1.5 uppercase tracking-wider">Prompt</label>
           <TextArea
             value={prompt}
             onChange={e => setPrompt(e.target.value)}
@@ -199,7 +215,7 @@ export function PlaygroundPage() {
               <span className="text-[12px] text-text-secondary flex items-center gap-2">
                 Images
                 {images.length > 0 && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent-teal/15 text-accent-teal">{images.length}</span>
+                  <span className="text-[11px] px-1.5 py-0.5 rounded bg-accent-teal/15 text-accent-teal">{images.length}</span>
                 )}
               </span>
             ),
@@ -255,11 +271,11 @@ export function PlaygroundPage() {
                         />
                         <button
                           onClick={() => removeImage(i)}
-                          className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                         >
                           <DeleteOutlined style={{ fontSize: 10 }} />
                         </button>
-                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-[9px] text-text-secondary text-center py-0.5">
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-[10px] text-text-secondary text-center py-0.5">
                           {img.type === 'url' ? 'URL' : img.mediaType?.split('/')[1]?.toUpperCase()}
                         </div>
                       </div>
@@ -272,8 +288,8 @@ export function PlaygroundPage() {
         />
 
         {/* Presets */}
-        <div className="flex flex-wrap gap-1.5">
-          {PRESET_PROMPTS.filter(p => !p.label.startsWith('Long Context')).map(preset => (
+        <div className="flex flex-wrap gap-1.5 items-center">
+          {STANDARD_PRESETS.map(preset => (
             <button
               key={preset.label}
               onClick={() => setPrompt(preset.prompt)}
@@ -282,19 +298,37 @@ export function PlaygroundPage() {
               {preset.label}
             </button>
           ))}
+          {!showLongContext ? (
+            <button
+              onClick={() => setShowLongContext(true)}
+              className="text-[11px] px-2.5 py-1 rounded border border-border text-text-tertiary hover:text-text-secondary transition-colors"
+            >
+              Long Context...
+            </button>
+          ) : (
+            LONG_CONTEXT_PRESETS.map(preset => (
+              <button
+                key={preset.label}
+                onClick={() => setPrompt(preset.prompt)}
+                className="text-[11px] px-2.5 py-1 rounded border border-accent-amber/30 text-accent-amber/80 hover:text-accent-amber hover:border-accent-amber/50 transition-colors"
+              >
+                {preset.label}
+              </button>
+            ))
+          )}
         </div>
 
-        {/* Config Row */}
-        <div className="flex items-center gap-4 flex-wrap">
+        {/* Config Row — wraps to vertical on small screens */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
           <div className="flex items-center gap-2">
-            <label className="text-[11px] text-text-tertiary">Max Tokens</label>
+            <label className="text-[12px] text-text-tertiary">Max Tokens</label>
             <InputNumber min={1} max={128000} value={maxTokens} onChange={v => v && setMaxTokens(v)} size="small" className="w-24" />
             <div className="flex gap-1">
               {QUICK_MAX_TOKENS.map(q => (
                 <button
                   key={q.value}
                   onClick={() => setMaxTokens(q.value)}
-                  className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
+                  className={`text-[11px] px-2 py-0.5 rounded border transition-colors ${
                     maxTokens === q.value
                       ? 'border-accent-blue/50 text-accent-blue bg-accent-blue/10'
                       : 'border-border text-text-tertiary hover:text-text-secondary'
@@ -307,7 +341,7 @@ export function PlaygroundPage() {
           </div>
           <div className="flex items-center gap-2">
             <Tooltip title="Streaming mode shows text as it arrives. Non-streaming waits for the full response.">
-              <label className="text-[11px] text-text-tertiary cursor-help">Streaming</label>
+              <label className="text-[12px] text-text-tertiary cursor-help">Streaming</label>
             </Tooltip>
             <Switch size="small" checked={useStreaming} onChange={setUseStreaming} />
           </div>
@@ -321,7 +355,7 @@ export function PlaygroundPage() {
         ) : (
           <Tooltip title={canRun ? 'Cmd+Enter' : undefined}>
             <Button type="primary" block icon={<SendOutlined />} onClick={handleRun} disabled={!canRun} size="large">
-              Run{useStreaming ? ' (Stream)' : ''}
+              Run
             </Button>
           </Tooltip>
         )}
@@ -342,7 +376,7 @@ export function PlaygroundPage() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <BulbOutlined className="text-accent-violet text-[13px]" />
-                <span className="text-[11px] text-text-tertiary uppercase tracking-wider">Reasoning</span>
+                <span className="text-[12px] text-text-tertiary uppercase tracking-wider">Reasoning</span>
               </div>
               <div className="rounded border border-accent-violet/20 bg-accent-violet/5 p-4 overflow-auto max-h-[300px]">
                 <pre className="whitespace-pre-wrap text-[13px] leading-relaxed font-mono text-text-secondary m-0">
@@ -357,11 +391,20 @@ export function PlaygroundPage() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <CodeOutlined className="text-accent-teal text-[13px]" />
-              <span className="text-[11px] text-text-tertiary uppercase tracking-wider">Response</span>
+              <span className="text-[12px] text-text-tertiary uppercase tracking-wider">Response</span>
               {selectedProvider && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/8 text-text-tertiary font-mono ml-auto">
+                <span className="text-[11px] px-1.5 py-0.5 rounded bg-white/8 text-text-tertiary font-mono ml-auto">
                   {selectedProvider.name} / {modelName} ({selectedProvider.format})
                 </span>
+              )}
+              {responseText && !loading && (
+                <button
+                  onClick={handleCopyResponse}
+                  className="text-[12px] text-text-tertiary hover:text-text-primary transition-colors ml-1"
+                  title="Copy response"
+                >
+                  {copied ? <CheckOutlined className="text-accent-teal" /> : <CopyOutlined />}
+                </button>
               )}
             </div>
             <div className="rounded border border-border bg-[#0a0a0a] p-4 overflow-auto max-h-[600px] min-h-[100px]">
@@ -462,15 +505,15 @@ function MetricsRow({ metrics, loading }: { metrics: PlaygroundMetrics | null; l
         >
           <div className="flex items-center gap-1.5 mb-1">
             {card.icon && <span className={`text-[12px] ${card.color}`}>{card.icon}</span>}
-            <span className="text-[10px] text-text-tertiary uppercase tracking-wider">{card.label}</span>
+            <span className="text-[11px] text-text-tertiary uppercase tracking-wider">{card.label}</span>
           </div>
           <div className={`text-[16px] font-mono font-medium ${card.color} ${loading && !metrics ? 'animate-pulse' : ''}`}>
             {card.value}
           </div>
-          {card.sublabel && <div className="text-[10px] text-text-tertiary mt-0.5">{card.sublabel}</div>}
+          {card.sublabel && <div className="text-[11px] text-text-tertiary mt-0.5">{card.sublabel}</div>}
           {card.warn && (
-            <div className="text-[10px] text-accent-rose mt-1 flex items-center gap-1">
-              <WarningOutlined className="text-[10px]" />
+            <div className="text-[11px] text-accent-rose mt-1 flex items-center gap-1">
+              <WarningOutlined className="text-[11px]" />
               No token data from API
             </div>
           )}
