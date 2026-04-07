@@ -76,6 +76,10 @@ function buildAnthropicHeaders(apiKey: string): Record<string, string> {
     'Content-Type': 'application/json',
     'x-api-key': apiKey,
     'anthropic-version': '2023-06-01',
+    'x-app': 'cli',
+    'User-Agent': 'claude-cli/2.1.89 (external, sdk-cli)',
+    'X-Claude-Code-Session-Id': randomUUID(),
+    'x-client-request-id': randomUUID(),
   };
 }
 
