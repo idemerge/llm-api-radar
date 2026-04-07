@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.2.1] - 2026-04-07
+
+### Changed
+- Playground image input redesigned: inline button at prompt bottom, drag-and-drop, clipboard paste support (matching ChatGPT/Claude UX)
+- Playground Run button moved to prompt textarea bottom-right for faster access
+- Config row (Max Tokens, Streaming, Thinking) moved above prompt area
+- Presets integrated into prompt bottom bar
+- Removed URL image input (file upload only)
+
 ## [1.2.0] - 2026-04-07
 
 ### Added
