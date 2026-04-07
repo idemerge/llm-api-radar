@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Select, Input, InputNumber, Switch, Button, Collapse, Alert, Tooltip } from '../antdImports';
+import { Select, Input, InputNumber, Switch, Collapse, Alert, Tooltip } from '../antdImports';
 import {
   SendOutlined,
   StopOutlined,
@@ -9,7 +9,6 @@ import {
   WarningOutlined,
   CodeOutlined,
   BulbOutlined,
-  PlusOutlined,
   DeleteOutlined,
   PictureOutlined,
   CopyOutlined,
@@ -259,7 +258,42 @@ export function PlaygroundPage() {
           }]}
         />
 
-        {/* Prompt with inline image support */}
+        {/* Config Row — above prompt, set once use many */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-2">
+            <label className="text-[12px] text-text-tertiary">Max Tokens</label>
+            <InputNumber min={1} max={128000} value={maxTokens} onChange={v => v && setMaxTokens(v)} size="small" className="w-24" />
+            <div className="flex gap-1">
+              {QUICK_MAX_TOKENS.map(q => (
+                <button
+                  key={q.value}
+                  onClick={() => setMaxTokens(q.value)}
+                  className={`text-[11px] px-2 py-0.5 rounded border transition-colors ${
+                    maxTokens === q.value
+                      ? 'border-accent-blue/50 text-accent-blue bg-accent-blue/10'
+                      : 'border-border text-text-tertiary hover:text-text-secondary'
+                  }`}
+                >
+                  {q.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Tooltip title="Streaming mode shows text as it arrives. Non-streaming waits for the full response.">
+              <label className="text-[12px] text-text-tertiary cursor-help">Streaming</label>
+            </Tooltip>
+            <Switch size="small" checked={useStreaming} onChange={setUseStreaming} />
+          </div>
+          <div className="flex items-center gap-2">
+            <Tooltip title="Enable extended thinking (Anthropic/OpenAI o-series). Shows the model's reasoning process. Disables system prompt for Anthropic.">
+              <label className="text-[12px] text-text-tertiary cursor-help">Thinking</label>
+            </Tooltip>
+            <Switch size="small" checked={enableThinking} onChange={setEnableThinking} />
+          </div>
+        </div>
+
+        {/* Prompt with inline image support, presets, and Run button */}
         <div>
           <label className="block text-[12px] text-text-tertiary mb-1.5 uppercase tracking-wider">Prompt</label>
           <div
@@ -316,7 +350,7 @@ export function PlaygroundPage() {
               onPaste={handlePaste}
             />
 
-            {/* Bottom bar — image button */}
+            {/* Bottom bar — image, presets, run */}
             <div className="flex items-center gap-2 px-2 pb-2">
               <input
                 ref={fileInputRef}
@@ -339,88 +373,66 @@ export function PlaygroundPage() {
                   {images.length > 0 && <span className="font-mono">{images.length}</span>}
                 </button>
               </Tooltip>
-            </div>
-          </div>
-        </div>
 
-        {/* Presets */}
-        <div className="flex flex-wrap gap-1.5 items-center">
-          {STANDARD_PRESETS.map(preset => (
-            <button
-              key={preset.label}
-              onClick={() => setPrompt(preset.prompt)}
-              className="text-[11px] px-2.5 py-1 rounded border border-border text-text-secondary hover:text-text-primary hover:border-accent-blue/40 transition-colors"
-            >
-              {preset.label}
-            </button>
-          ))}
-          {!showLongContext ? (
-            <button
-              onClick={() => setShowLongContext(true)}
-              className="text-[11px] px-2.5 py-1 rounded border border-border text-text-tertiary hover:text-text-secondary transition-colors"
-            >
-              Long Context...
-            </button>
-          ) : (
-            LONG_CONTEXT_PRESETS.map(preset => (
-              <button
-                key={preset.label}
-                onClick={() => setPrompt(preset.prompt)}
-                className="text-[11px] px-2.5 py-1 rounded border border-accent-amber/30 text-accent-amber/80 hover:text-accent-amber hover:border-accent-amber/50 transition-colors"
-              >
-                {preset.label}
-              </button>
-            ))
-          )}
-        </div>
+              {/* Presets — inline in bottom bar */}
+              <div className="flex flex-wrap gap-1 flex-1 min-w-0">
+                {STANDARD_PRESETS.map(preset => (
+                  <button
+                    key={preset.label}
+                    onClick={() => setPrompt(preset.prompt)}
+                    className="text-[10px] px-2 py-0.5 rounded border border-border text-text-tertiary hover:text-text-secondary hover:border-accent-blue/40 transition-colors whitespace-nowrap"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+                {!showLongContext ? (
+                  <button
+                    onClick={() => setShowLongContext(true)}
+                    className="text-[10px] px-2 py-0.5 rounded border border-border text-text-tertiary hover:text-text-secondary transition-colors whitespace-nowrap"
+                  >
+                    Long...
+                  </button>
+                ) : (
+                  LONG_CONTEXT_PRESETS.map(preset => (
+                    <button
+                      key={preset.label}
+                      onClick={() => setPrompt(preset.prompt)}
+                      className="text-[10px] px-2 py-0.5 rounded border border-accent-amber/30 text-accent-amber/80 hover:text-accent-amber hover:border-accent-amber/50 transition-colors whitespace-nowrap"
+                    >
+                      {preset.label}
+                    </button>
+                  ))
+                )}
+              </div>
 
-        {/* Config Row — wraps to vertical on small screens */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-          <div className="flex items-center gap-2">
-            <label className="text-[12px] text-text-tertiary">Max Tokens</label>
-            <InputNumber min={1} max={128000} value={maxTokens} onChange={v => v && setMaxTokens(v)} size="small" className="w-24" />
-            <div className="flex gap-1">
-              {QUICK_MAX_TOKENS.map(q => (
+              {/* Run / Stop — right side */}
+              {loading ? (
                 <button
-                  key={q.value}
-                  onClick={() => setMaxTokens(q.value)}
-                  className={`text-[11px] px-2 py-0.5 rounded border transition-colors ${
-                    maxTokens === q.value
-                      ? 'border-accent-blue/50 text-accent-blue bg-accent-blue/10'
-                      : 'border-border text-text-tertiary hover:text-text-secondary'
-                  }`}
+                  onClick={abort}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent-rose/15 text-accent-rose hover:bg-accent-rose/25 transition-colors text-[12px] font-medium whitespace-nowrap"
                 >
-                  {q.label}
+                  <StopOutlined />
+                  Stop
                 </button>
-              ))}
+              ) : (
+                <Tooltip title={canRun ? 'Cmd+Enter' : 'Select provider, model, and enter a prompt'}>
+                  <button
+                    onClick={handleRun}
+                    disabled={!canRun}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-medium whitespace-nowrap transition-colors ${
+                      canRun
+                        ? 'bg-accent-blue text-white hover:bg-accent-blue/90'
+                        : 'bg-white/5 text-text-tertiary cursor-not-allowed'
+                    }`}
+                  >
+                    <SendOutlined />
+                    Run
+                  </button>
+                </Tooltip>
+              )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Tooltip title="Streaming mode shows text as it arrives. Non-streaming waits for the full response.">
-              <label className="text-[12px] text-text-tertiary cursor-help">Streaming</label>
-            </Tooltip>
-            <Switch size="small" checked={useStreaming} onChange={setUseStreaming} />
-          </div>
-          <div className="flex items-center gap-2">
-            <Tooltip title="Enable extended thinking (Anthropic/OpenAI o-series). Shows the model's reasoning process. Disables system prompt for Anthropic.">
-              <label className="text-[12px] text-text-tertiary cursor-help">Thinking</label>
-            </Tooltip>
-            <Switch size="small" checked={enableThinking} onChange={setEnableThinking} />
-          </div>
         </div>
-
-        {/* Run / Stop */}
-        {loading ? (
-          <Button type="default" danger block icon={<StopOutlined />} onClick={abort} size="large">
-            Stop
-          </Button>
-        ) : (
-          <Tooltip title={canRun ? 'Cmd+Enter' : undefined}>
-            <Button type="primary" block icon={<SendOutlined />} onClick={handleRun} disabled={!canRun} size="large">
-              Run
-            </Button>
-          </Tooltip>
-        )}
       </div>
 
       {/* Error */}
