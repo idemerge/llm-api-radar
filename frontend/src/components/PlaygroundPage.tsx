@@ -43,6 +43,7 @@ export function PlaygroundPage() {
   const [imageUrlInput, setImageUrlInput] = useState('');
   const [showLongContext, setShowLongContext] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [enableThinking, setEnableThinking] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { fetchProviders(); }, [fetchProviders]);
@@ -75,6 +76,7 @@ export function PlaygroundPage() {
       systemPrompt: systemPrompt.trim() || undefined,
       maxTokens,
       images: images.length > 0 ? images : undefined,
+      enableThinking: enableThinking || undefined,
     };
     if (useStreaming) {
       streamPrompt(params);
@@ -344,6 +346,12 @@ export function PlaygroundPage() {
               <label className="text-[12px] text-text-tertiary cursor-help">Streaming</label>
             </Tooltip>
             <Switch size="small" checked={useStreaming} onChange={setUseStreaming} />
+          </div>
+          <div className="flex items-center gap-2">
+            <Tooltip title="Enable extended thinking (Anthropic/OpenAI o-series). Shows the model's reasoning process. Disables system prompt for Anthropic.">
+              <label className="text-[12px] text-text-tertiary cursor-help">Thinking</label>
+            </Tooltip>
+            <Switch size="small" checked={enableThinking} onChange={setEnableThinking} />
           </div>
         </div>
 

@@ -20,6 +20,7 @@ export interface PlaygroundParams {
   systemPrompt?: string;
   maxTokens: number;
   images?: ImageInput[];
+  enableThinking?: boolean;
 }
 
 export function usePlayground() {

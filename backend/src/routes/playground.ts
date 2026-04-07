@@ -132,9 +132,9 @@ function validateImages(images?: ImageInput[]): string | null {
 // ---- POST /api/playground/run (non-streaming) ----
 
 router.post('/run', async (req: Request, res: ExpressResponse) => {
-  const { providerId, modelName, prompt, systemPrompt, maxTokens = 4096, images }: {
+  const { providerId, modelName, prompt, systemPrompt, maxTokens = 4096, images, enableThinking }: {
     providerId: string; modelName: string; prompt: string;
-    systemPrompt?: string; maxTokens?: number; images?: ImageInput[];
+    systemPrompt?: string; maxTokens?: number; images?: ImageInput[]; enableThinking?: boolean;
   } = req.body;
 
   if (!providerId || !modelName || !prompt) {
@@ -178,9 +178,9 @@ router.post('/run', async (req: Request, res: ExpressResponse) => {
 // ---- POST /api/playground/stream (SSE streaming) ----
 
 router.post('/stream', async (req: Request, res: ExpressResponse) => {
-  const { providerId, modelName, prompt, systemPrompt, maxTokens = 4096, images }: {
+  const { providerId, modelName, prompt, systemPrompt, maxTokens = 4096, images, enableThinking }: {
     providerId: string; modelName: string; prompt: string;
-    systemPrompt?: string; maxTokens?: number; images?: ImageInput[];
+    systemPrompt?: string; maxTokens?: number; images?: ImageInput[]; enableThinking?: boolean;
   } = req.body;
 
   if (!providerId || !modelName || !prompt) {
@@ -219,10 +219,10 @@ router.post('/stream', async (req: Request, res: ExpressResponse) => {
     switch (config.format) {
       case 'openai':
       case 'custom':
-        await streamOpenAI(config.endpoint, model.name, apiKey, prompt, systemPrompt, maxTokens, images, startTime, sendEvent, () => aborted, upstreamAbort.signal);
+        await streamOpenAI(config.endpoint, model.name, apiKey, prompt, systemPrompt, maxTokens, images, startTime, sendEvent, () => aborted, upstreamAbort.signal, enableThinking);
         break;
       case 'anthropic':
-        await streamAnthropic(config.endpoint, apiKey, model.name, prompt, systemPrompt, maxTokens, images, startTime, sendEvent, () => aborted, upstreamAbort.signal);
+        await streamAnthropic(config.endpoint, apiKey, model.name, prompt, systemPrompt, maxTokens, images, startTime, sendEvent, () => aborted, upstreamAbort.signal, enableThinking);
         break;
       case 'gemini':
         await streamGemini(config.endpoint, model.name, apiKey, prompt, systemPrompt, maxTokens, images, startTime, sendEvent, () => aborted, upstreamAbort.signal);
@@ -251,11 +251,23 @@ async function streamOpenAI(
   prompt: string, systemPrompt: string | undefined, maxTokens: number,
   images: ImageInput[] | undefined,
   startTime: number, sendEvent: (d: any) => void, isAborted: () => boolean,
-  clientSignal?: AbortSignal
+  clientSignal?: AbortSignal, enableThinking?: boolean
 ) {
   const messages: Array<{ role: string; content: string | ContentPart[] }> = [];
   if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
   messages.push({ role: 'user', content: buildOpenAIContent(prompt, images || []) });
+
+  const requestBody: Record<string, any> = {
+    model: modelName,
+    messages,
+    max_tokens: maxTokens,
+    stream: true,
+    stream_options: { include_usage: true },
+  };
+  // For OpenAI o-series models, include reasoning_effort when thinking is enabled
+  if (enableThinking) {
+    requestBody.reasoning_effort = 'high';
+  }
 
   const response = await fetchWithTimeout(
     `${endpoint}/chat/completions`,
@@ -265,13 +277,7 @@ async function streamOpenAI(
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        model: modelName,
-        messages,
-        max_tokens: maxTokens,
-        stream: true,
-        stream_options: { include_usage: true },
-      }),
+      body: JSON.stringify(requestBody),
     },
     180000,
     clientSignal
@@ -349,7 +355,7 @@ async function streamAnthropic(
   prompt: string, systemPrompt: string | undefined, maxTokens: number,
   images: ImageInput[] | undefined,
   startTime: number, sendEvent: (d: any) => void, isAborted: () => boolean,
-  clientSignal?: AbortSignal
+  clientSignal?: AbortSignal, enableThinking?: boolean
 ) {
   const body: Record<string, any> = {
     model: modelName,
@@ -357,13 +363,26 @@ async function streamAnthropic(
     messages: [{ role: 'user', content: await buildAnthropicContent(prompt, images || []) }],
     stream: true,
   };
-  if (systemPrompt) body.system = systemPrompt;
+  if (enableThinking) {
+    // Extended thinking: budget is max_tokens minus a reserve for the response
+    const thinkingBudget = Math.max(1024, maxTokens - 1024);
+    body.thinking = { type: 'enabled', budget_tokens: thinkingBudget };
+    // Anthropic requires: thinking + system prompt cannot be used together
+    // System prompt is silently ignored when thinking is enabled
+  } else if (systemPrompt) {
+    body.system = systemPrompt;
+  }
+
+  const headers = buildAnthropicHeaders(apiKey);
+  if (enableThinking) {
+    headers['anthropic-version'] = '2025-04-15';
+  }
 
   const response = await fetchWithTimeout(
     `${endpoint}/messages`,
     {
       method: 'POST',
-      headers: buildAnthropicHeaders(apiKey),
+      headers,
       body: JSON.stringify(body),
     },
     180000,
