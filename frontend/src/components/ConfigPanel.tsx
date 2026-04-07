@@ -44,7 +44,7 @@ interface SelectedModel {
 }
 
 export function ConfigPanel({ onStart, isRunning, currentProviders, onCancel }: ConfigPanelProps) {
-  const { providers: configuredProviders, fetchProviders } = useProviders();
+  const { providers: configuredProviders, loading: providersLoading, fetchProviders } = useProviders();
   const [selectedModels, setSelectedModels] = useState<SelectedModel[]>([]);
   const [isAdvancedMode, setIsAdvancedMode] = useState(false);
 
@@ -147,7 +147,9 @@ export function ConfigPanel({ onStart, isRunning, currentProviders, onCancel }: 
       {/* Provider & Model Selection */}
       <div className="space-y-4">
         <label className="section-title">Providers & Models</label>
-        {configuredProviders.length === 0 ? (
+        {providersLoading && configuredProviders.length === 0 ? (
+          <div className="text-center py-6 text-text-tertiary text-[12px] animate-pulse">Loading providers...</div>
+        ) : configuredProviders.length === 0 ? (
           <div className="text-center py-6 border border-dashed border-border rounded-md">
             <div className="text-text-tertiary text-[12px] mb-1">No providers configured</div>
             <div className="text-text-tertiary text-[11px]">Go to Settings to add providers</div>

@@ -58,7 +58,7 @@ interface SelectedModel {
 }
 
 export function WorkflowConfigPanel({ onStart, isRunning, templates, onCancel, initialWorkflow, onInitialWorkflowConsumed }: WorkflowConfigPanelProps) {
-  const { providers: configuredProviders, fetchProviders } = useProviders();
+  const { providers: configuredProviders, loading: providersLoading, fetchProviders } = useProviders();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedModels, setSelectedModels] = useState<SelectedModel[]>([]);
@@ -690,7 +690,9 @@ export function WorkflowConfigPanel({ onStart, isRunning, templates, onCancel, i
         {/* Column 2: Providers & Models */}
         <div className="space-y-4">
           <label className="section-title">Providers & Models</label>
-          {configuredProviders.length === 0 ? (
+          {providersLoading && configuredProviders.length === 0 ? (
+            <div className="text-center py-4 text-text-tertiary text-[11px] animate-pulse">Loading providers...</div>
+          ) : configuredProviders.length === 0 ? (
             <div className="text-center py-4 border border-dashed border-border rounded-md">
               <div className="text-text-tertiary text-[11px]">No providers configured</div>
               <div className="text-text-tertiary text-[10px]">Go to Settings to add providers</div>
