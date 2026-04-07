@@ -364,19 +364,16 @@ async function streamAnthropic(
     stream: true,
   };
   if (enableThinking) {
-    // Extended thinking: budget is max_tokens minus a reserve for the response
-    const thinkingBudget = Math.max(1024, maxTokens - 1024);
+    // Ensure max_tokens is large enough for thinking + response
+    body.max_tokens = Math.max(maxTokens, 16000);
+    const thinkingBudget = body.max_tokens - 4096;
     body.thinking = { type: 'enabled', budget_tokens: thinkingBudget };
-    // Anthropic requires: thinking + system prompt cannot be used together
-    // System prompt is silently ignored when thinking is enabled
+    // Anthropic: thinking + system prompt cannot be used together
   } else if (systemPrompt) {
     body.system = systemPrompt;
   }
 
   const headers = buildAnthropicHeaders(apiKey);
-  if (enableThinking) {
-    headers['anthropic-version'] = '2025-04-15';
-  }
 
   const response = await fetchWithTimeout(
     `${endpoint}/messages`,
