@@ -25,16 +25,45 @@ function buildOpenAIContent(prompt: string, images: ImageInput[]): string | Cont
   return parts;
 }
 
-/** Build Anthropic-style multimodal content array */
-function buildAnthropicContent(prompt: string, images: ImageInput[]): string | ContentPart[] {
-  if (!images || images.length === 0) return prompt;
-  const parts: ContentPart[] = [];
+/** Fetch a remote image URL and return as {mediaType, data} base64 */
+async function fetchImageAsBase64(url: string): Promise<{ mediaType: string; data: string } | null> {
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(15000) });
+    if (!response.ok) return null;
+    const contentType = response.headers.get('content-type') || 'image/png';
+    const buffer = await response.arrayBuffer();
+    const data = Buffer.from(buffer).toString('base64');
+    return { mediaType: contentType.split(';')[0], data };
+  } catch {
+    return null;
+  }
+}
+
+/** Resolve all images to base64 (fetching URLs as needed) */
+async function resolveImagesToBase64(images: ImageInput[]): Promise<ImageInput[]> {
+  const resolved: ImageInput[] = [];
   for (const img of images) {
     if (img.type === 'url' && img.url) {
-      // Anthropic doesn't support URL directly — fetch and convert to base64
-      // For simplicity, skip URLs for Anthropic format
-      continue;
-    } else if (img.type === 'base64' && img.data && img.mediaType) {
+      const fetched = await fetchImageAsBase64(img.url);
+      if (fetched) {
+        resolved.push({ type: 'base64', mediaType: fetched.mediaType, data: fetched.data });
+      }
+      // Skip silently if fetch fails (image may be unreachable)
+    } else {
+      resolved.push(img);
+    }
+  }
+  return resolved;
+}
+
+/** Build Anthropic-style multimodal content array */
+async function buildAnthropicContent(prompt: string, images: ImageInput[]): Promise<string | ContentPart[]> {
+  if (!images || images.length === 0) return prompt;
+  const resolvedImages = await resolveImagesToBase64(images);
+  if (resolvedImages.length === 0) return prompt;
+  const parts: ContentPart[] = [];
+  for (const img of resolvedImages) {
+    if (img.type === 'base64' && img.data && img.mediaType) {
       parts.push({ type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.data } });
     }
   }
@@ -290,7 +319,7 @@ async function streamAnthropic(
   const body: Record<string, any> = {
     model: modelName,
     max_tokens: maxTokens,
-    messages: [{ role: 'user', content: buildAnthropicContent(prompt, images || []) }],
+    messages: [{ role: 'user', content: await buildAnthropicContent(prompt, images || []) }],
     stream: true,
   };
   if (systemPrompt) body.system = systemPrompt;
@@ -367,9 +396,10 @@ async function streamAnthropic(
 
 // ---- Stream: Gemini format ----
 
-function buildGeminiParts(prompt: string, images?: ImageInput[]): any[] {
+async function buildGeminiParts(prompt: string, images?: ImageInput[]): Promise<any[]> {
   const parts: any[] = [];
-  for (const img of images || []) {
+  const resolvedImages = images ? await resolveImagesToBase64(images) : [];
+  for (const img of resolvedImages) {
     if (img.type === 'base64' && img.data && img.mediaType) {
       parts.push({ inline_data: { mime_type: img.mediaType, data: img.data } });
     }
@@ -389,7 +419,7 @@ async function streamGemini(
     contents.push({ role: 'user', parts: [{ text: systemPrompt }] });
     contents.push({ role: 'model', parts: [{ text: 'Understood.' }] });
   }
-  contents.push({ role: 'user', parts: buildGeminiParts(prompt, images) });
+  contents.push({ role: 'user', parts: await buildGeminiParts(prompt, images) });
 
   const url = `${endpoint}/models/${modelName}:streamGenerateContent?key=${apiKey}&alt=sse`;
 
