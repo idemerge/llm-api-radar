@@ -11,7 +11,7 @@ import {
   BulbOutlined,
   PlusOutlined,
   DeleteOutlined,
-  LinkOutlined,
+  PictureOutlined,
   CopyOutlined,
   CheckOutlined,
 } from '@ant-design/icons';
@@ -44,7 +44,7 @@ export function PlaygroundPage() {
   const [useStreaming, setUseStreaming] = useState(true);
   const [hasRun, setHasRun] = useState(false);
   const [images, setImages] = useState<ImageInput[]>([]);
-  const [imageUrlInput, setImageUrlInput] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
   const [showLongContext, setShowLongContext] = useState(false);
   const [copied, setCopied] = useState(false);
   const [enableThinking, setEnableThinking] = useState(false);
@@ -100,16 +100,7 @@ export function PlaygroundPage() {
     }
   };
 
-  const handleAddImageUrl = () => {
-    const url = imageUrlInput.trim();
-    if (!url) return;
-    setImages(prev => [...prev, { type: 'url', url }]);
-    setImageUrlInput('');
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
+  const addImageFiles = (files: FileList | File[]) => {
     Array.from(files).forEach(file => {
       if (!file.type.startsWith('image/')) return;
       if (file.size > 10 * 1024 * 1024) return; // 10MB limit
@@ -124,8 +115,34 @@ export function PlaygroundPage() {
       };
       reader.readAsDataURL(file);
     });
-    // Reset input so same file can be re-selected
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) addImageFiles(e.target.files);
     e.target.value = '';
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files.length > 0) {
+      addImageFiles(e.dataTransfer.files);
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items;
+    const imageFiles: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile();
+        if (file) imageFiles.push(file);
+      }
+    }
+    if (imageFiles.length > 0) {
+      e.preventDefault();
+      addImageFiles(imageFiles);
+    }
   };
 
   const removeImage = (index: number) => {
@@ -242,103 +259,89 @@ export function PlaygroundPage() {
           }]}
         />
 
-        {/* Prompt */}
+        {/* Prompt with inline image support */}
         <div>
           <label className="block text-[12px] text-text-tertiary mb-1.5 uppercase tracking-wider">Prompt</label>
-          <TextArea
-            value={prompt}
-            onChange={e => setPrompt(e.target.value)}
-            placeholder="Enter your prompt..."
-            autoSize={{ minRows: 4, maxRows: 12 }}
-            className="font-mono text-[13px]"
-            onKeyDown={e => {
-              if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && canRun && !loading) {
-                handleRun();
-              }
-            }}
-          />
-        </div>
-
-        {/* Images */}
-        <Collapse
-          ghost
-          items={[{
-            key: 'images',
-            label: (
-              <span className="text-[12px] text-text-secondary flex items-center gap-2">
-                Images
-                {images.length > 0 && (
-                  <span className="text-[11px] px-1.5 py-0.5 rounded bg-accent-teal/15 text-accent-teal">{images.length}</span>
-                )}
-              </span>
-            ),
-            children: (
-              <div className="space-y-3">
-                {/* URL Input */}
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="https://example.com/image.png"
-                    value={imageUrlInput}
-                    onChange={e => setImageUrlInput(e.target.value)}
-                    onPressEnter={handleAddImageUrl}
-                    prefix={<LinkOutlined className="text-text-tertiary" />}
-                    className="flex-1"
-                    size="small"
-                  />
-                  <Button size="small" onClick={handleAddImageUrl} disabled={!imageUrlInput.trim()}>
-                    Add URL
-                  </Button>
-                </div>
-                {/* File Upload */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-                <Button
-                  size="small"
-                  icon={<PlusOutlined />}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  Upload Image
-                </Button>
-                {/* Image Previews */}
-                {images.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {images.map((img, i) => (
-                      <div
-                        key={i}
-                        className="relative group rounded border border-border overflow-hidden"
-                        style={{ width: 80, height: 80 }}
-                      >
-                        <img
-                          src={
-                            img.type === 'url' ? img.url!
-                            : `data:${img.mediaType};base64,${img.data}`
-                          }
-                          alt={`Image ${i + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                        <button
-                          onClick={() => removeImage(i)}
-                          className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-                        >
-                          <DeleteOutlined style={{ fontSize: 10 }} />
-                        </button>
-                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-[10px] text-text-secondary text-center py-0.5">
-                          {img.type === 'url' ? 'URL' : img.mediaType?.split('/')[1]?.toUpperCase()}
-                        </div>
-                      </div>
-                    ))}
+          <div
+            className={`relative rounded-lg border transition-colors ${
+              isDragging ? 'border-accent-blue border-dashed bg-accent-blue/5' : 'border-border'
+            }`}
+            onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={e => { e.preventDefault(); setIsDragging(false); }}
+            onDrop={handleDrop}
+          >
+            {/* Image Previews — above textarea */}
+            {images.length > 0 && (
+              <div className="flex flex-wrap gap-2 p-2 pb-0">
+                {images.map((img, i) => (
+                  <div
+                    key={i}
+                    className="relative group rounded border border-border overflow-hidden"
+                    style={{ width: 64, height: 64 }}
+                  >
+                    <img
+                      src={`data:${img.mediaType};base64,${img.data}`}
+                      alt={`Image ${i + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      onClick={() => removeImage(i)}
+                      className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/70 text-white flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                    >
+                      <DeleteOutlined style={{ fontSize: 9 }} />
+                    </button>
                   </div>
-                )}
+                ))}
               </div>
-            ),
-          }]}
-        />
+            )}
+
+            {/* Drag overlay */}
+            {isDragging && (
+              <div className="absolute inset-0 flex items-center justify-center bg-accent-blue/5 rounded-lg z-10 pointer-events-none">
+                <span className="text-[13px] text-accent-blue">Drop images here</span>
+              </div>
+            )}
+
+            <TextArea
+              value={prompt}
+              onChange={e => setPrompt(e.target.value)}
+              placeholder="Enter your prompt... (paste or drop images here)"
+              autoSize={{ minRows: 4, maxRows: 12 }}
+              className="font-mono text-[13px] !border-0 !shadow-none !bg-transparent"
+              onKeyDown={e => {
+                if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && canRun && !loading) {
+                  handleRun();
+                }
+              }}
+              onPaste={handlePaste}
+            />
+
+            {/* Bottom bar — image button */}
+            <div className="flex items-center gap-2 px-2 pb-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              <Tooltip title="Add images (or paste / drag-and-drop)">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`flex items-center gap-1 text-[12px] px-2 py-1 rounded transition-colors ${
+                    images.length > 0
+                      ? 'text-accent-teal bg-accent-teal/10'
+                      : 'text-text-tertiary hover:text-text-secondary hover:bg-white/5'
+                  }`}
+                >
+                  <PictureOutlined />
+                  {images.length > 0 && <span className="font-mono">{images.length}</span>}
+                </button>
+              </Tooltip>
+            </div>
+          </div>
+        </div>
 
         {/* Presets */}
         <div className="flex flex-wrap gap-1.5 items-center">
