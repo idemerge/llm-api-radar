@@ -9,7 +9,8 @@ backend/public/
 
 # Database
 backend/data/*.db
-data/
+backend/data/
+/data/
 *.sqlite
 *.sqlite3
 

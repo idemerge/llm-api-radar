@@ -3,41 +3,73 @@
  */
 
 import pkg from '../package.json';
+import shareGPTData from './data/sharegpt-prompts.json';
 
 export const APP_VERSION = `v${pkg.version}`;
 
-export function generateLongContextPrompt(targetChars: number): string {
-  const prefix =
-    'Analyze the following long text and provide a comprehensive summary including key themes, patterns, and insights:\n\n';
-  const paragraph =
-    'The development of artificial intelligence has been one of the most transformative technological advances in recent decades. Machine learning algorithms have evolved from simple pattern recognition systems to complex neural networks capable of generating human-like text, creating art, and solving scientific problems. This rapid progress has raised important questions about ethics, safety, and the future relationship between humans and intelligent machines. Researchers continue to push boundaries while grappling with challenges around bias, transparency, and alignment with human values. ';
-  const repetitions = Math.ceil((targetChars - prefix.length) / paragraph.length);
-  return prefix + Array(repetitions).fill(paragraph).join('');
+export type PresetCategory = 'standard' | 'long-context';
+
+export interface PresetPrompt {
+  label: string;
+  prompt: string;
+  tokens: number;
+  category: PresetCategory;
+  /** Heavy presets are loaded on demand via loadHeavyPreset() */
+  heavy?: boolean;
 }
 
-export const PRESET_PROMPTS = [
+function longContextPreset(
+  bucket: keyof typeof shareGPTData.buckets,
+  label: string,
+  index = 0
+): PresetPrompt {
+  const item = shareGPTData.buckets[bucket][index];
+  return { label, prompt: item.text, tokens: item.tokens, category: 'long-context' };
+}
+
+function heavyPreset(bucket: '64k' | '256k'): PresetPrompt {
+  const label = bucket === '64k' ? 'Long Context 64K' : 'Long Context 256K';
+  const tokens = bucket === '64k' ? 64_000 : 256_000;
+  return { label, prompt: '', tokens, category: 'long-context', heavy: true };
+}
+
+export async function loadHeavyPreset(bucket: '64k' | '256k', index = 0): Promise<string> {
+  const mod = bucket === '64k'
+    ? await import('./data/sharegpt-64k.json')
+    : await import('./data/sharegpt-256k.json');
+  return (mod as any).default.buckets[bucket][index].text;
+}
+
+export const PRESET_PROMPTS: PresetPrompt[] = [
   {
     label: 'General Knowledge',
-    prompt:
-      'Explain quantum computing in simple terms that a 10-year-old could understand.',
+    prompt: 'Explain quantum computing in simple terms that a 10-year-old could understand.',
+    tokens: 16,
+    category: 'standard',
   },
   {
     label: 'Code Generation',
-    prompt:
-      'Write a TypeScript function that implements a binary search tree with insert, search, and delete operations.',
+    prompt: 'Write a TypeScript function that implements a binary search tree with insert, search, and delete operations.',
+    tokens: 22,
+    category: 'standard',
   },
   {
     label: 'Creative Writing',
-    prompt:
-      'Write a short science fiction story about an AI that discovers it can dream.',
+    prompt: 'Write a short science fiction story about an AI that discovers it can dream.',
+    tokens: 18,
+    category: 'standard',
   },
   {
     label: 'Analysis',
-    prompt:
-      'Compare and contrast microservices architecture vs monolithic architecture. Include pros, cons, and when to use each.',
+    prompt: 'Compare and contrast microservices architecture vs monolithic architecture. Include pros, cons, and when to use each.',
+    tokens: 24,
+    category: 'standard',
   },
-  { label: 'Long Context 10K', prompt: generateLongContextPrompt(10000) },
-  { label: 'Long Context 50K', prompt: generateLongContextPrompt(50000) },
+  longContextPreset('1k',  'Long Context 1K'),
+  longContextPreset('4k',  'Long Context 4K'),
+  longContextPreset('16k', 'Long Context 16K'),
+  heavyPreset('64k'),
+  heavyPreset('256k'),
 ];
 
 export const QUICK_MAX_TOKENS = [

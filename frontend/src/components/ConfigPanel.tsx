@@ -12,6 +12,8 @@ import {
 import { useProviders } from '../hooks/useProviders';
 import { Button, Input, InputNumber, Switch, Segmented } from '../antdImports';
 import { LoadingOutlined } from '@ant-design/icons';
+import { useTokenCount } from '../utils/tokenCount';
+import { loadHeavyPreset } from '../constants';
 
 interface ConfigPanelProps {
   onStart: (
@@ -53,6 +55,7 @@ export function ConfigPanel({ onStart, isRunning, currentProviders, onCancel }: 
   }, [fetchProviders]);
 
   const [prompt, setPrompt] = useState(PRESET_PROMPTS[0].prompt);
+  const promptTokenCount = useTokenCount(prompt);
   const [maxTokens, setMaxTokens] = useState(4096);
   const [concurrency, setConcurrency] = useState(3);
   const [iterations, setIterations] = useState(5);
@@ -221,7 +224,14 @@ export function ConfigPanel({ onStart, isRunning, currentProviders, onCancel }: 
           {PRESET_PROMPTS.map((preset) => (
             <button
               key={preset.label}
-              onClick={() => setPrompt(preset.prompt)}
+              onClick={async () => {
+                if (preset.heavy) {
+                  const bucket = preset.tokens >= 200_000 ? '256k' : '64k';
+                  setPrompt(await loadHeavyPreset(bucket));
+                } else {
+                  setPrompt(preset.prompt);
+                }
+              }}
               className={`text-[11px] px-2.5 py-1.5 rounded-md border transition-all font-medium ${
                 prompt === preset.prompt
                   ? 'border-accent-teal/40 bg-accent-teal/8 text-accent-teal'
@@ -239,6 +249,7 @@ export function ConfigPanel({ onStart, isRunning, currentProviders, onCancel }: 
           placeholder="Enter your test prompt..."
           style={{ fontSize: 13 }}
         />
+        <span className="text-[10px] text-text-tertiary font-mono">{promptTokenCount} tokens</span>
       </div>
 
       {/* Core Parameters */}

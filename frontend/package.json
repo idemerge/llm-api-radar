@@ -14,6 +14,7 @@
     "@tailwindcss/vite": "^4.2.2",
     "antd": "^6.3.5",
     "framer-motion": "^12.38.0",
+    "js-tiktoken": "^1.0.21",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.13.2",

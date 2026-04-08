@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WorkflowTemplate, BenchmarkConfig, BenchmarkWorkflow, ProviderConfigResponse, FORMAT_COLORS, getProviderColor } from '../types';
 import {
@@ -9,6 +9,8 @@ import {
   QUICK_WARMUP,
   QUICK_INTERVAL,
 } from '../constants';
+import { countTokens } from '../utils/tokenCount';
+import { loadHeavyPreset } from '../constants';
 import { CreateWorkflowData } from '../hooks/useWorkflow';
 import { useProviders } from '../hooks/useProviders';
 import { Button, Input, InputNumber, Switch, Collapse, Segmented, Tooltip } from '../antdImports';
@@ -66,6 +68,9 @@ export function WorkflowConfigPanel({ onStart, isRunning, templates, onCancel, i
   const [stopOnFailure, setStopOnFailure] = useState(true);
   const [cooldown, setCooldown] = useState(3000);
   const [expandedTask, setExpandedTask] = useState<number>(0);
+  const HEAVY_THRESHOLD = 10_000; // chars
+  const heavyPromptsRef = useRef<Map<number, string>>(new Map());
+  const [heavyTaskIndexes, setHeavyTaskIndexes] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     fetchProviders();
@@ -184,6 +189,18 @@ export function WorkflowConfigPanel({ onStart, isRunning, templates, onCancel, i
     setTasks(newTasks);
   };
 
+  const setTaskPromptSmart = (index: number, text: string) => {
+    if (text.length > HEAVY_THRESHOLD) {
+      heavyPromptsRef.current.set(index, text);
+      setHeavyTaskIndexes(prev => new Set(prev).add(index));
+      updateTaskConfig(index, { prompt: text.slice(0, 200) + `\n\n… [${text.length.toLocaleString()} chars total — full text loaded]` });
+    } else {
+      heavyPromptsRef.current.delete(index);
+      setHeavyTaskIndexes(prev => { const s = new Set(prev); s.delete(index); return s; });
+      updateTaskConfig(index, { prompt: text });
+    }
+  };
+
   const loadTemplate = (template: WorkflowTemplate) => {
     setName(template.name);
     setDescription(template.description);
@@ -219,10 +236,13 @@ export function WorkflowConfigPanel({ onStart, isRunning, templates, onCancel, i
       description: description || undefined,
       providers: providerKeys,
       apiKeys: {},
-      tasks: tasks.map((t) => ({
+      tasks: tasks.map((t, i) => ({
         name: t.name,
         description: t.description || undefined,
-        config: t.config,
+        config: {
+          ...t.config,
+          prompt: heavyPromptsRef.current.get(i) ?? t.config.prompt,
+        },
         tags: Object.keys(t.tags).length > 0 ? t.tags : undefined,
       })),
       options: { stopOnFailure, cooldownBetweenTasks: cooldown },
@@ -312,7 +332,14 @@ export function WorkflowConfigPanel({ onStart, isRunning, templates, onCancel, i
               {PRESET_PROMPTS.map((preset) => (
                 <button
                   key={preset.label}
-                  onClick={() => updateTaskConfig(index, { prompt: preset.prompt })}
+                  onClick={async () => {
+                    if (preset.heavy) {
+                      const bucket = preset.tokens >= 200_000 ? '256k' : '64k';
+                      setTaskPromptSmart(index, await loadHeavyPreset(bucket));
+                    } else {
+                      setTaskPromptSmart(index, preset.prompt);
+                    }
+                  }}
                   className={`text-[10px] px-2 py-1 rounded border transition-all font-medium ${
                     task.config.prompt === preset.prompt
                       ? 'border-accent-teal/40 bg-accent-teal/8 text-accent-teal'
@@ -334,11 +361,36 @@ export function WorkflowConfigPanel({ onStart, isRunning, templates, onCancel, i
               </Tooltip>
               <Input.TextArea
                 value={task.config.prompt}
-                onChange={(e) => updateTaskConfig(index, { prompt: e.target.value })}
+                onChange={(e) => {
+                  heavyPromptsRef.current.delete(index);
+                  setHeavyTaskIndexes(prev => { const s = new Set(prev); s.delete(index); return s; });
+                  updateTaskConfig(index, { prompt: e.target.value });
+                }}
+                readOnly={heavyTaskIndexes.has(index)}
                 autoSize={{ minRows: 3, maxRows: 8 }}
                 placeholder="Test prompt — the prompt sent to each provider for benchmarking"
                 style={{ fontSize: 13 }}
               />
+              {heavyTaskIndexes.has(index) && (
+                <div className="px-2 py-1 rounded bg-surface-secondary border border-border flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-text-tertiary">Large prompt loaded — editing disabled</span>
+                  <button
+                    onClick={() => {
+                      heavyPromptsRef.current.delete(index);
+                      setHeavyTaskIndexes(prev => { const s = new Set(prev); s.delete(index); return s; });
+                      updateTaskConfig(index, { prompt: '' });
+                    }}
+                    className="text-[11px] text-text-secondary hover:text-text-primary transition-colors"
+                  >
+                    Clear
+                  </button>
+                </div>
+              )}
+              {!heavyTaskIndexes.has(index) && (
+                <span className="text-[10px] text-text-tertiary font-mono">
+                  {countTokens(task.config.prompt)} tokens
+                </span>
+              )}
             </div>
             <div className="space-y-2">
               <label className="text-[11px] text-text-secondary font-medium">System Prompt (optional)</label>

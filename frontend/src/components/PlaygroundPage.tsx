@@ -20,12 +20,13 @@ import { usePlayground, PlaygroundMetrics } from '../hooks/usePlayground';
 import { usePlaygroundHistory } from '../hooks/usePlaygroundHistory';
 import { PlaygroundHistorySidebar } from './PlaygroundHistorySidebar';
 import { ImageInput } from '../types';
-import { PRESET_PROMPTS, QUICK_MAX_TOKENS } from '../constants';
+import { PRESET_PROMPTS, QUICK_MAX_TOKENS, loadHeavyPreset } from '../constants';
+import { useTokenCount } from '../utils/tokenCount';
 
 const { TextArea } = Input;
 
-const STANDARD_PRESETS = PRESET_PROMPTS.filter(p => !p.label.startsWith('Long Context'));
-const LONG_CONTEXT_PRESETS = PRESET_PROMPTS.filter(p => p.label.startsWith('Long Context'));
+const STANDARD_PRESETS = PRESET_PROMPTS.filter(p => p.category === 'standard');
+const SHAREGPT_PRESETS = PRESET_PROMPTS.filter(p => p.category === 'long-context');
 
 export function PlaygroundPage() {
   const { providers, fetchProviders } = useProviders();
@@ -44,13 +45,20 @@ export function PlaygroundPage() {
   const [hasRun, setHasRun] = useState(false);
   const [images, setImages] = useState<ImageInput[]>([]);
   const [isDragging, setIsDragging] = useState(false);
-  const [showLongContext, setShowLongContext] = useState(false);
+  const [showLongContext, setShowLongContext] = useState(true);
   const [copied, setCopied] = useState(false);
   const [enableThinking, setEnableThinking] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(true);
   const [selectedHistoryId, setSelectedHistoryId] = useState<string>();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const prevLoadingRef = useRef(false);
+  // For very large prompts, store the full text in a ref to avoid textarea lag.
+  // prompt state holds a truncated preview; fullPromptRef holds the real content.
+  const HEAVY_THRESHOLD = 10_000; // chars
+  const fullPromptRef = useRef<string | null>(null);
+  const [isHeavyPrompt, setIsHeavyPrompt] = useState(false);
+  const effectivePrompt = fullPromptRef.current ?? prompt;
+  const promptTokenCount = useTokenCount(isHeavyPrompt ? '' : prompt);
 
   useEffect(() => { fetchProviders(); fetchHistory(); }, [fetchProviders, fetchHistory]);
 
@@ -80,13 +88,25 @@ export function PlaygroundPage() {
 
   const canRun = providerId && modelName && prompt.trim();
 
+  const setPromptSmart = (text: string) => {
+    if (text.length > HEAVY_THRESHOLD) {
+      fullPromptRef.current = text;
+      setIsHeavyPrompt(true);
+      setPrompt(text.slice(0, 200) + `\n\n… [${text.length.toLocaleString()} chars total — full text loaded]`);
+    } else {
+      fullPromptRef.current = null;
+      setIsHeavyPrompt(false);
+      setPrompt(text);
+    }
+  };
+
   const handleRun = () => {
     if (!canRun) return;
     setHasRun(true);
     const params = {
       providerId: providerId!,
       modelName: modelName!,
-      prompt: prompt.trim(),
+      prompt: effectivePrompt.trim(),
       systemPrompt: systemPrompt.trim() || undefined,
       maxTokens,
       images: images.length > 0 ? images : undefined,
@@ -163,7 +183,7 @@ export function PlaygroundPage() {
     setSelectedHistoryId(id);
     setProviderId(detail.providerId);
     setModelName(detail.modelName);
-    setPrompt(detail.prompt);
+    setPromptSmart(detail.prompt);
     setSystemPrompt(detail.systemPrompt || '');
     setMaxTokens(detail.maxTokens);
     setUseStreaming(detail.useStreaming);
@@ -338,10 +358,15 @@ export function PlaygroundPage() {
 
             <TextArea
               value={prompt}
-              onChange={e => setPrompt(e.target.value)}
+              onChange={e => {
+                fullPromptRef.current = null;
+                setIsHeavyPrompt(false);
+                setPrompt(e.target.value);
+              }}
               placeholder="Enter your prompt... (paste or drop images here)"
               autoSize={{ minRows: 4, maxRows: 12 }}
               className="font-mono text-[13px] !border-0 !shadow-none !bg-transparent"
+              readOnly={isHeavyPrompt}
               onKeyDown={e => {
                 if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && canRun && !loading) {
                   handleRun();
@@ -349,6 +374,26 @@ export function PlaygroundPage() {
               }}
               onPaste={handlePaste}
             />
+            {isHeavyPrompt && (
+              <div className="mx-2 mb-1 px-2 py-1 rounded bg-surface-secondary border border-border flex items-center justify-between gap-2">
+                <span className="text-[11px] text-text-tertiary">Large prompt loaded — editing disabled</span>
+                <button
+                  onClick={() => { fullPromptRef.current = null; setIsHeavyPrompt(false); setPrompt(''); }}
+                  className="text-[11px] text-text-secondary hover:text-text-primary transition-colors"
+                >
+                  Clear
+                </button>
+              </div>
+            )}
+            {(prompt || isHeavyPrompt) && (
+              <div className="px-2 pb-1">
+                <span className="text-[10px] text-text-tertiary font-mono">
+                  {isHeavyPrompt
+                    ? `~${(effectivePrompt.length / 4).toFixed(0)} tokens`
+                    : `${promptTokenCount} tokens`}
+                </span>
+              </div>
+            )}
 
             {/* Bottom bar — image, presets, run */}
             <div className="flex items-center gap-2 px-2 pb-2">
@@ -379,7 +424,7 @@ export function PlaygroundPage() {
                 {STANDARD_PRESETS.map(preset => (
                   <button
                     key={preset.label}
-                    onClick={() => setPrompt(preset.prompt)}
+                    onClick={() => setPromptSmart(preset.prompt)}
                     className="text-[10px] px-2 py-0.5 rounded border border-border text-text-tertiary hover:text-text-secondary hover:border-accent-blue/40 transition-colors whitespace-nowrap"
                   >
                     {preset.label}
@@ -390,14 +435,22 @@ export function PlaygroundPage() {
                     onClick={() => setShowLongContext(true)}
                     className="text-[10px] px-2 py-0.5 rounded border border-border text-text-tertiary hover:text-text-secondary transition-colors whitespace-nowrap"
                   >
-                    Long...
+                    Long Context...
                   </button>
                 ) : (
-                  LONG_CONTEXT_PRESETS.map(preset => (
+                  SHAREGPT_PRESETS.map(preset => (
                     <button
                       key={preset.label}
-                      onClick={() => setPrompt(preset.prompt)}
-                      className="text-[10px] px-2 py-0.5 rounded border border-accent-amber/30 text-accent-amber/80 hover:text-accent-amber hover:border-accent-amber/50 transition-colors whitespace-nowrap"
+                      onClick={async () => {
+                        if (preset.heavy) {
+                          const bucket = preset.tokens >= 200_000 ? '256k' : '64k';
+                          const text = await loadHeavyPreset(bucket);
+                          setPromptSmart(text);
+                        } else {
+                          setPromptSmart(preset.prompt);
+                        }
+                      }}
+                      className="text-[10px] px-2 py-0.5 rounded border border-border text-text-tertiary hover:text-text-secondary hover:border-accent-blue/40 transition-colors whitespace-nowrap"
                     >
                       {preset.label}
                     </button>
