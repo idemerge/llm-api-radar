@@ -161,7 +161,7 @@ export function HistoryDetailPage({ workflowId, onExport, onBack }: HistoryDetai
 
       {/* Results */}
       {workflow.summary && (
-        <WorkflowResults workflow={workflow} onExport={onExport} />
+        <WorkflowResults workflow={workflow} />
       )}
     </motion.div>
   );
