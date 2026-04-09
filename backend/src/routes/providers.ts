@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { providerStore } from '../services/providerStore';
+import { monitorConfigStore } from '../services/monitorConfigStore';
 import { testProviderConnection } from '../providers/adapter';
 import { ProviderConfigInput, ProviderFormat } from '../types';
 import { v4 as uuidv4 } from 'uuid';
@@ -124,6 +125,20 @@ router.put('/:id', (req: Request, res: Response) => {
     return res.status(500).json({ error: 'Failed to update provider' });
   }
 
+  // Sync monitor targets: rename changed models, remove deleted ones
+  const oldModelsById = new Map(existing.models.map(m => [m.id, m.name]));
+  const newModelsById = new Map(updated.models.map(m => [m.id, m.name]));
+  for (const [id, oldName] of oldModelsById) {
+    const newName = newModelsById.get(id);
+    if (!newName) {
+      // Model was removed
+      monitorConfigStore.removeTarget(req.params.id, oldName);
+    } else if (newName !== oldName) {
+      // Model was renamed
+      monitorConfigStore.renameTarget(req.params.id, oldName, newName);
+    }
+  }
+
   res.json(providerStore.toResponse(updated));
 });
 
@@ -133,6 +148,8 @@ router.delete('/:id', (req: Request, res: Response) => {
   if (!result) {
     return res.status(404).json({ error: 'Provider not found' });
   }
+  // Clean up monitor targets for this provider
+  monitorConfigStore.removeTargetsByProvider(req.params.id);
   res.json({ success: true });
 });
 

@@ -12,6 +12,7 @@ interface WorkflowResultsProps {
 type TabType = 'overview' | 'tasks';
 
 function formatNumber(n: number, decimals = 0): string {
+  if (n == null || isNaN(n)) return '0';
   return n.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
@@ -251,6 +252,7 @@ export function WorkflowResults({ workflow, onExport }: WorkflowResultsProps) {
           providerName: ps?.provider || '',
           model: ps?.model || '',
           ...taskMetric,
+          totalTokens: taskMetric.promptTokens,
         };
       })
       .filter(Boolean) as Array<{ key: string; providerKey: string; providerName: string; [k: string]: unknown }>;

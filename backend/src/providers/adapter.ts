@@ -362,13 +362,18 @@ export class DynamicProvider extends BaseLLMProvider {
             inputTokens = parsed.message?.usage?.input_tokens || 0;
           }
           if (parsed.type === 'message_delta') {
-            outputTokens = parsed.usage?.output_tokens || 0;
+            outputTokens = parsed.usage?.output_tokens || outputTokens;
+            // Some proxies (e.g. LiteLLM) return input_tokens in message_delta instead of message_start
+            if (parsed.usage?.input_tokens) {
+              inputTokens = parsed.usage.input_tokens;
+            }
           }
         } catch { /* skip */ }
       }
     }
 
     const responseTime = Date.now() - startTime;
+
     return {
       text: '',
       inputTokens,
@@ -564,7 +569,7 @@ export async function testProviderConnection(
     };
 
     const provider = new DynamicProvider(tempConfig, config.modelName, config.apiKey);
-    const result = await provider.execute('Hello', undefined, 500, '', true);
+    const result = await provider.execute('Write a 200-word introduction to artificial intelligence covering its history, current applications, and future potential.', undefined, 1024, '', true);
 
     const latencyMs = result.responseTime;
     const outputTokens = result.outputTokens || 0;

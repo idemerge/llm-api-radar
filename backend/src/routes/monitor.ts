@@ -25,8 +25,8 @@ router.put('/config', (req: Request, res: Response) => {
   const ht = current.healthThresholds;
   if (body.healthThresholds && typeof body.healthThresholds === 'object') {
     const bht = body.healthThresholds;
-    if (typeof bht.latencySlowMs === 'number' && bht.latencySlowMs > 0) ht.latencySlowMs = Math.round(bht.latencySlowMs);
-    if (typeof bht.latencyVerySlowMs === 'number' && bht.latencyVerySlowMs > 0) ht.latencyVerySlowMs = Math.round(bht.latencyVerySlowMs);
+    if (typeof bht.tpsSlowThreshold === 'number' && bht.tpsSlowThreshold > 0) ht.tpsSlowThreshold = Math.round(bht.tpsSlowThreshold);
+    if (typeof bht.tpsVerySlowThreshold === 'number' && bht.tpsVerySlowThreshold > 0) ht.tpsVerySlowThreshold = Math.round(bht.tpsVerySlowThreshold);
     if (typeof bht.ttftSlowMs === 'number' && bht.ttftSlowMs > 0) ht.ttftSlowMs = Math.round(bht.ttftSlowMs);
     if (typeof bht.minOutputTokens === 'number' && bht.minOutputTokens >= 0) ht.minOutputTokens = Math.round(bht.minOutputTokens);
   }

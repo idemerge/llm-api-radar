@@ -60,7 +60,7 @@ export function ConfigPanel({ onStart, isRunning, currentProviders, onCancel }: 
   const [concurrency, setConcurrency] = useState(3);
   const [iterations, setIterations] = useState(5);
   const [streaming, setStreaming] = useState(true);
-  const [warmupRuns, setWarmupRuns] = useState(2);
+  const [warmupRuns, setWarmupRuns] = useState(0);
   const [requestInterval, setRequestInterval] = useState(0);
   const [randomizeInterval, setRandomizeInterval] = useState(false);
 

@@ -24,8 +24,8 @@ export interface MonitorTarget {
 }
 
 export interface HealthThresholds {
-  latencySlowMs: number;
-  latencyVerySlowMs: number;
+  tpsSlowThreshold: number;
+  tpsVerySlowThreshold: number;
   ttftSlowMs: number;
   minOutputTokens: number;
 }
@@ -41,7 +41,7 @@ export function useMonitor() {
   const [targets, setTargets] = useState<MonitorTarget[]>([]);
   const [globalConfig, setGlobalConfig] = useState<MonitorGlobalConfig>({
     defaultIntervalMinutes: 10,
-    healthThresholds: { latencySlowMs: 2000, latencyVerySlowMs: 5000, ttftSlowMs: 1000, minOutputTokens: 1 },
+    healthThresholds: { tpsSlowThreshold: 20, tpsVerySlowThreshold: 5, ttftSlowMs: 1000, minOutputTokens: 1 },
   });
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);

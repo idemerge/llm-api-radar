@@ -56,7 +56,7 @@ export const workflowTemplates: WorkflowTemplate[] = [
           concurrency: 3,
           iterations: 5,
           streaming: true,
-          warmupRuns: 2,
+          warmupRuns: 0,
         },
       },
     ],
@@ -73,19 +73,19 @@ export const workflowTemplates: WorkflowTemplate[] = [
       {
         name: 'Short Prompt (TTFT Baseline)',
         description: 'Minimal input to measure pure first-token latency',
-        config: { prompt: 'What is 2+2?', maxTokens: 50, concurrency: 1, iterations: 20, streaming: true, warmupRuns: 2 },
+        config: { prompt: 'What is 2+2?', maxTokens: 50, concurrency: 1, iterations: 20, streaming: true, warmupRuns: 0 },
         tags: { phase: 'short', metric: 'ttft' },
       },
       {
         name: 'Medium Prompt (Balanced)',
         description: 'Typical API call length to measure balanced latency',
-        config: { prompt: 'Explain how a hash table works, including collision resolution strategies like chaining and open addressing. Provide time complexity for each operation.', maxTokens: 500, concurrency: 1, iterations: 15, streaming: true, warmupRuns: 1 },
+        config: { prompt: 'Explain how a hash table works, including collision resolution strategies like chaining and open addressing. Provide time complexity for each operation.', maxTokens: 500, concurrency: 1, iterations: 15, streaming: true, warmupRuns: 0 },
         tags: { phase: 'medium', metric: 'balanced' },
       },
       {
         name: 'Long Prompt (Generation-bound)',
         description: 'Long output request to measure sustained generation speed',
-        config: { prompt: 'Write a detailed technical design document for a distributed rate limiter service. Include architecture diagram description, algorithm choice (token bucket vs sliding window), data storage, failure modes, and scaling strategy.', maxTokens: 2000, concurrency: 1, iterations: 10, streaming: true, warmupRuns: 1 },
+        config: { prompt: 'Write a detailed technical design document for a distributed rate limiter service. Include architecture diagram description, algorithm choice (token bucket vs sliding window), data storage, failure modes, and scaling strategy.', maxTokens: 2000, concurrency: 1, iterations: 10, streaming: true, warmupRuns: 0 },
         tags: { phase: 'long', metric: 'tpot' },
       },
       {
@@ -94,7 +94,7 @@ export const workflowTemplates: WorkflowTemplate[] = [
         config: {
           prompt: 'Summarize this approach in 3 bullet points.',
           systemPrompt: 'You are a senior software architect reviewing technical proposals. Always respond with numbered bullet points. Use precise technical language. Flag any risks or trade-offs. Consider scalability, maintainability, and cost implications.',
-          maxTokens: 300, concurrency: 1, iterations: 15, streaming: true, warmupRuns: 2,
+          maxTokens: 300, concurrency: 1, iterations: 15, streaming: true, warmupRuns: 0,
         },
         tags: { phase: 'sysprompt', metric: 'overhead' },
       },
@@ -109,7 +109,7 @@ export const workflowTemplates: WorkflowTemplate[] = [
     name: 'Concurrency Ladder',
     description: 'Ramp concurrency 1→5→10→25→50 to find the performance inflection point',
     tasks: [
-      { name: '1 Concurrent', description: 'Baseline — no contention', config: { prompt: 'Write a Python function that performs binary search on a sorted list.', concurrency: 1, iterations: 20, maxTokens: 200, streaming: true, warmupRuns: 2 }, tags: { concurrency: '1' } },
+      { name: '1 Concurrent', description: 'Baseline — no contention', config: { prompt: 'Write a Python function that performs binary search on a sorted list.', concurrency: 1, iterations: 20, maxTokens: 200, streaming: true, warmupRuns: 0 }, tags: { concurrency: '1' } },
       { name: '5 Concurrent', description: 'Light load', config: { prompt: 'Write a Python function that performs binary search on a sorted list.', concurrency: 5, iterations: 20, maxTokens: 200, streaming: true }, tags: { concurrency: '5' } },
       { name: '10 Concurrent', description: 'Moderate load', config: { prompt: 'Write a Python function that performs binary search on a sorted list.', concurrency: 10, iterations: 20, maxTokens: 200, streaming: true }, tags: { concurrency: '10' } },
       { name: '25 Concurrent', description: 'Heavy load', config: { prompt: 'Write a Python function that performs binary search on a sorted list.', concurrency: 25, iterations: 20, maxTokens: 200, streaming: true }, tags: { concurrency: '25' } },
@@ -128,13 +128,13 @@ export const workflowTemplates: WorkflowTemplate[] = [
       {
         name: 'Streaming Mode',
         description: 'Server-sent events for real-time output',
-        config: { prompt: 'Design a REST API for a task management application with CRUD operations, authentication, and rate limiting. Include endpoint definitions, request/response schemas, and error handling.', streaming: true, concurrency: 5, iterations: 20, maxTokens: 800, warmupRuns: 2 },
+        config: { prompt: 'Design a REST API for a task management application with CRUD operations, authentication, and rate limiting. Include endpoint definitions, request/response schemas, and error handling.', streaming: true, concurrency: 5, iterations: 20, maxTokens: 800, warmupRuns: 0 },
         tags: { mode: 'streaming' },
       },
       {
         name: 'Non-Streaming Mode',
         description: 'Traditional request-response (full payload)',
-        config: { prompt: 'Design a REST API for a task management application with CRUD operations, authentication, and rate limiting. Include endpoint definitions, request/response schemas, and error handling.', streaming: false, concurrency: 5, iterations: 20, maxTokens: 800, warmupRuns: 2 },
+        config: { prompt: 'Design a REST API for a task management application with CRUD operations, authentication, and rate limiting. Include endpoint definitions, request/response schemas, and error handling.', streaming: false, concurrency: 5, iterations: 20, maxTokens: 800, warmupRuns: 0 },
         tags: { mode: 'batch' },
       },
     ],
@@ -148,7 +148,7 @@ export const workflowTemplates: WorkflowTemplate[] = [
     name: 'Token Length Gradient',
     description: 'Measure throughput at 100/500/2000/8000 token output lengths',
     tasks: [
-      { name: '100 Tokens', description: 'Brief output — measure bare generation speed', config: { prompt: 'Define artificial intelligence in one paragraph.', maxTokens: 100, concurrency: 3, iterations: 15, streaming: true, warmupRuns: 2 }, tags: { tokens: '100' } },
+      { name: '100 Tokens', description: 'Brief output — measure bare generation speed', config: { prompt: 'Define artificial intelligence in one paragraph.', maxTokens: 100, concurrency: 3, iterations: 15, streaming: true, warmupRuns: 0 }, tags: { tokens: '100' } },
       { name: '500 Tokens', description: 'Medium output — typical chatbot response', config: { prompt: 'Explain how Docker container networking works, including bridge, host, and overlay networks. Include practical examples of when to use each.', maxTokens: 500, concurrency: 3, iterations: 15, streaming: true }, tags: { tokens: '500' } },
       { name: '2000 Tokens', description: 'Long output — documentation or report', config: { prompt: 'Write a complete getting-started guide for Kubernetes including pod management, service discovery, deployment strategies, and monitoring setup. Include code examples.', maxTokens: 2000, concurrency: 3, iterations: 10, streaming: true }, tags: { tokens: '2000' } },
       { name: '8000 Tokens', description: 'Very long output — stress test sustained generation', config: { prompt: 'Write a comprehensive systems design document for a real-time collaborative text editor (like Google Docs). Cover operational transformation vs CRDT, conflict resolution, presence indicators, version history, offline support, and scaling to millions of concurrent users.', maxTokens: 8000, concurrency: 1, iterations: 5, streaming: true }, tags: { tokens: '8000' } },
@@ -166,7 +166,7 @@ export const workflowTemplates: WorkflowTemplate[] = [
       {
         name: 'Knowledge Q&A',
         description: 'Factual accuracy and depth',
-        config: { prompt: 'Explain the CAP theorem in distributed systems. Give a real-world example of each trade-off decision (CP vs AP) with specific database systems.', maxTokens: 500, concurrency: 3, iterations: 10, streaming: true, warmupRuns: 1 },
+        config: { prompt: 'Explain the CAP theorem in distributed systems. Give a real-world example of each trade-off decision (CP vs AP) with specific database systems.', maxTokens: 500, concurrency: 3, iterations: 10, streaming: true, warmupRuns: 0 },
         tags: { category: 'knowledge' },
       },
       {
@@ -217,7 +217,7 @@ export const workflowTemplates: WorkflowTemplate[] = [
       {
         name: 'Minimal Tier (50t)',
         description: 'Tiny responses — measure baseline cost per request',
-        config: { prompt: 'What is the capital of France? Answer in one word.', concurrency: 5, iterations: 30, maxTokens: 50, streaming: true, warmupRuns: 2 },
+        config: { prompt: 'What is the capital of France? Answer in one word.', concurrency: 5, iterations: 30, maxTokens: 50, streaming: true, warmupRuns: 0 },
         tags: { cost_tier: 'minimal' },
       },
       {
@@ -246,7 +246,7 @@ export const workflowTemplates: WorkflowTemplate[] = [
       {
         name: 'Moderate Stress (10c × 50i)',
         description: 'Sustained moderate load to find steady-state error rate',
-        config: { prompt: 'Parse this log line and return severity, timestamp, and message as JSON: "2024-03-15T14:23:45.123Z ERROR [auth-service] Failed to validate token: expired"', concurrency: 10, iterations: 50, maxTokens: 100, streaming: true, warmupRuns: 3 },
+        config: { prompt: 'Parse this log line and return severity, timestamp, and message as JSON: "2024-03-15T14:23:45.123Z ERROR [auth-service] Failed to validate token: expired"', concurrency: 10, iterations: 50, maxTokens: 100, streaming: true, warmupRuns: 0 },
         tags: { phase: 'moderate' },
       },
       {
@@ -275,7 +275,7 @@ export const workflowTemplates: WorkflowTemplate[] = [
       {
         name: 'Quick Q&A Burst',
         description: 'Short, rapid-fire questions simulating a chat interface',
-        config: { prompt: 'What are the top 3 benefits of using TypeScript over JavaScript?', maxTokens: 200, concurrency: 8, iterations: 25, streaming: true, warmupRuns: 2, requestInterval: 200, randomizeInterval: true },
+        config: { prompt: 'What are the top 3 benefits of using TypeScript over JavaScript?', maxTokens: 200, concurrency: 8, iterations: 25, streaming: true, warmupRuns: 0, requestInterval: 200, randomizeInterval: true },
         tags: { type: 'qa', behavior: 'burst' },
       },
       {
@@ -313,7 +313,7 @@ export const workflowTemplates: WorkflowTemplate[] = [
         config: {
           prompt: 'I need to know the current weather in Tokyo and New York. Call the get_weather function for both cities.',
           systemPrompt: 'You have access to a function: get_weather(city: string, unit: "celsius"|"fahrenheit"). When the user asks about weather, respond with a JSON array of function calls: [{"function": "get_weather", "arguments": {...}}]. No other text.',
-          maxTokens: 200, concurrency: 3, iterations: 15, streaming: true, warmupRuns: 2,
+          maxTokens: 200, concurrency: 3, iterations: 15, streaming: true, warmupRuns: 0,
         },
         tags: { type: 'tool-call', domain: 'weather' },
       },
@@ -367,7 +367,7 @@ export const workflowTemplates: WorkflowTemplate[] = [
           concurrency: 3,
           iterations: 10,
           streaming: true,
-          warmupRuns: 2,
+          warmupRuns: 0,
           images: builtinImage ? [builtinImage] : undefined,
         },
         tags: { type: 'vision', task: 'description' },

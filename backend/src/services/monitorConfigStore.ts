@@ -11,10 +11,10 @@ export interface MonitorTarget {
 }
 
 export interface HealthThresholds {
-  latencySlowMs: number;     // default 2000
-  latencyVerySlowMs: number; // default 5000
-  ttftSlowMs: number;        // default 1000
-  minOutputTokens: number;   // default 1
+  tpsSlowThreshold: number;     // default 20 — below this is 'slow'
+  tpsVerySlowThreshold: number; // default 5  — below this is 'very_slow'
+  ttftSlowMs: number;           // default 1000
+  minOutputTokens: number;      // default 1
 }
 
 export interface MonitorGlobalConfig {
@@ -25,8 +25,8 @@ export interface MonitorGlobalConfig {
 const DEFAULT_CONFIG: MonitorGlobalConfig = {
   defaultIntervalMinutes: 10,
   healthThresholds: {
-    latencySlowMs: 2000,
-    latencyVerySlowMs: 5000,
+    tpsSlowThreshold: 20,
+    tpsVerySlowThreshold: 5,
     ttftSlowMs: 1000,
     minOutputTokens: 1,
   },
@@ -148,6 +148,22 @@ class MonitorConfigStore {
     this.db.prepare(
       'DELETE FROM monitor_targets WHERE provider_id = ? AND model_name = ?'
     ).run(providerId, modelName);
+  }
+
+  /** Rename a target's model name (preserves interval and enabled state) */
+  renameTarget(providerId: string, oldModelName: string, newModelName: string): void {
+    if (!this.db) return;
+    this.db.prepare(
+      'UPDATE monitor_targets SET model_name = ? WHERE provider_id = ? AND model_name = ?'
+    ).run(newModelName, providerId, oldModelName);
+  }
+
+  /** Remove all targets for a given provider */
+  removeTargetsByProvider(providerId: string): void {
+    if (!this.db) return;
+    this.db.prepare(
+      'DELETE FROM monitor_targets WHERE provider_id = ?'
+    ).run(providerId);
   }
 }
 

@@ -89,14 +89,10 @@ function HistoryBar({ history, providerId, modelName }: { history: PingResult[];
                   <span className="text-white/60">{formatTime(p.checkedAt)}</span>
                 </div>
                 <div className="flex gap-3 text-white/70 pl-3">
-                  <span>Latency <span className="text-white font-mono">{formatLatency(p.latencyMs)}</span></span>
+                  <span>TPS <span className="text-white font-mono">{p.latencyMs > 0 ? Math.round((p.outputTokens / p.latencyMs) * 1000) : 0}</span></span>
                   <span>TTFT <span className="text-white font-mono">{formatLatency(p.ttftMs)}</span></span>
+                  <span>Latency <span className="text-white font-mono">{formatLatency(p.latencyMs)}</span></span>
                 </div>
-                {p.outputTokens > 0 && (
-                  <div className="text-white/70 pl-3">
-                    Tokens <span className="text-white font-mono">{p.outputTokens}</span>
-                  </div>
-                )}
                 {p.errorMessage && (
                   <div className="text-red-300 pl-3 truncate max-w-[240px]">{p.errorMessage}</div>
                 )}
@@ -119,8 +115,8 @@ export function MonitorPage() {
   const [initialLoaded, setInitialLoaded] = useState(false);
   const [draftInterval, setDraftInterval] = useState(globalConfig.defaultIntervalMinutes);
   const [thresholdTexts, setThresholdTexts] = useState<Record<keyof HealthThresholds, string>>({
-    latencySlowMs: String(globalConfig.healthThresholds.latencySlowMs),
-    latencyVerySlowMs: String(globalConfig.healthThresholds.latencyVerySlowMs),
+    tpsSlowThreshold: String(globalConfig.healthThresholds.tpsSlowThreshold),
+    tpsVerySlowThreshold: String(globalConfig.healthThresholds.tpsVerySlowThreshold),
     ttftSlowMs: String(globalConfig.healthThresholds.ttftSlowMs),
     minOutputTokens: String(globalConfig.healthThresholds.minOutputTokens),
   });
@@ -131,8 +127,8 @@ export function MonitorPage() {
   useEffect(() => {
     setDraftInterval(globalConfig.defaultIntervalMinutes);
     setThresholdTexts({
-      latencySlowMs: String(globalConfig.healthThresholds.latencySlowMs),
-      latencyVerySlowMs: String(globalConfig.healthThresholds.latencyVerySlowMs),
+      tpsSlowThreshold: String(globalConfig.healthThresholds.tpsSlowThreshold),
+      tpsVerySlowThreshold: String(globalConfig.healthThresholds.tpsVerySlowThreshold),
       ttftSlowMs: String(globalConfig.healthThresholds.ttftSlowMs),
       minOutputTokens: String(globalConfig.healthThresholds.minOutputTokens),
     });
@@ -154,8 +150,8 @@ export function MonitorPage() {
 
   const handleSaveAll = () => {
     const parsedThresholds: HealthThresholds = {
-      latencySlowMs: parseInt(thresholdTexts.latencySlowMs) || 2000,
-      latencyVerySlowMs: parseInt(thresholdTexts.latencyVerySlowMs) || 5000,
+      tpsSlowThreshold: parseInt(thresholdTexts.tpsSlowThreshold) || 20,
+      tpsVerySlowThreshold: parseInt(thresholdTexts.tpsVerySlowThreshold) || 5,
       ttftSlowMs: parseInt(thresholdTexts.ttftSlowMs) || 1000,
       minOutputTokens: parseInt(thresholdTexts.minOutputTokens) || 1,
     };
@@ -367,32 +363,32 @@ export function MonitorPage() {
             <div className="text-[12px] font-medium text-text-primary">Health Thresholds</div>
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-text-secondary">Slow latency</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-mono">≥</span>
+                <span className="text-[11px] text-text-secondary">Slow TPS</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-mono">&lt;</span>
                 <input
                   type="text"
                   className="w-14 px-2 py-1 text-[11px] rounded border border-border bg-[#0a0a0a] text-text-primary font-mono text-center"
-                  value={thresholdTexts.latencySlowMs}
+                  value={thresholdTexts.tpsSlowThreshold}
                   onChange={(e) => {
-                    setThresholdTexts({ ...thresholdTexts, latencySlowMs: e.target.value });
+                    setThresholdTexts({ ...thresholdTexts, tpsSlowThreshold: e.target.value });
                     setConfigDirty(true);
                   }}
                 />
-                <span className="text-[10px] text-text-tertiary">ms</span>
+                <span className="text-[10px] text-text-tertiary">tok/s</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-text-secondary">Very slow</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 font-mono">≥</span>
+                <span className="text-[11px] text-text-secondary">Very slow TPS</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 font-mono">&lt;</span>
                 <input
                   type="text"
                   className="w-14 px-2 py-1 text-[11px] rounded border border-border bg-[#0a0a0a] text-text-primary font-mono text-center"
-                  value={thresholdTexts.latencyVerySlowMs}
+                  value={thresholdTexts.tpsVerySlowThreshold}
                   onChange={(e) => {
-                    setThresholdTexts({ ...thresholdTexts, latencyVerySlowMs: e.target.value });
+                    setThresholdTexts({ ...thresholdTexts, tpsVerySlowThreshold: e.target.value });
                     setConfigDirty(true);
                   }}
                 />
-                <span className="text-[10px] text-text-tertiary">ms</span>
+                <span className="text-[10px] text-text-tertiary">tok/s</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[11px] text-text-secondary">Slow TTFT</span>
@@ -536,8 +532,8 @@ export function MonitorPage() {
                                 'bg-red-500/10 text-red-400'
                               }`}>{getStatusLabel(cls)}</span>
                             )}
-                            {ping && ping.outputTokens > 0 && (
-                              <span className="text-[9px] text-text-tertiary font-mono">{ping.outputTokens}tok</span>
+                            {ping && ping.outputTokens > 0 && ping.latencyMs > 0 && (
+                              <span className="text-[9px] text-text-tertiary font-mono">{Math.round((ping.outputTokens / ping.latencyMs) * 1000)} tok/s</span>
                             )}
                           </div>
                           {ping ? (
@@ -545,10 +541,10 @@ export function MonitorPage() {
                               <Tooltip title="TTFT (first token)">
                                 <span className={cls !== 'healthy' ? getStatusTextColor(cls!) : ''}>{formatLatency(ping.ttftMs)}</span>
                               </Tooltip>
-                              <span>→</span>
-                              <Tooltip title="Total latency">
+                              <span>·</span>
+                              <Tooltip title="Tokens per second">
                                 <span className={`font-medium ${getStatusTextColor(cls!)}`}>
-                                  {ping.status === 'error' ? 'FAIL' : formatLatency(ping.latencyMs)}
+                                  {ping.status === 'error' ? 'FAIL' : `${ping.latencyMs > 0 ? Math.round((ping.outputTokens / ping.latencyMs) * 1000) : 0} tok/s`}
                                 </span>
                               </Tooltip>
                             </div>

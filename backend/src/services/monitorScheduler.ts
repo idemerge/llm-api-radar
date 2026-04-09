@@ -15,8 +15,11 @@ function classifyHealth(
   // Only enforce minOutputTokens when streaming provides real token counts.
   // Non-streaming checks may report outputTokens=0 with a valid response.
   if (outputTokens > 0 && outputTokens < thresholds.minOutputTokens) return 'down';
-  if (latencyMs >= thresholds.latencyVerySlowMs) return 'very_slow';
-  if (latencyMs >= thresholds.latencySlowMs || ttftMs >= thresholds.ttftSlowMs) return 'slow';
+  // Calculate TPS (tokens per second) for throughput-based health classification
+  const tps = latencyMs > 0 ? (outputTokens / latencyMs) * 1000 : 0;
+  if (tps > 0 && tps < thresholds.tpsVerySlowThreshold) return 'very_slow';
+  if (tps > 0 && tps < thresholds.tpsSlowThreshold) return 'slow';
+  if (ttftMs >= thresholds.ttftSlowMs) return 'slow';
   return 'healthy';
 }
 

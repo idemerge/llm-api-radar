@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] - 2026-04-09
+
+### Added
+- Monitor health classification now based on TPS (tokens per second) instead of raw latency
+- Monitor probe prompt upgraded to generate longer responses for accurate TPS measurement
+- Provider deletion cascades to monitor targets cleanup
+- Provider model rename auto-syncs monitor targets (preserves monitoring config)
+- Anthropic streaming fallback: read `input_tokens` from `message_delta` for LiteLLM compatibility
+
+### Changed
+- Monitor health thresholds: `latencySlowMs`/`latencyVerySlowMs` replaced with `tpsSlowThreshold` (default 20) / `tpsVerySlowThreshold` (default 5)
+- Monitor UI tooltips show TPS instead of latency as primary metric
+- Workflow templates default `warmupRuns` changed from 2 to 0
+- Quick Benchmark and Workflow config default `warmupRuns` changed from 2 to 0
+
+### Fixed
+- `formatNumber` crash when token values are undefined (WorkflowResults page)
+- Workflow detail table showing Tokens as 0 (field mismatch: `promptTokens` vs `totalTokens`)
+- Orphaned monitor targets remaining after provider model rename or deletion
+
 ## [1.2.1] - 2026-04-07
 
 ### Changed

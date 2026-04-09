@@ -470,7 +470,11 @@ async function streamAnthropic(
             // signature_delta is ignored (integrity verification, not content)
           }
           if (parsed.type === 'message_delta') {
-            outputTokens = parsed.usage?.output_tokens || 0;
+            outputTokens = parsed.usage?.output_tokens || outputTokens;
+            // Some proxies (e.g. LiteLLM) return input_tokens in message_delta instead of message_start
+            if (parsed.usage?.input_tokens) {
+              inputTokens = parsed.usage.input_tokens;
+            }
           }
         } catch { /* skip */ }
       }
