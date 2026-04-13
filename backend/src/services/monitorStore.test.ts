@@ -1,7 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import Database from 'better-sqlite3';
-import * as path from 'path';
-import * as fs from 'fs';
 
 // We test the store logic directly with an in-memory database
 // to avoid coupling to the singleton and filesystem

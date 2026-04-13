@@ -11,7 +11,7 @@ import {
   Cell,
 } from 'recharts';
 import { BenchmarkRun, getProviderColor, getProviderDisplayName, ErrorCategory } from '../types';
-import { Button, Table, Tag, Segmented, Card, Tooltip, Space } from '../antdImports';
+import { Button, Table, Tag, Segmented, Card, Space } from '../antdImports';
 import { AppstoreOutlined, TableOutlined, DownloadOutlined, BarChartOutlined } from '@ant-design/icons';
 
 interface ResultsPanelProps {

@@ -113,7 +113,7 @@ export function Dashboard({ run, isRunning }: DashboardProps) {
   const avgSystemThroughput = Math.round(
     providers.reduce((sum, p) => sum + (run.results[p]?.summary?.systemThroughput || 0), 0) / providers.length,
   );
-  const totalCost = Number(
+  const _totalCost = Number(
     providers.reduce((sum, p) => sum + (run.results[p]?.summary?.estimatedCost || 0), 0).toFixed(4),
   );
   const totalIterations = providers.reduce((sum, p) => sum + (run.results[p]?.iterations?.length || 0), 0);

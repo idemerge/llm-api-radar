@@ -28,7 +28,6 @@ export abstract class BaseLLMProvider implements LLMProvider {
     baseLatency: number,
     latencyVariance: number,
   ): LLMResponse {
-    const startTime = Date.now();
     const inputTokens = Math.ceil(prompt.length / 4);
     const outputTokens = Math.min(maxTokens, Math.floor(50 + Math.random() * 200));
     const totalTokens = inputTokens + outputTokens;

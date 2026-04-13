@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ProviderConfigResponse, ProviderFormat, ModelConfig } from '../types';
+import { ProviderConfigResponse, ProviderFormat } from '../types';
 import { useProviders } from '../hooks/useProviders';
 import { Button, Input, InputNumber, Select, Checkbox, Popconfirm, Alert, Tag, Modal } from '../antdImports';
 import { PlusOutlined, ApiOutlined } from '@ant-design/icons';

@@ -79,7 +79,6 @@ function App() {
     error: workflowError,
     startWorkflow,
     fetchWorkflows,
-    fetchWorkflow,
     fetchTemplates,
     cancelWorkflow,
     exportWorkflow,
@@ -137,7 +136,7 @@ function App() {
         prevRunningRef.current = true;
       }
     });
-  }, [authed, fetchWorkflows, fetchTemplates, reconnectActiveWorkflow]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [authed, fetchWorkflows, fetchTemplates, reconnectActiveWorkflow]);
 
   // Reload workflows when navigating to history page; auto-refresh every 30s if any workflow is running
   useEffect(() => {

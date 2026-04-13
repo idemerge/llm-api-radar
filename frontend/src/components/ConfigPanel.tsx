@@ -45,7 +45,7 @@ interface SelectedModel {
   color: string;
 }
 
-export function ConfigPanel({ onStart, isRunning, currentProviders, onCancel }: ConfigPanelProps) {
+export function ConfigPanel({ onStart, isRunning, currentProviders: _currentProviders, onCancel }: ConfigPanelProps) {
   const { providers: configuredProviders, loading: providersLoading, fetchProviders } = useProviders();
   const [selectedModels, setSelectedModels] = useState<SelectedModel[]>([]);
   const [isAdvancedMode, setIsAdvancedMode] = useState(false);

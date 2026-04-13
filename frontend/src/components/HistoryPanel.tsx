@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Table, Tag, Empty, Popconfirm, Tooltip } from '../antdImports';
-import { CopyOutlined, DeleteOutlined, InfoCircleOutlined, ReloadOutlined } from '@ant-design/icons';
+import { CopyOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
 import { BenchmarkWorkflow, getProviderColor } from '../types';
 
 interface HistoryPanelProps {

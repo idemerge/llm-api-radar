@@ -286,19 +286,9 @@ function HistoryBar({
 }
 
 export function MonitorPage() {
-  const {
-    statuses,
-    history,
-    targets,
-    globalConfig,
-    loading: monitorLoading,
-    running,
-    fetchAll,
-    saveTargets,
-    saveConfig,
-    triggerRun,
-  } = useMonitor();
-  const { providers, loading: providersLoading, fetchProviders } = useProviders();
+  const { statuses, history, targets, globalConfig, running, fetchAll, saveTargets, saveConfig, triggerRun } =
+    useMonitor();
+  const { providers, fetchProviders } = useProviders();
   const [lastChecked, setLastChecked] = useState<string>('');
   const [showConfig, setShowConfig] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
@@ -415,12 +405,9 @@ export function MonitorPage() {
 
   const toggleDraftTarget = (providerId: string, modelName: string, providerName: string) => {
     const key = `${providerId}::${modelName}`;
-    let next: MonitorTarget[];
-    if (draftTargetKeys.has(key)) {
-      next = draftTargets.filter((t) => `${t.providerId}::${t.modelName}` !== key);
-    } else {
-      next = [...draftTargets, { providerId, modelName, providerName }];
-    }
+    const next: MonitorTarget[] = draftTargetKeys.has(key)
+      ? draftTargets.filter((t) => `${t.providerId}::${t.modelName}` !== key)
+      : [...draftTargets, { providerId, modelName, providerName }];
     setDraftTargets(next);
   };
 
@@ -434,7 +421,7 @@ export function MonitorPage() {
 
   const selectAllForProvider = (provider: any) => {
     const activeModels = provider.models.filter((m: any) => m.isActive !== false);
-    let next = [...draftTargets];
+    const next = [...draftTargets];
     for (const m of activeModels) {
       const key = `${provider.id}::${m.name}`;
       if (!draftTargetKeys.has(key)) {

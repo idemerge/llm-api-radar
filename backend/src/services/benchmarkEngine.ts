@@ -28,7 +28,7 @@ const legacyProviders: Record<string, LLMProvider> = {
 
 // Resolve a provider name to an LLMProvider instance
 // Supports: legacy IDs (openai, claude, etc.), configId:modelName, or bare configId
-function resolveProvider(providerName: string, apiKey: string): LLMProvider | null {
+function resolveProvider(providerName: string, _apiKey: string): LLMProvider | null {
   // Try legacy providers first
   if (legacyProviders[providerName]) {
     return legacyProviders[providerName];

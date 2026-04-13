@@ -122,7 +122,7 @@ router.post('/', async (req: Request, res: Response) => {
 router.get('/', (_req: Request, res: Response) => {
   const workflows = workflowStore.getAll();
   // Return without apiKeys
-  const safe = workflows.map(({ apiKeys, ...rest }) => rest);
+  const safe = workflows.map(({ apiKeys: _apiKeys, ...rest }) => rest);
   res.json(safe);
 });
 
@@ -133,7 +133,7 @@ router.get('/active', (_req: Request, res: Response) => {
     res.json(null);
     return;
   }
-  const { apiKeys, ...safe } = running;
+  const { apiKeys: _apiKeys, ...safe } = running;
   res.json(safe);
 });
 
@@ -149,7 +149,7 @@ router.get('/:id', (req: Request, res: Response) => {
     res.status(404).json({ error: 'Workflow not found' });
     return;
   }
-  const { apiKeys, ...safe } = workflow;
+  const { apiKeys: _apiKeys, ...safe } = workflow;
   res.json(safe);
 });
 
@@ -168,7 +168,7 @@ router.get('/:id/stream', (req: Request, res: Response) => {
   });
 
   // Send initial state
-  const { apiKeys, ...safe } = workflow;
+  const { apiKeys: _apiKeys, ...safe } = workflow;
   res.write(`data: ${JSON.stringify({ type: 'workflow:init', data: safe })}\n\n`);
 
   if (workflow.status === 'completed' || workflow.status === 'failed' || workflow.status === 'cancelled') {
@@ -268,7 +268,7 @@ router.get('/:id/export', (req: Request, res: Response) => {
       }
     }
 
-    const { apiKeys, ...safe } = workflow;
+    const { apiKeys: _apiKeys, ...safe } = workflow;
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', `attachment; filename=workflow-${workflow.id}.json`);
     res.json({ workflow: safe, benchmarkRuns: runs });

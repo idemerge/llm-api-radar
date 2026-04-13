@@ -1,4 +1,4 @@
-import { ProviderConfig, ProviderConfigInput, ModelConfig } from '../types';
+import { ProviderConfig, ProviderConfigInput } from '../types';
 import { encrypt, decrypt, maskApiKey } from '../utils/encryption';
 import Database from 'better-sqlite3';
 import * as path from 'path';
