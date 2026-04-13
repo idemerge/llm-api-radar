@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.3.2] - 2026-04-13
+
+### Added
+- Vitest test framework with initial test suites (frontend: tokenCount, MonitorPage helpers; backend: MonitorStore CRUD)
+- Prettier for consistent code formatting across frontend and backend
+- ESLint for backend (flat config, typescript-eslint)
+- Husky pre-commit hook with lint-staged (auto-format on commit)
+- GitHub Actions CI pipeline: typecheck, lint, format check, tests, build
+- `scripts/release.sh` for automated version bump, changelog update, tag, and push
+
+### Fixed
+- 11 TypeScript type errors across the codebase (ResultsPanel JSX, App.tsx, WorkflowResults, etc.)
+- CI error messages now show specific failures and actionable fix instructions
+
 ## [1.3.1] - 2026-04-10
 
 ### Added
