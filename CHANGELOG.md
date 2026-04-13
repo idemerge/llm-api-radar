@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.3.1] - 2026-04-10
+
+### Added
+- Monitor trend charts: expandable TTFT, TPS, and Latency time-series graphs per model with 1h/6h/24h range selector and threshold reference lines
+
+### Fixed
+- Playground history: clicking a failed history entry no longer crashes (undefined metrics guard)
+- Playground history: selecting a record whose provider was deleted no longer causes a blank screen (graceful fallback to empty provider selection)
+
 ## [1.3.0] - 2026-04-09
 
 ### Added

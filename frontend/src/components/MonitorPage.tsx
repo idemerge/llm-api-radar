@@ -1,8 +1,12 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { Button, Tooltip, Checkbox, Select } from '../antdImports';
-import { ReloadOutlined, ClockCircleOutlined, SettingOutlined, WarningOutlined } from '@ant-design/icons';
+import { ReloadOutlined, ClockCircleOutlined, SettingOutlined, WarningOutlined, LineChartOutlined } from '@ant-design/icons';
 import { useMonitor, PingResult, MonitorTarget, HealthThresholds } from '../hooks/useMonitor';
 import { useProviders } from '../hooks/useProviders';
+import {
+  XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, ResponsiveContainer,
+  Area, AreaChart, ReferenceLine,
+} from 'recharts';
 
 const INTERVAL_OPTIONS = [
   { value: 0, label: 'Default' },
@@ -56,6 +60,139 @@ function getStatusTextColor(cls: HealthStatus): string {
   if (cls === 'very_slow') return 'text-orange-400';
   if (cls === 'slow') return 'text-amber-400';
   return 'text-emerald-400';
+}
+
+const TIME_RANGES = [
+  { label: '1h', hours: 1 },
+  { label: '6h', hours: 6 },
+  { label: '24h', hours: 24 },
+] as const;
+
+const CHART_COLORS = { ttft: '#f59e0b', tps: '#10b981', latency: '#3b82f6' };
+
+const CHART_TOOLTIP_STYLE = {
+  background: '#1f1f1f',
+  border: '1px solid #303030',
+  borderRadius: '6px',
+  padding: '6px 10px',
+  fontSize: '11px',
+};
+
+function formatChartTime(iso: string): string {
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+interface TrendChartsProps {
+  history: PingResult[];
+  providerId: string;
+  modelName: string;
+  thresholds: HealthThresholds;
+}
+
+function TrendCharts({ history, providerId, modelName, thresholds }: TrendChartsProps) {
+  const [range, setRange] = useState<number>(24);
+
+  const data = useMemo(() => {
+    const cutoff = Date.now() - range * 60 * 60 * 1000;
+    return history
+      .filter(p => p.providerId === providerId && p.modelName === modelName && new Date(p.checkedAt).getTime() >= cutoff)
+      .sort((a, b) => new Date(a.checkedAt).getTime() - new Date(b.checkedAt).getTime())
+      .map(p => ({
+        time: formatChartTime(p.checkedAt),
+        ttft: p.status === 'ok' ? +(p.ttftMs / 1000).toFixed(2) : undefined,
+        tps: p.status === 'ok' && p.latencyMs > 0 ? Math.round((p.outputTokens / p.latencyMs) * 1000) : undefined,
+        latency: p.status === 'ok' ? +(p.latencyMs / 1000).toFixed(2) : undefined,
+        isError: p.status === 'error',
+      }));
+  }, [history, providerId, modelName, range]);
+
+  if (data.length === 0) {
+    return <div className="text-[11px] text-text-tertiary py-2">No data for selected time range.</div>;
+  }
+
+  const charts: { key: string; label: string; dataKey: string; color: string; unit: string; refLine?: number }[] = [
+    { key: 'ttft', label: 'TTFT', dataKey: 'ttft', color: CHART_COLORS.ttft, unit: 's', refLine: +(thresholds.ttftSlowMs / 1000).toFixed(2) },
+    { key: 'tps', label: 'TPS', dataKey: 'tps', color: CHART_COLORS.tps, unit: 'tok/s', refLine: thresholds.tpsSlowThreshold },
+    { key: 'latency', label: 'Latency', dataKey: 'latency', color: CHART_COLORS.latency, unit: 's' },
+  ];
+
+  return (
+    <div className="space-y-2 pt-2">
+      <div className="flex items-center gap-1">
+        {TIME_RANGES.map(r => (
+          <button
+            key={r.hours}
+            onClick={() => setRange(r.hours)}
+            className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
+              range === r.hours
+                ? 'bg-white/10 text-text-primary'
+                : 'text-text-tertiary hover:text-text-secondary'
+            }`}
+          >
+            {r.label}
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+        {charts.map(c => (
+          <div key={c.key} className="rounded border border-border bg-[#060606] p-2">
+            <div className="text-[10px] text-text-tertiary mb-1">{c.label} <span className="text-text-tertiary/50">({c.unit})</span></div>
+            <div className="h-[100px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                  <defs>
+                    <linearGradient id={`grad-${c.key}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={c.color} stopOpacity={0.2} />
+                      <stop offset="95%" stopColor={c.color} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis
+                    dataKey="time"
+                    stroke="#585a6e"
+                    tick={{ fontSize: 9, fill: '#8e8fa2' }}
+                    axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis
+                    stroke="#585a6e"
+                    tick={{ fontSize: 9, fill: '#8e8fa2' }}
+                    axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
+                    width={40}
+                  />
+                  <RTooltip
+                    contentStyle={CHART_TOOLTIP_STYLE}
+                    labelStyle={{ color: '#d8d9da' }}
+                    formatter={(value: number) => [`${value} ${c.unit}`, c.label]}
+                  />
+                  {c.refLine != null && (
+                    <ReferenceLine
+                      y={c.refLine}
+                      stroke="#f59e0b"
+                      strokeDasharray="4 3"
+                      strokeOpacity={0.5}
+                      label={{ value: `${c.refLine}`, position: 'right', fontSize: 9, fill: '#f59e0b80' }}
+                    />
+                  )}
+                  <Area
+                    type="monotone"
+                    dataKey={c.dataKey}
+                    stroke={c.color}
+                    strokeWidth={1.5}
+                    fill={`url(#grad-${c.key})`}
+                    dot={false}
+                    activeDot={{ r: 3, strokeWidth: 1, stroke: '#000' }}
+                    connectNulls={false}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function HistoryBar({ history, providerId, modelName }: { history: PingResult[]; providerId: string; modelName: string }) {
@@ -122,6 +259,15 @@ export function MonitorPage() {
   });
   const [draftTargets, setDraftTargets] = useState<MonitorTarget[]>(targets);
   const [configDirty, setConfigDirty] = useState(false);
+  const [expandedModels, setExpandedModels] = useState<Set<string>>(new Set());
+
+  const toggleExpanded = useCallback((key: string) => {
+    setExpandedModels(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }, []);
 
   // Sync draft when backend data changes
   useEffect(() => {
@@ -561,7 +707,24 @@ export function MonitorPage() {
                         {ping?.errorMessage && (
                           <div className="text-[10px] text-red-400/80 truncate">{ping.errorMessage}</div>
                         )}
-                        <HistoryBar history={history} providerId={providerId} modelName={target.modelName} />
+                        <div className="flex items-center justify-between">
+                          <HistoryBar history={history} providerId={providerId} modelName={target.modelName} />
+                          <Tooltip title={expandedModels.has(`${providerId}::${target.modelName}`) ? 'Hide trends' : 'Show trends'}>
+                            <button
+                              onClick={() => toggleExpanded(`${providerId}::${target.modelName}`)}
+                              className={`ml-2 shrink-0 text-[11px] p-1 rounded transition-colors ${
+                                expandedModels.has(`${providerId}::${target.modelName}`)
+                                  ? 'text-accent-blue bg-accent-blue/10'
+                                  : 'text-text-tertiary hover:text-text-secondary'
+                              }`}
+                            >
+                              <LineChartOutlined />
+                            </button>
+                          </Tooltip>
+                        </div>
+                        {expandedModels.has(`${providerId}::${target.modelName}`) && (
+                          <TrendCharts history={history} providerId={providerId} modelName={target.modelName} thresholds={thresholds} />
+                        )}
                       </div>
                     );
                   })}

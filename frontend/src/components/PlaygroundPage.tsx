@@ -181,8 +181,14 @@ export function PlaygroundPage() {
     const detail = await getDetail(id);
     if (!detail) return;
     setSelectedHistoryId(id);
-    setProviderId(detail.providerId);
-    setModelName(detail.modelName);
+    const providerExists = providers.some(p => p.id === detail.providerId);
+    if (providerExists) {
+      setProviderId(detail.providerId);
+      setModelName(detail.modelName);
+    } else {
+      setProviderId(null);
+      setModelName(null);
+    }
     setPromptSmart(detail.prompt);
     setSystemPrompt(detail.systemPrompt || '');
     setMaxTokens(detail.maxTokens);
@@ -607,19 +613,19 @@ function MetricsRow({ metrics, loading }: { metrics: PlaygroundMetrics | null; l
   const cards = [
     {
       label: 'Response Time',
-      value: metrics ? `${metrics.responseTime.toLocaleString()} ms` : '--',
+      value: metrics?.responseTime != null ? `${metrics.responseTime.toLocaleString()} ms` : '--',
       icon: <ClockCircleOutlined />,
       color: 'text-accent-blue',
     },
     {
       label: 'First Token',
-      value: metrics ? (metrics.firstTokenLatency > 0 ? `${metrics.firstTokenLatency.toLocaleString()} ms` : 'N/A') : '--',
+      value: metrics?.firstTokenLatency != null && metrics.firstTokenLatency > 0 ? `${metrics.firstTokenLatency.toLocaleString()} ms` : (metrics ? 'N/A' : '--'),
       icon: <ThunderboltOutlined />,
       color: 'text-accent-amber',
     },
     {
       label: 'TPS',
-      value: metrics ? `${metrics.tokensPerSecond}` : '--',
+      value: metrics?.tokensPerSecond != null ? `${metrics.tokensPerSecond}` : '--',
       icon: <DashboardOutlined />,
       color: metrics?.tokensPerSecond === 0 && metrics?.outputTokens === 0
         ? 'text-accent-rose' : 'text-accent-teal',
@@ -627,7 +633,7 @@ function MetricsRow({ metrics, loading }: { metrics: PlaygroundMetrics | null; l
     },
     {
       label: 'Tokens',
-      value: metrics ? `${metrics.inputTokens} in / ${metrics.outputTokens} out` : '--',
+      value: metrics?.inputTokens != null ? `${metrics.inputTokens} in / ${metrics.outputTokens ?? 0} out` : '--',
       icon: metrics?.outputTokens === 0 ? <WarningOutlined /> : null,
       color: metrics?.outputTokens === 0 ? 'text-accent-rose' : 'text-text-primary',
       warn: metrics?.outputTokens === 0,
