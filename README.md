@@ -101,9 +101,16 @@ Running LLMs in production means juggling multiple providers, each with differen
 - 24h history bar with color-coded health status
 - Auto-refresh dashboard with summary stats
 
-### Authentication
+### Authentication & Security
 
 - JWT-based login with configurable credentials
+- Auto-generated persistent secrets (JWT, encryption key, salt) — no hardcoded defaults
+- Forced password change on first login with default credentials
+- Login rate limiting (5 attempts per 5 minutes)
+- Helmet security headers with Content Security Policy
+- One-time tokens for SSE/download URLs (no JWT in query strings)
+- Session-bound token storage (`sessionStorage`, cleared on tab close)
+- CORS restricted to configured origin (same-origin by default)
 - Protected API routes and frontend routing
 - Auto-redirect to login page on session expiry
 
@@ -163,9 +170,11 @@ All configuration is managed via a single `.env` file in the project root:
 | --- | --- | --- |
 | `PORT` | `3001` | Server port |
 | `AUTH_USERNAME` | `admin` | Login username |
-| `AUTH_PASSWORD` | `changeme` | Login password |
-| `JWT_SECRET` | `your-secret-key-here` | JWT signing secret (change before deploying) |
+| `AUTH_PASSWORD` | `changeme` | Login password (must change on first login) |
+| `JWT_SECRET` | auto-generated | JWT signing secret (leave empty to auto-generate) |
 | `JWT_EXPIRES_IN` | `24h` | JWT token expiry |
+| `ENCRYPTION_SECRET` | auto-generated | API key encryption secret (leave empty to auto-generate) |
+| `CORS_ORIGIN` | same-origin only | Allowed CORS origin (e.g. `https://your-domain.com`) |
 
 ### Connect Real Providers
 
@@ -210,7 +219,7 @@ All configuration is managed via a single `.env` file in the project root:
           └─────────────────────────┘
 ```
 
-The entire stack runs as a **single Node.js process** — no Redis, no Postgres, no external dependencies. The frontend is built by Vite and served as static files by Express. SQLite stores all benchmarks, workflows, monitor history, and provider config in one file, making backup and migration trivial.
+The entire stack runs as a **single Node.js process** — no Redis, no Postgres, no external dependencies. The frontend is built by Vite and served as static files by Express. SQLite (WAL mode) stores all benchmarks, workflows, monitor history, and provider config in one file, making backup and migration trivial.
 
 | Layer     | Stack                                        |
 | --------- | -------------------------------------------- |

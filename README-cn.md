@@ -101,9 +101,16 @@
 - 24 小时历史条形图，按颜色标识健康状态
 - 自动刷新仪表盘，包含汇总统计
 
-### 认证
+### 认证与安全
 
 - 基于 JWT 的登录，凭证可配置
+- 自动生成持久化密钥（JWT、加密密钥、Salt）— 无硬编码默认值
+- 首次使用默认密码登录后强制修改密码
+- 登录速率限制（5 分钟内最多 5 次尝试）
+- Helmet 安全头及内容安全策略（CSP）
+- SSE/下载 URL 使用一次性令牌（不再在 URL 中暴露 JWT）
+- 会话级令牌存储（`sessionStorage`，关闭标签页即清除）
+- CORS 限制为配置的来源（默认仅同源）
 - 受保护的 API 路由和前端路由
 - 会话过期自动跳转登录页
 
@@ -163,9 +170,11 @@ cd ../frontend && npm install && npm run dev
 | --- | --- | --- |
 | `PORT` | `3001` | 服务端口 |
 | `AUTH_USERNAME` | `admin` | 登录用户名 |
-| `AUTH_PASSWORD` | `changeme` | 登录密码 |
-| `JWT_SECRET` | `your-secret-key-here` | JWT 签名密钥（部署前务必修改） |
+| `AUTH_PASSWORD` | `changeme` | 登录密码（首次登录需强制修改） |
+| `JWT_SECRET` | 自动生成 | JWT 签名密钥（留空则自动生成） |
 | `JWT_EXPIRES_IN` | `24h` | JWT 令牌过期时间 |
+| `ENCRYPTION_SECRET` | 自动生成 | API 密钥加密密钥（留空则自动生成） |
+| `CORS_ORIGIN` | 仅同源 | 允许的 CORS 来源（如 `https://your-domain.com`） |
 
 ### 接入真实服务商
 
@@ -210,7 +219,7 @@ cd ../frontend && npm install && npm run dev
           └─────────────────────────┘
 ```
 
-整个技术栈以**单个 Node.js 进程**运行 — 无需 Redis、无需 Postgres、无外部依赖。前端由 Vite 构建，作为静态文件由 Express 提供服务。SQLite 将所有基准测试、工作流、监控历史和服务商配置存储在一个文件中，备份和迁移极其简单。
+整个技术栈以**单个 Node.js 进程**运行 — 无需 Redis、无需 Postgres、无外部依赖。前端由 Vite 构建，作为静态文件由 Express 提供服务。SQLite（WAL 模式）将所有基准测试、工作流、监控历史和服务商配置存储在一个文件中，备份和迁移极其简单。
 
 | 层 | 技术栈 |
 | --- | --- |
