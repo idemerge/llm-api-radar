@@ -30,42 +30,87 @@ jobs:
 
       # Type checking
       - name: Typecheck frontend
-        run: cd frontend && npx tsc --noEmit
+        run: |
+          cd frontend && npx tsc --noEmit 2>&1 || {
+            echo ""
+            echo "::error::Frontend type check failed. Fix the TypeScript errors above."
+            exit 1
+          }
 
       - name: Typecheck backend
-        run: cd backend && npx tsc --noEmit
+        run: |
+          cd backend && npx tsc --noEmit 2>&1 || {
+            echo ""
+            echo "::error::Backend type check failed. Fix the TypeScript errors above."
+            exit 1
+          }
 
       # Linting
       - name: Lint frontend
-        run: cd frontend && npm run lint
+        run: |
+          cd frontend
+          OUTPUT=$(npx eslint . 2>&1) || {
+            echo "$OUTPUT"
+            echo ""
+            echo "::error::Frontend lint failed. Run 'cd frontend && npx eslint . --fix' to auto-fix, then commit."
+            exit 1
+          }
+          echo "$OUTPUT"
 
       - name: Lint backend
-        run: cd backend && npm run lint
+        run: |
+          cd backend
+          OUTPUT=$(npx eslint . 2>&1) || {
+            echo "$OUTPUT"
+            echo ""
+            echo "::error::Backend lint failed. Run 'cd backend && npx eslint . --fix' to auto-fix, then commit."
+            exit 1
+          }
+          echo "$OUTPUT"
 
       # Formatting
       - name: Format check
         run: |
           UNFORMATTED=$(npx -y prettier --list-different "frontend/**/*.{ts,tsx,js,jsx,json}" "backend/**/*.{ts,js,json}" "*.{json,md,yml,yaml}" 2>/dev/null || true)
           if [ -n "$UNFORMATTED" ]; then
-            echo "::error::The following files are not formatted. Run 'npx prettier --write .' locally and commit."
-            echo ""
+            echo "Unformatted files:"
             echo "$UNFORMATTED"
             echo ""
-            echo "Tip: Install husky (npm install) to auto-format on commit."
+            echo "::error::Files above are not formatted. Run 'npx prettier --write .' locally and commit."
             exit 1
           fi
           echo "All files formatted correctly."
 
       # Tests
       - name: Test frontend
-        run: cd frontend && npm test
+        run: |
+          cd frontend && npm test 2>&1 || {
+            echo ""
+            echo "::error::Frontend tests failed. Run 'cd frontend && npm test' locally to debug."
+            exit 1
+          }
 
       - name: Test backend
-        run: cd backend && npm test
+        run: |
+          cd backend && npm test 2>&1 || {
+            echo ""
+            echo "::error::Backend tests failed. Run 'cd backend && npm test' locally to debug."
+            exit 1
+          }
 
       # Build
       - name: Build frontend
-        run: cd frontend && npx vite build
+        run: |
+          cd frontend && npx vite build 2>&1 || {
+            echo ""
+            echo "::error::Frontend build failed. Run 'cd frontend && npx vite build' locally to debug."
+            exit 1
+          }
 
       - name: Build backend
-        run: cd backend && npm run build
+        run: |
+          cd backend && npm run build 2>&1 || {
+            echo ""
+            echo "::error::Backend build failed. Run 'cd backend && npm run build' locally to debug."
+            exit 1
+          }
