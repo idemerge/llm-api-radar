@@ -7,3 +7,8 @@ data
 nohup.out
 frontend/dist
 backend/dist
+CHANGELOG.md
+README.md
+README-cn.md
+CLAUDE.md
+docker-compose.yml
