@@ -1,33 +1,23 @@
 import { Router, Request, Response } from 'express';
 import { store } from '../services/store';
 import { startBenchmark, subscribe, cancelRun } from '../services/benchmarkEngine';
-import { StartBenchmarkRequest } from '../types';
 import { providerStore } from '../services/providerStore';
+import { LEGACY_PROVIDER_IDS } from '../types';
+import { validate } from '../validation/middleware';
+import { StartBenchmarkSchema } from '../validation/schemas';
+import { toCsvRow } from '../utils/csv';
 
 const router = Router();
 
 // Start a new benchmark
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', validate(StartBenchmarkSchema), async (req: Request, res: Response) => {
   try {
-    const { providers, config, apiKeys } = req.body as StartBenchmarkRequest;
-
-    if (!providers || !providers.length) {
-      res.status(400).json({ error: 'At least one provider is required' });
-      return;
-    }
-
-    if (!config || !config.prompt) {
-      res.status(400).json({ error: 'Prompt is required in config' });
-      return;
-    }
+    const { providers, config, apiKeys } = req.body;
 
     // Validate providers: accept both legacy IDs and configId:modelName format
-    const legacyProviders = ['openai', 'claude', 'gemini', 'zai'];
     for (const p of providers) {
-      if (legacyProviders.includes(p)) continue;
-      // Dynamic provider format: configId:modelName
+      if (LEGACY_PROVIDER_IDS.includes(p)) continue;
       if (p.includes(':')) continue;
-      // Could be a provider config ID without model (use first active model)
       const providerConfig = providerStore.get(p);
       if (providerConfig) continue;
       res.status(400).json({ error: `Invalid provider: ${p}` });
@@ -146,7 +136,7 @@ router.get('/:id/export', (req: Request, res: Response) => {
     Object.values(run.results).forEach((providerResult) => {
       providerResult.iterations.forEach((iter) => {
         csvLines.push(
-          [
+          toCsvRow([
             providerResult.provider,
             providerResult.model,
             iter.iteration,
@@ -161,7 +151,7 @@ router.get('/:id/export', (req: Request, res: Response) => {
             iter.success,
             iter.error || '',
             iter.errorCategory || '',
-          ].join(','),
+          ]),
         );
       });
     });

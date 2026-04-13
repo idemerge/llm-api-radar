@@ -1,15 +1,15 @@
 const TOKEN_KEY = 'llm_bench_token';
 
 export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  return sessionStorage.getItem(TOKEN_KEY);
 }
 
 export function setToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token);
+  sessionStorage.setItem(TOKEN_KEY, token);
 }
 
 export function clearToken(): void {
-  localStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
 }
 
 export function isAuthenticated(): boolean {
@@ -40,21 +40,37 @@ export async function apiFetch(input: string, init?: RequestInit): Promise<Respo
 }
 
 /**
- * Build an SSE URL with the token as a query parameter.
- * EventSource does not support custom headers.
+ * Fetch a short-lived one-time token for SSE/download authentication.
  */
-export function sseUrl(path: string): string {
-  const token = getToken();
-  const separator = path.includes('?') ? '&' : '?';
-  return token ? `${path}${separator}token=${token}` : path;
+async function fetchOneTimeToken(): Promise<string | null> {
+  try {
+    const response = await apiFetch('/api/auth/sse-token', { method: 'POST' });
+    if (response.ok) {
+      const data = await response.json();
+      return data.token;
+    }
+  } catch {
+    // One-time token unavailable — SSE/download will fail with 401
+  }
+  return null;
 }
 
 /**
- * Build a download URL with the token as a query parameter.
+ * Build an SSE URL with a one-time token as a query parameter.
+ * EventSource does not support custom headers.
+ */
+export async function sseUrl(urlPath: string): Promise<string> {
+  const token = await fetchOneTimeToken();
+  const separator = urlPath.includes('?') ? '&' : '?';
+  return token ? `${urlPath}${separator}token=${token}` : urlPath;
+}
+
+/**
+ * Build a download URL with a one-time token as a query parameter.
  * window.open() cannot set headers.
  */
-export function downloadUrl(path: string): string {
-  const token = getToken();
-  const separator = path.includes('?') ? '&' : '?';
-  return token ? `${path}${separator}token=${token}` : path;
+export async function downloadUrl(urlPath: string): Promise<string> {
+  const token = await fetchOneTimeToken();
+  const separator = urlPath.includes('?') ? '&' : '?';
+  return token ? `${urlPath}${separator}token=${token}` : urlPath;
 }

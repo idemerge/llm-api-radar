@@ -1,7 +1,4 @@
-import Database from 'better-sqlite3';
-import * as path from 'path';
-
-const DB_PATH = path.join(__dirname, '../../data/benchmarks.db');
+import { getDb } from './database';
 
 export interface MonitorTarget {
   providerId: string;
@@ -33,58 +30,47 @@ const DEFAULT_CONFIG: MonitorGlobalConfig = {
 };
 
 class MonitorConfigStore {
-  private db: Database.Database | null = null;
+  private db = getDb();
 
   constructor() {
     this.initDatabase();
   }
 
   private initDatabase() {
-    try {
-      const fs = require('fs');
-      const dir = path.dirname(DB_PATH);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS monitor_targets (
+        provider_id TEXT NOT NULL,
+        model_name TEXT NOT NULL,
+        provider_name TEXT NOT NULL,
+        interval_minutes INTEGER NOT NULL DEFAULT 0,
+        enabled INTEGER NOT NULL DEFAULT 1,
+        PRIMARY KEY (provider_id, model_name)
+      )
+    `);
 
-      this.db = new Database(DB_PATH);
-
-      this.db.exec(`
-        CREATE TABLE IF NOT EXISTS monitor_targets (
-          provider_id TEXT NOT NULL,
-          model_name TEXT NOT NULL,
-          provider_name TEXT NOT NULL,
-          interval_minutes INTEGER NOT NULL DEFAULT 0,
-          enabled INTEGER NOT NULL DEFAULT 1,
-          PRIMARY KEY (provider_id, model_name)
-        )
-      `);
-
-      // Migration: add interval_minutes column if missing (older table)
-      try {
-        this.db.exec('ALTER TABLE monitor_targets ADD COLUMN interval_minutes INTEGER NOT NULL DEFAULT 0');
-      } catch {
-        /* column already exists, ignore */
-      }
-
-      this.db.exec(`
-        CREATE TABLE IF NOT EXISTS monitor_config (
-          key TEXT PRIMARY KEY,
-          value TEXT NOT NULL
-        )
-      `);
-
-      console.log('Monitor config store initialized');
-    } catch (err) {
-      console.error('Failed to initialize monitor config store:', err);
+    // Migration: add interval_minutes column if missing using PRAGMA check
+    const cols = (this.db.pragma('table_info(monitor_targets)') as Array<{ name: string }>).map((c) => c.name);
+    if (!cols.includes('interval_minutes')) {
+      this.db.exec('ALTER TABLE monitor_targets ADD COLUMN interval_minutes INTEGER NOT NULL DEFAULT 0');
+      console.log('Migrated: added interval_minutes column to monitor_targets');
     }
+
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS monitor_config (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      )
+    `);
+
+    console.log('Monitor config store initialized');
   }
 
   // ---- Global Config ----
 
   getConfig(): MonitorGlobalConfig {
-    if (!this.db) return DEFAULT_CONFIG;
-    const row = this.db.prepare("SELECT value FROM monitor_config WHERE key = 'global'").get() as any;
+    const row = this.db.prepare("SELECT value FROM monitor_config WHERE key = 'global'").get() as
+      | { value: string }
+      | undefined;
     if (!row) return DEFAULT_CONFIG;
     try {
       const parsed = JSON.parse(row.value);
@@ -99,7 +85,6 @@ class MonitorConfigStore {
   }
 
   setConfig(config: MonitorGlobalConfig): void {
-    if (!this.db) return;
     const clamped = clampInterval(config.defaultIntervalMinutes);
     this.db.prepare("INSERT OR REPLACE INTO monitor_config (key, value) VALUES ('global', ?)").run(
       JSON.stringify({
@@ -112,12 +97,16 @@ class MonitorConfigStore {
   // ---- Targets ----
 
   getTargets(): MonitorTarget[] {
-    if (!this.db) return [];
     const rows = this.db
       .prepare(
         'SELECT provider_id, model_name, provider_name, interval_minutes FROM monitor_targets WHERE enabled = 1 ORDER BY provider_name, model_name',
       )
-      .all() as any[];
+      .all() as Array<{
+      provider_id: string;
+      model_name: string;
+      provider_name: string;
+      interval_minutes: number;
+    }>;
     return rows.map((r) => ({
       providerId: r.provider_id,
       modelName: r.model_name,
@@ -127,10 +116,9 @@ class MonitorConfigStore {
   }
 
   setTargets(targets: MonitorTarget[]): void {
-    if (!this.db) return;
     const tx = this.db.transaction(() => {
-      this.db!.prepare('DELETE FROM monitor_targets').run();
-      const stmt = this.db!.prepare(
+      this.db.prepare('DELETE FROM monitor_targets').run();
+      const stmt = this.db.prepare(
         'INSERT INTO monitor_targets (provider_id, model_name, provider_name, interval_minutes, enabled) VALUES (?, ?, ?, ?, 1)',
       );
       for (const t of targets) {
@@ -141,7 +129,6 @@ class MonitorConfigStore {
   }
 
   addTarget(target: MonitorTarget): void {
-    if (!this.db) return;
     this.db
       .prepare(
         'INSERT OR REPLACE INTO monitor_targets (provider_id, model_name, provider_name, interval_minutes, enabled) VALUES (?, ?, ?, ?, 1)',
@@ -150,13 +137,11 @@ class MonitorConfigStore {
   }
 
   removeTarget(providerId: string, modelName: string): void {
-    if (!this.db) return;
     this.db.prepare('DELETE FROM monitor_targets WHERE provider_id = ? AND model_name = ?').run(providerId, modelName);
   }
 
   /** Rename a target's model name (preserves interval and enabled state) */
   renameTarget(providerId: string, oldModelName: string, newModelName: string): void {
-    if (!this.db) return;
     this.db
       .prepare('UPDATE monitor_targets SET model_name = ? WHERE provider_id = ? AND model_name = ?')
       .run(newModelName, providerId, oldModelName);
@@ -164,7 +149,6 @@ class MonitorConfigStore {
 
   /** Remove all targets for a given provider */
   removeTargetsByProvider(providerId: string): void {
-    if (!this.db) return;
     this.db.prepare('DELETE FROM monitor_targets WHERE provider_id = ?').run(providerId);
   }
 }

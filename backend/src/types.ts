@@ -1,3 +1,5 @@
+export const LEGACY_PROVIDER_IDS = ['openai', 'claude', 'gemini', 'zai'] as const;
+
 export interface ImageInput {
   type: 'url' | 'base64';
   url?: string;

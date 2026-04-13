@@ -1,35 +1,25 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { BenchmarkWorkflow, WorkflowTask } from '../types';
+import { BenchmarkWorkflow, WorkflowTask, LEGACY_PROVIDER_IDS } from '../types';
 import { workflowStore } from '../services/workflowStore';
 import { executeWorkflow, subscribeWorkflow, cancelWorkflow } from '../services/workflowEngine';
 import { workflowTemplates } from '../services/workflowTemplates';
 import { store } from '../services/store';
 import { providerStore } from '../services/providerStore';
+import { validate } from '../validation/middleware';
+import { CreateWorkflowSchema } from '../validation/schemas';
+import { toCsvRow } from '../utils/csv';
 
 const router = Router();
 
 // Create and start a workflow
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', validate(CreateWorkflowSchema), async (req: Request, res: Response) => {
   try {
     const { name, description, providers, apiKeys, tasks, options } = req.body;
 
-    if (!name) {
-      res.status(400).json({ error: 'Workflow name is required' });
-      return;
-    }
-    if (!providers || !providers.length) {
-      res.status(400).json({ error: 'At least one provider is required' });
-      return;
-    }
-    if (!tasks || !tasks.length) {
-      res.status(400).json({ error: 'At least one task is required' });
-      return;
-    }
-
-    const legacyProviders = ['openai', 'claude', 'gemini', 'zai'];
+    // Validate providers: accept both legacy IDs and configId:modelName format
     for (const p of providers) {
-      if (legacyProviders.includes(p)) continue;
+      if (LEGACY_PROVIDER_IDS.includes(p)) continue;
       if (p.includes(':')) continue;
       const providerConfig = providerStore.get(p);
       if (providerConfig) continue;
@@ -55,25 +45,36 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     // Build workflow tasks with IDs
-    const workflowTasks: WorkflowTask[] = tasks.map((t: any, index: number) => ({
-      id: `task_${uuidv4().slice(0, 8)}`,
-      name: t.name || `Task ${index + 1}`,
-      description: t.description,
-      order: index,
-      config: {
-        prompt: t.config.prompt || '',
-        systemPrompt: t.config.systemPrompt,
-        maxTokens: Math.min(t.config.maxTokens || 500, 32000),
-        concurrency: Math.min(t.config.concurrency || 1, 50),
-        iterations: Math.min(t.config.iterations || 5, 1000),
-        streaming: t.config.streaming ?? true,
-        warmupRuns: Math.min(t.config.warmupRuns || 0, 5),
-        requestInterval: Math.min(t.config.requestInterval || 0, 10000),
-        randomizeInterval: t.config.randomizeInterval ?? false,
-      },
-      providers: t.providers,
-      tags: t.tags,
-    }));
+    const workflowTasks: WorkflowTask[] = tasks.map(
+      (
+        t: {
+          name?: string;
+          description?: string;
+          config: Record<string, unknown>;
+          providers?: string[];
+          tags?: Record<string, string>;
+        },
+        index: number,
+      ) => ({
+        id: `task_${uuidv4().slice(0, 8)}`,
+        name: t.name || `Task ${index + 1}`,
+        description: t.description,
+        order: index,
+        config: {
+          prompt: (t.config.prompt as string) || '',
+          systemPrompt: t.config.systemPrompt as string | undefined,
+          maxTokens: Math.min((t.config.maxTokens as number) || 500, 32000),
+          concurrency: Math.min((t.config.concurrency as number) || 1, 50),
+          iterations: Math.min((t.config.iterations as number) || 5, 1000),
+          streaming: (t.config.streaming as boolean) ?? true,
+          warmupRuns: Math.min((t.config.warmupRuns as number) || 0, 5),
+          requestInterval: Math.min((t.config.requestInterval as number) || 0, 10000),
+          randomizeInterval: (t.config.randomizeInterval as boolean) ?? false,
+        },
+        providers: t.providers,
+        tags: t.tags,
+      }),
+    );
 
     const workflow: BenchmarkWorkflow = {
       id: `wf_${uuidv4().slice(0, 8)}`,
@@ -103,7 +104,11 @@ router.post('/', async (req: Request, res: Response) => {
     // Start execution asynchronously
     executeWorkflow(workflow, apiKeys || {}).catch((err) => {
       console.error('Workflow execution error:', err);
-      workflowStore.update(workflow.id, { status: 'failed' });
+      // Re-read current state to avoid overwriting a cancellation
+      const current = workflowStore.get(workflow.id);
+      if (current && current.status === 'running') {
+        workflowStore.update(workflow.id, { status: 'failed', completedAt: new Date().toISOString() });
+      }
     });
 
     res.status(201).json({
@@ -234,7 +239,7 @@ router.get('/:id/export', (req: Request, res: Response) => {
       Object.values(run.results).forEach((providerResult) => {
         providerResult.iterations.forEach((iter) => {
           csvLines.push(
-            [
+            toCsvRow([
               task?.name || '',
               task?.order ?? '',
               providerResult.provider,
@@ -249,7 +254,7 @@ router.get('/:id/export', (req: Request, res: Response) => {
               iter.estimatedCost,
               iter.success,
               iter.error || '',
-            ].join(','),
+            ]),
           );
         });
       });
@@ -260,7 +265,7 @@ router.get('/:id/export', (req: Request, res: Response) => {
     res.send(csvLines.join('\n'));
   } else {
     // JSON: include workflow + all related benchmark runs
-    const runs: Record<string, any> = {};
+    const runs: Record<string, unknown> = {};
     for (const taskResult of workflow.taskResults) {
       if (taskResult.benchmarkRunId) {
         const run = store.get(taskResult.benchmarkRunId);

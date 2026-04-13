@@ -1,8 +1,5 @@
-import Database from 'better-sqlite3';
-import * as path from 'path';
 import { randomUUID } from 'crypto';
-
-const DB_PATH = path.join(__dirname, '../../data/benchmarks.db');
+import { getDb } from './database';
 
 export interface PlaygroundHistoryEntry {
   id: string;
@@ -16,7 +13,7 @@ export interface PlaygroundHistoryEntry {
   enableThinking: boolean;
   responseText?: string;
   reasoningText?: string;
-  metrics?: Record<string, any>;
+  metrics?: Record<string, unknown>;
   error?: string;
   createdAt: string;
 }
@@ -34,7 +31,7 @@ export interface PlaygroundHistoryListItem {
 
 class PlaygroundHistoryStore {
   private entries: Map<string, PlaygroundHistoryEntry> = new Map();
-  private db: Database.Database | null = null;
+  private db = getDb();
 
   constructor() {
     this.initDatabase();
@@ -42,48 +39,50 @@ class PlaygroundHistoryStore {
   }
 
   private initDatabase() {
-    try {
-      const fs = require('fs');
-      const dir = path.dirname(DB_PATH);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS playground_history (
+        id TEXT PRIMARY KEY,
+        provider_id TEXT NOT NULL,
+        provider_name TEXT NOT NULL,
+        model_name TEXT NOT NULL,
+        prompt TEXT NOT NULL,
+        system_prompt TEXT,
+        max_tokens INTEGER NOT NULL,
+        use_streaming INTEGER NOT NULL DEFAULT 1,
+        enable_thinking INTEGER NOT NULL DEFAULT 0,
+        response_text TEXT,
+        reasoning_text TEXT,
+        metrics TEXT,
+        error TEXT,
+        created_at TEXT NOT NULL
+      )
+    `);
 
-      this.db = new Database(DB_PATH);
+    this.db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_ph_created_at ON playground_history(created_at DESC);
+    `);
 
-      this.db.exec(`
-        CREATE TABLE IF NOT EXISTS playground_history (
-          id TEXT PRIMARY KEY,
-          provider_id TEXT NOT NULL,
-          provider_name TEXT NOT NULL,
-          model_name TEXT NOT NULL,
-          prompt TEXT NOT NULL,
-          system_prompt TEXT,
-          max_tokens INTEGER NOT NULL,
-          use_streaming INTEGER NOT NULL DEFAULT 1,
-          enable_thinking INTEGER NOT NULL DEFAULT 0,
-          response_text TEXT,
-          reasoning_text TEXT,
-          metrics TEXT,
-          error TEXT,
-          created_at TEXT NOT NULL
-        )
-      `);
-
-      this.db.exec(`
-        CREATE INDEX IF NOT EXISTS idx_ph_created_at ON playground_history(created_at DESC);
-      `);
-
-      console.log('Playground history store initialized');
-    } catch (err) {
-      console.error('Failed to initialize playground history store:', err);
-    }
+    console.log('Playground history store initialized');
   }
 
   private load() {
-    if (!this.db) return;
     try {
-      const rows = this.db.prepare('SELECT * FROM playground_history ORDER BY created_at DESC').all() as any[];
+      const rows = this.db.prepare('SELECT * FROM playground_history ORDER BY created_at DESC').all() as Array<{
+        id: string;
+        provider_id: string;
+        provider_name: string;
+        model_name: string;
+        prompt: string;
+        system_prompt: string | null;
+        max_tokens: number;
+        use_streaming: number;
+        enable_thinking: number;
+        response_text: string | null;
+        reasoning_text: string | null;
+        metrics: string | null;
+        error: string | null;
+        created_at: string;
+      }>;
       for (const row of rows) {
         const entry: PlaygroundHistoryEntry = {
           id: row.id,
@@ -115,37 +114,33 @@ class PlaygroundHistoryStore {
       id: randomUUID(),
       createdAt: new Date().toISOString(),
     };
-    this.entries.set(entry.id, entry);
 
-    if (this.db) {
-      try {
-        this.db
-          .prepare(
-            `
-          INSERT INTO playground_history (id, provider_id, provider_name, model_name, prompt, system_prompt, max_tokens, use_streaming, enable_thinking, response_text, reasoning_text, metrics, error, created_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `,
-          )
-          .run(
-            entry.id,
-            entry.providerId,
-            entry.providerName,
-            entry.modelName,
-            entry.prompt,
-            entry.systemPrompt || null,
-            entry.maxTokens,
-            entry.useStreaming ? 1 : 0,
-            entry.enableThinking ? 1 : 0,
-            entry.responseText || null,
-            entry.reasoningText || null,
-            entry.metrics ? JSON.stringify(entry.metrics) : null,
-            entry.error || null,
-            entry.createdAt,
-          );
-      } catch (err) {
-        console.error('Failed to save playground history entry:', err);
-      }
-    }
+    // Write to SQLite first, then update Map on success
+    this.db
+      .prepare(
+        `
+        INSERT INTO playground_history (id, provider_id, provider_name, model_name, prompt, system_prompt, max_tokens, use_streaming, enable_thinking, response_text, reasoning_text, metrics, error, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      )
+      .run(
+        entry.id,
+        entry.providerId,
+        entry.providerName,
+        entry.modelName,
+        entry.prompt,
+        entry.systemPrompt || null,
+        entry.maxTokens,
+        entry.useStreaming ? 1 : 0,
+        entry.enableThinking ? 1 : 0,
+        entry.responseText || null,
+        entry.reasoningText || null,
+        entry.metrics ? JSON.stringify(entry.metrics) : null,
+        entry.error || null,
+        entry.createdAt,
+      );
+
+    this.entries.set(entry.id, entry);
     return entry;
   }
 
@@ -163,32 +158,21 @@ class PlaygroundHistoryStore {
         modelName: e.modelName,
         promptSnippet: e.prompt.slice(0, 80),
         createdAt: e.createdAt,
-        responseTime: e.metrics?.responseTime,
+        responseTime: e.metrics?.responseTime as number | undefined,
         error: e.error,
       }));
   }
 
   delete(id: string): boolean {
-    const existed = this.entries.delete(id);
-    if (this.db) {
-      try {
-        this.db.prepare('DELETE FROM playground_history WHERE id = ?').run(id);
-      } catch {
-        /* ignore */
-      }
-    }
+    const existed = this.entries.has(id);
+    this.db.prepare('DELETE FROM playground_history WHERE id = ?').run(id);
+    this.entries.delete(id);
     return existed;
   }
 
   deleteAll(): void {
+    this.db.prepare('DELETE FROM playground_history').run();
     this.entries.clear();
-    if (this.db) {
-      try {
-        this.db.prepare('DELETE FROM playground_history').run();
-      } catch {
-        /* ignore */
-      }
-    }
   }
 }
 

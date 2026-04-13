@@ -64,7 +64,8 @@ export function useBenchmark(): UseBenchmarkReturn {
         const { id } = await res.json();
 
         // Connect to SSE for real-time updates
-        const eventSource = new EventSource(sseUrl(`/api/benchmarks/${id}/stream`));
+        const url = await sseUrl(`/api/benchmarks/${id}/stream`);
+        const eventSource = new EventSource(url);
         eventSourceRef.current = eventSource;
 
         eventSource.onmessage = (event) => {
@@ -105,8 +106,9 @@ export function useBenchmark(): UseBenchmarkReturn {
     [fetchBenchmark, fetchBenchmarks],
   );
 
-  const exportBenchmark = useCallback((id: string, format: 'json' | 'csv') => {
-    window.open(downloadUrl(`/api/benchmarks/${id}/export?format=${format}`), '_blank');
+  const exportBenchmark = useCallback(async (id: string, format: 'json' | 'csv') => {
+    const url = await downloadUrl(`/api/benchmarks/${id}/export?format=${format}`);
+    window.open(url, '_blank');
   }, []);
 
   const cancelBenchmark = useCallback(

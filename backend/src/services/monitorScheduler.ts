@@ -118,11 +118,16 @@ async function runCheck(forceAll = false) {
   }
 }
 
+let cleanupTask: ScheduledTask | null = null;
+
 export function startScheduler() {
   if (scheduledTask) return;
 
   // Backfill health_status for old records that defaulted to 'down'
   monitorStore.backfillHealthStatus(classifyHealth);
+
+  // Run initial cleanup of old pings (older than 7 days)
+  monitorStore.cleanup(7);
 
   // Check every minute to see which targets need probing
   scheduledTask = cron.schedule('* * * * *', () => {
@@ -131,7 +136,14 @@ export function startScheduler() {
     });
   });
 
-  console.log('[Monitor] Scheduler started (checks every minute, probes based on per-target interval)');
+  // Daily cleanup at 3am — remove pings older than 7 days
+  cleanupTask = cron.schedule('0 3 * * *', () => {
+    monitorStore.cleanup(7);
+  });
+
+  console.log(
+    '[Monitor] Scheduler started (checks every minute, probes based on per-target interval, daily cleanup at 3am)',
+  );
 
   // Initial check after startup
   setTimeout(() => {
@@ -150,8 +162,12 @@ export function stopScheduler() {
   if (scheduledTask) {
     scheduledTask.stop();
     scheduledTask = null;
-    console.log('[Monitor] Scheduler stopped');
   }
+  if (cleanupTask) {
+    cleanupTask.stop();
+    cleanupTask = null;
+  }
+  console.log('[Monitor] Scheduler stopped');
 }
 
 export function triggerManualCheck() {

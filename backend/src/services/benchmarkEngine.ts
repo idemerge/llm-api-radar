@@ -9,6 +9,7 @@ import {
   ProviderResult,
   ProviderSummary,
   SSEEvent,
+  LEGACY_PROVIDER_IDS,
 } from '../types';
 import { store } from './store';
 import { testCapabilities } from './capabilityTester';
@@ -457,30 +458,44 @@ export async function startBenchmark(
     }
   });
 
-  Promise.all(providerPromises).then(async () => {
-    if (isCancelled(id)) {
-      run.status = 'failed';
+  Promise.all(providerPromises)
+    .then(async () => {
+      if (isCancelled(id)) {
+        run.status = 'failed';
+        run.completedAt = new Date().toISOString();
+        store.update(id, run);
+        emit(id, { type: 'done', data: { id, cancelled: true } });
+        cancelledRuns.delete(id);
+        return;
+      }
+
+      try {
+        const testProvider = providerNames.find((name) => apiKeys[name]);
+        if (testProvider) {
+          run.capabilityTests = await testCapabilities(testProvider, apiKeys[testProvider]);
+        }
+      } catch (err) {
+        console.error('Capability tests failed:', err);
+      }
+
+      run.status = 'completed';
       run.completedAt = new Date().toISOString();
       store.update(id, run);
-      emit(id, { type: 'done', data: { id, cancelled: true } });
       cancelledRuns.delete(id);
-      return;
-    }
-
-    try {
-      const testProvider = providerNames.find((name) => apiKeys[name]);
-      if (testProvider) {
-        run.capabilityTests = await testCapabilities(testProvider, apiKeys[testProvider]);
+      emit(id, { type: 'done', data: { id } });
+    })
+    .catch((err) => {
+      console.error('Benchmark completion error:', err);
+      cancelledRuns.delete(id);
+      run.status = 'failed';
+      run.completedAt = new Date().toISOString();
+      try {
+        store.update(id, run);
+      } catch (storeErr) {
+        console.error('Failed to update failed benchmark:', storeErr);
       }
-    } catch (err) {
-      console.error('Capability tests failed:', err);
-    }
-
-    run.status = 'completed';
-    run.completedAt = new Date().toISOString();
-    store.update(id, run);
-    emit(id, { type: 'done', data: { id } });
-  });
+      emit(id, { type: 'done', data: { id, error: 'Internal error' } });
+    });
 
   return run;
 }

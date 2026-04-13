@@ -139,14 +139,18 @@ function App() {
   }, [authed, fetchWorkflows, fetchTemplates, reconnectActiveWorkflow]);
 
   // Reload workflows when navigating to history page; auto-refresh every 30s if any workflow is running
+  const hasRunningRef = useRef(false);
+  useEffect(() => {
+    hasRunningRef.current = workflows.some((w) => w.status === 'running');
+  }, [workflows]);
+
   useEffect(() => {
     if (!authed || activePage !== 'history') return;
     fetchWorkflows();
-    const hasRunning = workflows.some((w) => w.status === 'running');
-    if (!hasRunning) return;
+    if (!hasRunningRef.current) return;
     const timer = setInterval(() => fetchWorkflows(), 30000);
     return () => clearInterval(timer);
-  }, [authed, activePage, fetchWorkflows, workflows]);
+  }, [authed, activePage, fetchWorkflows]);
 
   useEffect(() => {
     if (isWorkflowRunning && !prevRunningRef.current) {
@@ -417,8 +421,10 @@ function App() {
               >
                 <MenuOutlined style={{ fontSize: 18 }} />
               </button>
-              <h1 className="app-topbar-title">{pageConfig[activePage].title}</h1>
-              <span className="text-[12px] text-text-tertiary hidden sm:inline">{pageConfig[activePage].subtitle}</span>
+              <h1 className="app-topbar-title">{(pageConfig[activePage] || { title: 'Dashboard' }).title}</h1>
+              <span className="text-[12px] text-text-tertiary hidden sm:inline">
+                {(pageConfig[activePage] || { subtitle: '' }).subtitle}
+              </span>
             </div>
             <div className="flex items-center gap-3" />
           </Layout.Header>

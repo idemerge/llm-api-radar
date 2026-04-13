@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { BenchmarkWorkflow, WorkflowTemplate } from '../types';
 import { apiFetch, sseUrl, downloadUrl } from '../services/api';
 
@@ -93,7 +93,7 @@ export function useWorkflow(): UseWorkflowReturn {
 
   // Shared SSE connection logic
   const connectSSE = useCallback(
-    (id: string) => {
+    async (id: string) => {
       // Close existing connection
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
@@ -102,7 +102,8 @@ export function useWorkflow(): UseWorkflowReturn {
       activeRunIdRef.current = id;
       setIsRunning(true);
 
-      const eventSource = new EventSource(sseUrl(`/api/workflows/${id}/stream`));
+      const url = await sseUrl(`/api/workflows/${id}/stream`);
+      const eventSource = new EventSource(url);
       eventSourceRef.current = eventSource;
 
       eventSource.onmessage = (event) => {
@@ -206,8 +207,9 @@ export function useWorkflow(): UseWorkflowReturn {
     [fetchWorkflow],
   );
 
-  const exportWorkflow = useCallback((id: string, format: 'json' | 'csv') => {
-    window.open(downloadUrl(`/api/workflows/${id}/export?format=${format}`), '_blank');
+  const exportWorkflow = useCallback(async (id: string, format: 'json' | 'csv') => {
+    const url = await downloadUrl(`/api/workflows/${id}/export?format=${format}`);
+    window.open(url, '_blank');
   }, []);
 
   const deleteWorkflow = useCallback(
@@ -250,6 +252,16 @@ export function useWorkflow(): UseWorkflowReturn {
   );
 
   const clearError = useCallback(() => setError(null), []);
+
+  // Clean up EventSource on unmount
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+    };
+  }, []);
 
   return {
     workflows,

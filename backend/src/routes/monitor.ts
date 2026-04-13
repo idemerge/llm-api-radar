@@ -2,6 +2,8 @@ import { Router, Request, Response } from 'express';
 import { monitorStore } from '../services/monitorStore';
 import { monitorConfigStore, MonitorTarget, MonitorGlobalConfig } from '../services/monitorConfigStore';
 import { triggerManualCheck, isCheckRunning } from '../services/monitorScheduler';
+import { validate } from '../validation/middleware';
+import { MonitorConfigSchema, MonitorTargetSchema, MonitorTargetsArraySchema } from '../validation/schemas';
 
 const router = Router();
 
@@ -12,7 +14,7 @@ router.get('/config', (_req: Request, res: Response) => {
 });
 
 // PUT /api/monitor/config — Update global config
-router.put('/config', (req: Request, res: Response) => {
+router.put('/config', validate(MonitorConfigSchema), (req: Request, res: Response) => {
   const current = monitorConfigStore.getConfig();
   const body = req.body;
 
@@ -23,7 +25,7 @@ router.put('/config', (req: Request, res: Response) => {
       : current.defaultIntervalMinutes;
 
   // Validate health thresholds — ensure positive integers
-  const ht = current.healthThresholds;
+  const ht = { ...current.healthThresholds };
   if (body.healthThresholds && typeof body.healthThresholds === 'object') {
     const bht = body.healthThresholds;
     if (typeof bht.tpsSlowThreshold === 'number' && bht.tpsSlowThreshold > 0)
@@ -50,21 +52,14 @@ router.get('/targets', (_req: Request, res: Response) => {
 });
 
 // PUT /api/monitor/targets — Replace all monitored targets
-router.put('/targets', (req: Request, res: Response) => {
-  const targets: MonitorTarget[] = req.body;
-  if (!Array.isArray(targets)) {
-    return res.status(400).json({ error: 'Expected array of targets' });
-  }
-  monitorConfigStore.setTargets(targets);
+router.put('/targets', validate(MonitorTargetsArraySchema), (req: Request, res: Response) => {
+  monitorConfigStore.setTargets(req.body as MonitorTarget[]);
   res.json({ success: true });
 });
 
 // POST /api/monitor/targets — Add a single target
-router.post('/targets', (req: Request, res: Response) => {
+router.post('/targets', validate(MonitorTargetSchema), (req: Request, res: Response) => {
   const { providerId, modelName, providerName, intervalMinutes } = req.body;
-  if (!providerId || !modelName || !providerName) {
-    return res.status(400).json({ error: 'providerId, modelName, providerName required' });
-  }
   monitorConfigStore.addTarget({ providerId, modelName, providerName, intervalMinutes: intervalMinutes || 0 });
   res.json({ success: true });
 });
@@ -91,15 +86,16 @@ router.get('/history', (req: Request, res: Response) => {
 // POST /api/monitor/run — Manual trigger
 router.post('/run', async (_req: Request, res: Response) => {
   if (isCheckRunning()) {
-    return res.json({ message: 'Check already in progress' });
+    return res.status(409).json({ message: 'Check already in progress' });
   }
 
   try {
     await triggerManualCheck();
     const latest = monitorStore.getLatest();
     res.json({ success: true, results: latest });
-  } catch (err: any) {
-    res.json({ success: false, error: err.message });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Manual check failed';
+    res.status(500).json({ success: false, error: message });
   }
 });
 

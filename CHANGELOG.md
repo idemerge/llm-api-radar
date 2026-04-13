@@ -4,6 +4,53 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0] - 2026-04-13
+
+### Security
+- Eliminated all hardcoded secrets: JWT secret, encryption key, and salt are now auto-generated and persisted to `data/` directory
+- Force password change on first login with default credentials (`changeme`)
+- Restricted CORS to configured origin (default: same-origin only)
+- Added login rate limiting (5 attempts per 5 minutes per IP)
+- Added Helmet security headers with Content Security Policy
+- Moved auth verify and change-password endpoints behind authentication middleware
+- Replaced JWT-in-query-string with short-lived one-time tokens for SSE and download URLs
+- New password must differ from current password when changing
+- JWT token storage moved from `localStorage` to `sessionStorage`
+
+### Added
+- Zod schema validation for all API request bodies with descriptive error messages
+- `ProviderConfigUpdateSchema` for partial provider updates
+- `POST /api/auth/change-password` endpoint
+- `POST /api/auth/sse-token` endpoint for one-time token exchange
+- Shared SQLite connection singleton with WAL mode and busy timeout
+- CSV escaping utility to prevent injection in exports
+- Express Request type augmentation (`req.user`)
+- 5 new test suites: encryption, auth middleware, validation schemas, benchmark engine, store sync (65 backend tests total)
+
+### Changed
+- SQLite-first write pattern across all stores: DB writes before in-memory Map updates to prevent inconsistency on failures
+- Encryption migration runs synchronously before server startup to prevent race conditions
+- Monitor cleanup runs daily at 3am with 7-day retention
+- `cancelledRuns` cleanup in benchmark engine on both success and error paths
+- PRAGMA `table_info` migration pattern replaces try/catch `ALTER TABLE`
+- `apiKeys` field in benchmark and workflow schemas is now optional with empty default
+- `supportsVision`/`supportsTools` use nullish coalescing (`??`) instead of logical OR
+
+### Fixed
+- Encryption migration race condition — server could accept requests before migration completed
+- `store.delete()` violated SQLite-first pattern (deleted Map before DB)
+- `PUT /api/providers/:id` had no input validation
+- Monitor error responses returned HTTP 200 instead of 500
+- Provider test endpoints could crash the server on connection failure (now returns 502)
+- Workflow error recovery could overwrite cancellation status
+- Frontend infinite re-render loop on History page with running workflows
+- EventSource not cleaned up on component unmount in useWorkflow hook
+- Missing `pageConfig` fallback for unknown routes
+- Redundant `method`/`action` attributes on login form
+
+### Removed
+- Dead code: `backend/src/services/store-old.ts`
+
 ## [1.3.3] - 2026-04-13
 
 ### Changed

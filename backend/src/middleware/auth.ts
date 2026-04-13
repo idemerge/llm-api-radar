@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'llm-benchmark-jwt-default-secret-key';
+import { getJwtSecret } from '../utils/secrets';
+import { consumeOneTimeToken } from '../routes/auth';
 
 export interface AuthPayload {
   sub: string;
@@ -9,25 +9,38 @@ export interface AuthPayload {
 }
 
 export function authMiddleware(req: Request, res: Response, next: NextFunction): void {
-  // Try Authorization header first, then query parameter (for SSE and file downloads)
+  // Try Authorization header first
   let token: string | undefined;
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     token = authHeader.split(' ')[1];
-  } else if (req.query.token && typeof req.query.token === 'string') {
-    token = req.query.token;
   }
 
-  if (!token) {
-    res.status(401).json({ error: 'Authentication required' });
+  if (token) {
+    // Standard JWT auth via header
+    try {
+      const decoded = jwt.verify(token, getJwtSecret()) as AuthPayload;
+      req.user = decoded;
+      next();
+      return;
+    } catch {
+      res.status(401).json({ error: 'Invalid or expired token' });
+      return;
+    }
+  }
+
+  // Try one-time token via query parameter (for SSE and downloads)
+  if (req.query.token && typeof req.query.token === 'string') {
+    const ottPayload = consumeOneTimeToken(req.query.token);
+    if (ottPayload) {
+      req.user = ottPayload;
+      next();
+      return;
+    }
+
+    res.status(401).json({ error: 'Invalid or expired token' });
     return;
   }
 
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as AuthPayload;
-    (req as any).user = decoded;
-    next();
-  } catch {
-    res.status(401).json({ error: 'Invalid or expired token' });
-  }
+  res.status(401).json({ error: 'Authentication required' });
 }

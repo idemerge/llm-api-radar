@@ -2,12 +2,12 @@ import { Router, Request, Response } from 'express';
 import { providerStore } from '../services/providerStore';
 import { monitorConfigStore } from '../services/monitorConfigStore';
 import { testProviderConnection } from '../providers/adapter';
-import { ProviderConfigInput, ProviderFormat } from '../types';
+import { ProviderConfigInput } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { validate } from '../validation/middleware';
+import { ProviderConfigInputSchema, ProviderConfigUpdateSchema, TestConnectionSchema } from '../validation/schemas';
 
 const router = Router();
-
-const VALID_FORMATS: ProviderFormat[] = ['openai', 'anthropic', 'gemini', 'custom'];
 
 // GET /api/providers - List all providers (masked keys)
 router.get('/', (_req: Request, res: Response) => {
@@ -16,30 +16,8 @@ router.get('/', (_req: Request, res: Response) => {
 });
 
 // POST /api/providers - Create provider
-router.post('/', (req: Request, res: Response) => {
+router.post('/', validate(ProviderConfigInputSchema), (req: Request, res: Response) => {
   const { name, endpoint, apiKey, format, models } = req.body as ProviderConfigInput;
-
-  if (!name?.trim()) {
-    return res.status(400).json({ error: 'Name is required' });
-  }
-  if (!endpoint?.trim()) {
-    return res.status(400).json({ error: 'Endpoint URL is required' });
-  }
-  if (!apiKey?.trim()) {
-    return res.status(400).json({ error: 'API Key is required' });
-  }
-  if (!format || !VALID_FORMATS.includes(format)) {
-    return res.status(400).json({ error: `Format must be one of: ${VALID_FORMATS.join(', ')}` });
-  }
-  if (!models || !Array.isArray(models) || models.length === 0) {
-    return res.status(400).json({ error: 'At least one model is required' });
-  }
-
-  for (const model of models) {
-    if (!model.name?.trim()) {
-      return res.status(400).json({ error: 'Each model must have a name' });
-    }
-  }
 
   const input: ProviderConfigInput = {
     name: name.trim(),
@@ -63,21 +41,22 @@ router.post('/', (req: Request, res: Response) => {
 });
 
 // POST /api/providers/test-connection - Test with raw config (before saving)
-router.post('/test-connection', async (req: Request, res: Response) => {
-  const { endpoint, apiKey, format, modelName } = req.body;
+router.post('/test-connection', validate(TestConnectionSchema), async (req: Request, res: Response) => {
+  try {
+    const { endpoint, apiKey, format, modelName } = req.body;
 
-  if (!endpoint || !apiKey || !format || !modelName) {
-    return res.status(400).json({ error: 'endpoint, apiKey, format, and modelName are required' });
+    const result = await testProviderConnection({
+      endpoint: endpoint.trim().replace(/\/+$/, ''),
+      apiKey: apiKey.trim(),
+      format,
+      modelName: modelName.trim(),
+    });
+
+    res.json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Connection test failed';
+    res.status(502).json({ error: 'Connection test failed', details: message });
   }
-
-  const result = await testProviderConnection({
-    endpoint: endpoint.trim().replace(/\/+$/, ''),
-    apiKey: apiKey.trim(),
-    format,
-    modelName: modelName.trim(),
-  });
-
-  res.json(result);
 });
 
 // GET /api/providers/:id - Get single provider
@@ -90,7 +69,7 @@ router.get('/:id', (req: Request, res: Response) => {
 });
 
 // PUT /api/providers/:id - Update provider
-router.put('/:id', (req: Request, res: Response) => {
+router.put('/:id', validate(ProviderConfigUpdateSchema), (req: Request, res: Response) => {
   const existing = providerStore.get(req.params.id);
   if (!existing) {
     return res.status(404).json({ error: 'Provider not found' });
@@ -98,25 +77,21 @@ router.put('/:id', (req: Request, res: Response) => {
 
   const { name, endpoint, apiKey, format, models } = req.body;
 
-  if (format && !VALID_FORMATS.includes(format)) {
-    return res.status(400).json({ error: `Format must be one of: ${VALID_FORMATS.join(', ')}` });
-  }
-
   const input: Partial<ProviderConfigInput> = {};
   if (name?.trim()) input.name = name.trim();
   if (endpoint?.trim()) input.endpoint = endpoint.trim().replace(/\/+$/, '');
   if (apiKey?.trim()) input.apiKey = apiKey.trim();
   if (format) input.format = format;
   if (models && Array.isArray(models) && models.length > 0) {
-    input.models = models.map((m: any) => ({
-      id: m.id || uuidv4(),
-      name: m.name?.trim() || '',
-      displayName: m.displayName?.trim() || undefined,
-      contextSize: m.contextSize || 4096,
-      supportsVision: m.supportsVision || false,
-      supportsTools: m.supportsTools || false,
-      supportsStreaming: m.supportsStreaming ?? true,
-      isActive: m.isActive ?? true,
+    input.models = models.map((m: Record<string, unknown>) => ({
+      id: (m.id as string) || uuidv4(),
+      name: ((m.name as string) || '').trim(),
+      displayName: (m.displayName as string)?.trim() || undefined,
+      contextSize: (m.contextSize as number) || 4096,
+      supportsVision: (m.supportsVision as boolean) ?? false,
+      supportsTools: (m.supportsTools as boolean) ?? false,
+      supportsStreaming: (m.supportsStreaming as boolean) ?? true,
+      isActive: (m.isActive as boolean) ?? true,
     }));
   }
 
@@ -131,10 +106,8 @@ router.put('/:id', (req: Request, res: Response) => {
   for (const [id, oldName] of oldModelsById) {
     const newName = newModelsById.get(id);
     if (!newName) {
-      // Model was removed
       monitorConfigStore.removeTarget(req.params.id, oldName);
     } else if (newName !== oldName) {
-      // Model was renamed
       monitorConfigStore.renameTarget(req.params.id, oldName, newName);
     }
   }
@@ -148,7 +121,6 @@ router.delete('/:id', (req: Request, res: Response) => {
   if (!result) {
     return res.status(404).json({ error: 'Provider not found' });
   }
-  // Clean up monitor targets for this provider
   monitorConfigStore.removeTargetsByProvider(req.params.id);
   res.json({ success: true });
 });
@@ -171,14 +143,19 @@ router.post('/:id/test', async (req: Request, res: Response) => {
     return res.status(500).json({ error: 'Failed to decrypt API key' });
   }
 
-  const result = await testProviderConnection({
-    endpoint: provider.endpoint,
-    apiKey,
-    format: provider.format,
-    modelName,
-  });
+  try {
+    const result = await testProviderConnection({
+      endpoint: provider.endpoint,
+      apiKey,
+      format: provider.format,
+      modelName,
+    });
 
-  res.json(result);
+    res.json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Connection test failed';
+    res.status(502).json({ error: 'Connection test failed', details: message });
+  }
 });
 
 export default router;
