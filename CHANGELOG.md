@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.3.3] - 2026-04-13
+
+### Changed
+- Merged Docker publish into CI pipeline — Docker image build now requires all quality checks to pass first
+- CI workflow also triggers on version tags so quality gate runs before Docker push
+
+### Fixed
+- CI lint warnings: cleaned up unused imports/variables across frontend and backend
+- Upgraded GitHub Actions to v5 (Node.js 24 compatible)
+- Root docs (CHANGELOG, README, docker-compose) excluded from Prettier formatting
+- lint-staged glob expanded to cover config `.js` files
+
 ## [1.3.2] - 2026-04-13
 
 ### Added

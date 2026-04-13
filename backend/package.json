@@ -1,6 +1,6 @@
 {
   "name": "llm-benchmark-backend",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "LLM API Radar - Backend",
   "main": "dist/index.js",
   "scripts": {
