@@ -8,10 +8,10 @@
     "prettier": "^3.8.2"
   },
   "lint-staged": {
-    "frontend/src/**/*.{ts,tsx}": [
+    "frontend/**/*.{ts,tsx,js,jsx}": [
       "prettier --write"
     ],
-    "backend/src/**/*.ts": [
+    "backend/**/*.{ts,js}": [
       "prettier --write"
     ],
     "*.{json,md,yml,yaml}": "prettier --write"

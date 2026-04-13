@@ -43,11 +43,18 @@ jobs:
         run: cd backend && npm run lint
 
       # Formatting
-      - name: Format check frontend
-        run: cd frontend && npx prettier --check .
-
-      - name: Format check backend
-        run: cd backend && npx prettier --check .
+      - name: Format check
+        run: |
+          UNFORMATTED=$(npx -y prettier --list-different "frontend/**/*.{ts,tsx,js,jsx,json}" "backend/**/*.{ts,js,json}" "*.{json,md,yml,yaml}" 2>/dev/null || true)
+          if [ -n "$UNFORMATTED" ]; then
+            echo "::error::The following files are not formatted. Run 'npx prettier --write .' locally and commit."
+            echo ""
+            echo "$UNFORMATTED"
+            echo ""
+            echo "Tip: Install husky (npm install) to auto-format on commit."
+            exit 1
+          fi
+          echo "All files formatted correctly."
 
       # Tests
       - name: Test frontend
