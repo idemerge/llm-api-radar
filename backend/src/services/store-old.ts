@@ -50,7 +50,7 @@ class BenchmarkStore {
 
   getAll(): BenchmarkRun[] {
     return Array.from(this.runs.values()).sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
   }
 

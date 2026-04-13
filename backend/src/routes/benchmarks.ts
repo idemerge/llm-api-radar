@@ -161,23 +161,17 @@ router.get('/:id/export', (req: Request, res: Response) => {
             iter.success,
             iter.error || '',
             iter.errorCategory || '',
-          ].join(',')
+          ].join(','),
         );
       });
     });
 
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename=benchmark-${run.id}.csv`
-    );
+    res.setHeader('Content-Disposition', `attachment; filename=benchmark-${run.id}.csv`);
     res.send(csvLines.join('\n'));
   } else {
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename=benchmark-${run.id}.json`
-    );
+    res.setHeader('Content-Disposition', `attachment; filename=benchmark-${run.id}.json`);
     res.json(run);
   }
 });

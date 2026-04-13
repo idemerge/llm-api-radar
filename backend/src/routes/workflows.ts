@@ -44,7 +44,7 @@ router.post('/', async (req: Request, res: Response) => {
         const [configId, modelName] = p.split(':', 2);
         const config = providerStore.get(configId);
         if (config) {
-          const modelCfg = config.models.find(m => m.name === modelName || m.id === modelName);
+          const modelCfg = config.models.find((m) => m.name === modelName || m.id === modelName);
           providerLabels[p] = `${config.name}/${modelCfg?.displayName || modelCfg?.name || modelName}`;
         } else {
           providerLabels[p] = modelName;
@@ -128,7 +128,7 @@ router.get('/', (_req: Request, res: Response) => {
 
 // Get the currently running workflow (if any)
 router.get('/active', (_req: Request, res: Response) => {
-  const running = workflowStore.getAll().find(w => w.status === 'running');
+  const running = workflowStore.getAll().find((w) => w.status === 'running');
   if (!running) {
     res.json(null);
     return;
@@ -172,7 +172,9 @@ router.get('/:id/stream', (req: Request, res: Response) => {
   res.write(`data: ${JSON.stringify({ type: 'workflow:init', data: safe })}\n\n`);
 
   if (workflow.status === 'completed' || workflow.status === 'failed' || workflow.status === 'cancelled') {
-    res.write(`data: ${JSON.stringify({ type: 'workflow:complete', data: { workflowId: workflow.id, summary: workflow.summary, status: workflow.status } })}\n\n`);
+    res.write(
+      `data: ${JSON.stringify({ type: 'workflow:complete', data: { workflowId: workflow.id, summary: workflow.summary, status: workflow.status } })}\n\n`,
+    );
     res.end();
     return;
   }
@@ -247,7 +249,7 @@ router.get('/:id/export', (req: Request, res: Response) => {
               iter.estimatedCost,
               iter.success,
               iter.error || '',
-            ].join(',')
+            ].join(','),
           );
         });
       });
@@ -292,7 +294,9 @@ router.post('/:id/duplicate', (req: Request, res: Response) => {
       id: `task_${uuidv4().slice(0, 8)}`,
       order: i,
     })),
-    options: workflow.options ? { ...workflow.options } : { executionMode: 'sequential', stopOnFailure: true, cooldownBetweenTasks: 3000 },
+    options: workflow.options
+      ? { ...workflow.options }
+      : { executionMode: 'sequential', stopOnFailure: true, cooldownBetweenTasks: 3000 },
     taskResults: workflow.tasks.map((t) => ({
       taskId: t.id,
       taskName: t.name,

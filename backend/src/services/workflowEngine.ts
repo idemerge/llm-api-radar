@@ -20,7 +20,7 @@ function resolveProviderInfo(providerKey: string): { providerName: string; model
     const [configId, modelId] = providerKey.split(':', 2);
     const config = providerStore.get(configId);
     if (config) {
-      const modelCfg = config.models.find(m => m.name === modelId);
+      const modelCfg = config.models.find((m) => m.name === modelId);
       return {
         providerName: config.name,
         modelName: modelCfg?.displayName || modelCfg?.name || modelId,
@@ -30,7 +30,10 @@ function resolveProviderInfo(providerKey: string): { providerName: string; model
   }
   // Legacy keys
   const legacy: Record<string, string> = {
-    openai: 'OpenAI', claude: 'Anthropic', gemini: 'Google', zai: 'ZhipuAI',
+    openai: 'OpenAI',
+    claude: 'Anthropic',
+    gemini: 'Google',
+    zai: 'ZhipuAI',
   };
   return { providerName: legacy[providerKey] || providerKey, modelName: providerKey };
 }
@@ -72,10 +75,7 @@ export function cancelWorkflow(workflowId: string): boolean {
   return true;
 }
 
-export async function executeWorkflow(
-  workflow: BenchmarkWorkflow,
-  apiKeys: Record<string, string>
-): Promise<void> {
+export async function executeWorkflow(workflow: BenchmarkWorkflow, apiKeys: Record<string, string>): Promise<void> {
   workflow.status = 'running';
   workflow.startedAt = new Date().toISOString();
   workflowStore.update(workflow.id, workflow);
@@ -323,20 +323,12 @@ async function generateSummary(workflow: BenchmarkWorkflow): Promise<WorkflowSum
     const metrics = summary.perTaskMetrics;
     if (metrics.length === 0) continue;
 
-    summary.avgResponseTime = Math.round(
-      metrics.reduce((a, m) => a + m.avgResponseTime, 0) / metrics.length
-    );
-    summary.avgFirstTokenLatency = Math.round(
-      metrics.reduce((a, m) => a + m.avgFirstTokenLatency, 0) / metrics.length
-    );
-    summary.avgTokensPerSecond = Math.round(
-      metrics.reduce((a, m) => a + m.avgTokensPerSecond, 0) / metrics.length
-    );
+    summary.avgResponseTime = Math.round(metrics.reduce((a, m) => a + m.avgResponseTime, 0) / metrics.length);
+    summary.avgFirstTokenLatency = Math.round(metrics.reduce((a, m) => a + m.avgFirstTokenLatency, 0) / metrics.length);
+    summary.avgTokensPerSecond = Math.round(metrics.reduce((a, m) => a + m.avgTokensPerSecond, 0) / metrics.length);
     summary.totalTokens = metrics.reduce((a, m) => a + m.promptTokens, 0);
     summary.totalCost = Number(metrics.reduce((a, m) => a + m.estimatedCost, 0).toFixed(6));
-    summary.overallSuccessRate = Number(
-      (metrics.reduce((a, m) => a + m.successRate, 0) / metrics.length).toFixed(4)
-    );
+    summary.overallSuccessRate = Number((metrics.reduce((a, m) => a + m.successRate, 0) / metrics.length).toFixed(4));
   }
 
   const startTime = workflow.startedAt ? new Date(workflow.startedAt).getTime() : Date.now();

@@ -90,10 +90,8 @@ class WorkflowStore {
       for (const [id, wf] of this.workflows) {
         if (wf.status === 'running') {
           // Also fix stale taskResult statuses
-          const fixedTaskResults = wf.taskResults.map(tr =>
-            tr.status === 'running' || tr.status === 'pending'
-              ? { ...tr, status: 'failed' as const }
-              : tr
+          const fixedTaskResults = wf.taskResults.map((tr) =>
+            tr.status === 'running' || tr.status === 'pending' ? { ...tr, status: 'failed' as const } : tr,
           );
           this.update(id, {
             status: 'failed',
@@ -116,25 +114,29 @@ class WorkflowStore {
 
     if (this.db) {
       try {
-        this.db.prepare(`
+        this.db
+          .prepare(
+            `
           INSERT INTO workflows (id, name, description, status, providers, provider_labels, tasks, options, task_results, summary, created_at, updated_at, started_at, completed_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-          workflow.id,
-          workflow.name,
-          workflow.description || null,
-          workflow.status,
-          JSON.stringify(workflow.providers),
-          workflow.providerLabels ? JSON.stringify(workflow.providerLabels) : null,
-          JSON.stringify(workflow.tasks),
-          JSON.stringify(workflow.options),
-          JSON.stringify(workflow.taskResults),
-          workflow.summary ? JSON.stringify(workflow.summary) : null,
-          workflow.createdAt,
-          workflow.updatedAt,
-          workflow.startedAt || null,
-          workflow.completedAt || null
-        );
+        `,
+          )
+          .run(
+            workflow.id,
+            workflow.name,
+            workflow.description || null,
+            workflow.status,
+            JSON.stringify(workflow.providers),
+            workflow.providerLabels ? JSON.stringify(workflow.providerLabels) : null,
+            JSON.stringify(workflow.tasks),
+            JSON.stringify(workflow.options),
+            JSON.stringify(workflow.taskResults),
+            workflow.summary ? JSON.stringify(workflow.summary) : null,
+            workflow.createdAt,
+            workflow.updatedAt,
+            workflow.startedAt || null,
+            workflow.completedAt || null,
+          );
       } catch (err) {
         console.error('Failed to save workflow to SQLite:', err);
       }
@@ -149,7 +151,7 @@ class WorkflowStore {
 
   getAll(): BenchmarkWorkflow[] {
     return Array.from(this.workflows.values()).sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
   }
 
@@ -162,27 +164,31 @@ class WorkflowStore {
 
     if (this.db) {
       try {
-        this.db.prepare(`
+        this.db
+          .prepare(
+            `
           UPDATE workflows
           SET name = ?, description = ?, status = ?, providers = ?, provider_labels = ?,
               tasks = ?, options = ?, task_results = ?, summary = ?, updated_at = ?,
               started_at = ?, completed_at = ?
           WHERE id = ?
-        `).run(
-          updated.name,
-          updated.description || null,
-          updated.status,
-          JSON.stringify(updated.providers),
-          updated.providerLabels ? JSON.stringify(updated.providerLabels) : null,
-          JSON.stringify(updated.tasks),
-          JSON.stringify(updated.options),
-          JSON.stringify(updated.taskResults),
-          updated.summary ? JSON.stringify(updated.summary) : null,
-          updated.updatedAt,
-          updated.startedAt || null,
-          updated.completedAt || null,
-          id
-        );
+        `,
+          )
+          .run(
+            updated.name,
+            updated.description || null,
+            updated.status,
+            JSON.stringify(updated.providers),
+            updated.providerLabels ? JSON.stringify(updated.providerLabels) : null,
+            JSON.stringify(updated.tasks),
+            JSON.stringify(updated.options),
+            JSON.stringify(updated.taskResults),
+            updated.summary ? JSON.stringify(updated.summary) : null,
+            updated.updatedAt,
+            updated.startedAt || null,
+            updated.completedAt || null,
+            id,
+          );
       } catch (err) {
         console.error('Failed to update workflow in SQLite:', err);
       }

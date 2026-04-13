@@ -1,18 +1,14 @@
 import { CapabilityTest } from '../types';
 
-export async function testCapabilities(
-  provider: string,
-  apiKey: string,
-  baseUrl?: string
-): Promise<CapabilityTest[]> {
+export async function testCapabilities(provider: string, apiKey: string, baseUrl?: string): Promise<CapabilityTest[]> {
   const results: CapabilityTest[] = [];
-  
+
   // Test vision capability
   results.push(await testVision(provider, apiKey, baseUrl));
-  
+
   // Test function calling
   results.push(await testFunctionCalling(provider, apiKey, baseUrl));
-  
+
   // Test JSON mode
   results.push(await testJsonMode(provider, apiKey, baseUrl));
 
@@ -25,30 +21,27 @@ export async function testCapabilities(
   return results;
 }
 
-async function testVision(
-  provider: string,
-  apiKey: string,
-  baseUrl?: string
-): Promise<CapabilityTest> {
+async function testVision(provider: string, apiKey: string, baseUrl?: string): Promise<CapabilityTest> {
   const test: CapabilityTest = {
     type: 'vision',
     name: 'Vision Capability',
     description: 'Can the model understand images?',
     passed: false,
   };
-  
+
   try {
     // Simple 1x1 red pixel image (base64)
-    const testImage = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==';
-    
+    const testImage =
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==';
+
     const url = baseUrl || 'http://REDACTED:4001/v1';
     const model = provider === 'zai' ? 'z-ai/glm-4.7' : 'default';
-    
+
     const response = await fetch(`${url}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model,
@@ -57,22 +50,22 @@ async function testVision(
             role: 'user',
             content: [
               { type: 'text', text: 'What color is this image?' },
-              { type: 'image_url', image_url: { url: `data:image/png;base64,${testImage}` } }
-            ]
-          }
+              { type: 'image_url', image_url: { url: `data:image/png;base64,${testImage}` } },
+            ],
+          },
         ],
         max_tokens: 50,
       }),
     });
-    
+
     if (response.ok) {
-      const data = await response.json() as {
+      const data = (await response.json()) as {
         choices?: Array<{ message?: { content?: string } }>;
       };
       const answer = data.choices?.[0]?.message?.content?.toLowerCase() || '';
       // Check if the color red was mentioned
       test.passed = answer.includes('red') || answer.includes('红');
-      test.details = test.passed 
+      test.details = test.passed
         ? 'Model correctly identified the image color'
         : `Model response: ${answer.slice(0, 100)}`;
     } else {
@@ -81,37 +74,31 @@ async function testVision(
   } catch (error) {
     test.details = `Error: ${error instanceof Error ? error.message : 'Unknown'}`;
   }
-  
+
   return test;
 }
 
-async function testFunctionCalling(
-  provider: string,
-  apiKey: string,
-  baseUrl?: string
-): Promise<CapabilityTest> {
+async function testFunctionCalling(provider: string, apiKey: string, baseUrl?: string): Promise<CapabilityTest> {
   const test: CapabilityTest = {
     type: 'function_calling',
     name: 'Function Calling',
     description: 'Can the model use tools/functions?',
     passed: false,
   };
-  
+
   try {
     const url = baseUrl || 'http://REDACTED:4001/v1';
     const model = provider === 'zai' ? 'z-ai/glm-4.7' : 'default';
-    
+
     const response = await fetch(`${url}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model,
-        messages: [
-          { role: 'user', content: 'What is the weather in Beijing?' }
-        ],
+        messages: [{ role: 'user', content: 'What is the weather in Beijing?' }],
         tools: [
           {
             type: 'function',
@@ -121,23 +108,23 @@ async function testFunctionCalling(
               parameters: {
                 type: 'object',
                 properties: {
-                  location: { type: 'string', description: 'City name' }
+                  location: { type: 'string', description: 'City name' },
                 },
-                required: ['location']
-              }
-            }
-          }
+                required: ['location'],
+              },
+            },
+          },
         ],
         tool_choice: 'auto',
       }),
     });
-    
+
     if (response.ok) {
-      const data = await response.json() as {
+      const data = (await response.json()) as {
         choices?: Array<{ message?: { tool_calls?: Array<{ function?: { name?: string } }> } }>;
       };
       const toolCalls = data.choices?.[0]?.message?.tool_calls;
-      
+
       if (toolCalls && toolCalls.length > 0) {
         test.passed = true;
         test.details = `Model requested to call: ${toolCalls[0].function?.name || 'unknown function'}`;
@@ -150,15 +137,11 @@ async function testFunctionCalling(
   } catch (error) {
     test.details = `Error: ${error instanceof Error ? error.message : 'Unknown'}`;
   }
-  
+
   return test;
 }
 
-async function testJsonMode(
-  provider: string,
-  apiKey: string,
-  baseUrl?: string
-): Promise<CapabilityTest> {
+async function testJsonMode(provider: string, apiKey: string, baseUrl?: string): Promise<CapabilityTest> {
   const test: CapabilityTest = {
     type: 'json_mode',
     name: 'JSON Mode',
@@ -174,20 +157,18 @@ async function testJsonMode(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model,
-        messages: [
-          { role: 'user', content: 'Return a JSON object with name "test" and value 123' }
-        ],
+        messages: [{ role: 'user', content: 'Return a JSON object with name "test" and value 123' }],
         response_format: { type: 'json_object' },
         max_tokens: 100,
       }),
     });
 
     if (response.ok) {
-      const data = await response.json() as {
+      const data = (await response.json()) as {
         choices?: Array<{ message?: { content?: string } }>;
       };
       const content = data.choices?.[0]?.message?.content || '';
@@ -195,9 +176,7 @@ async function testJsonMode(
       try {
         const parsed = JSON.parse(content);
         test.passed = typeof parsed === 'object';
-        test.details = test.passed
-          ? `Valid JSON: ${JSON.stringify(parsed).slice(0, 50)}`
-          : 'Parsed but not an object';
+        test.details = test.passed ? `Valid JSON: ${JSON.stringify(parsed).slice(0, 50)}` : 'Parsed but not an object';
       } catch {
         test.details = `Invalid JSON: ${content.slice(0, 100)}`;
       }
@@ -211,11 +190,7 @@ async function testJsonMode(
   return test;
 }
 
-async function testStreaming(
-  provider: string,
-  apiKey: string,
-  baseUrl?: string
-): Promise<CapabilityTest> {
+async function testStreaming(provider: string, apiKey: string, baseUrl?: string): Promise<CapabilityTest> {
   const test: CapabilityTest = {
     type: 'streaming',
     name: 'Streaming Output',
@@ -232,7 +207,7 @@ async function testStreaming(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model,
@@ -277,11 +252,7 @@ async function testStreaming(
   return test;
 }
 
-async function testNonStreaming(
-  provider: string,
-  apiKey: string,
-  baseUrl?: string
-): Promise<CapabilityTest> {
+async function testNonStreaming(provider: string, apiKey: string, baseUrl?: string): Promise<CapabilityTest> {
   const test: CapabilityTest = {
     type: 'non_streaming',
     name: 'Non-Streaming Output',
@@ -298,7 +269,7 @@ async function testNonStreaming(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model,
@@ -311,15 +282,13 @@ async function testNonStreaming(
     const latency = Date.now() - start;
 
     if (response.ok) {
-      const data = await response.json() as {
+      const data = (await response.json()) as {
         choices?: Array<{ message?: { content?: string } }>;
       };
       const content = data.choices?.[0]?.message?.content || '';
       test.passed = content.length > 0;
       test.latencyMs = latency;
-      test.details = test.passed
-        ? `Response in ${latency}ms: "${content.slice(0, 60)}"`
-        : 'Empty response content';
+      test.details = test.passed ? `Response in ${latency}ms: "${content.slice(0, 60)}"` : 'Empty response content';
     } else {
       test.details = `API error: ${response.status}`;
     }

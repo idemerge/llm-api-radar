@@ -17,18 +17,22 @@ router.put('/config', (req: Request, res: Response) => {
   const body = req.body;
 
   // Validate and clamp interval
-  const interval = typeof body.defaultIntervalMinutes === 'number'
-    ? Math.max(5, Math.min(360, body.defaultIntervalMinutes))
-    : current.defaultIntervalMinutes;
+  const interval =
+    typeof body.defaultIntervalMinutes === 'number'
+      ? Math.max(5, Math.min(360, body.defaultIntervalMinutes))
+      : current.defaultIntervalMinutes;
 
   // Validate health thresholds — ensure positive integers
   const ht = current.healthThresholds;
   if (body.healthThresholds && typeof body.healthThresholds === 'object') {
     const bht = body.healthThresholds;
-    if (typeof bht.tpsSlowThreshold === 'number' && bht.tpsSlowThreshold > 0) ht.tpsSlowThreshold = Math.round(bht.tpsSlowThreshold);
-    if (typeof bht.tpsVerySlowThreshold === 'number' && bht.tpsVerySlowThreshold > 0) ht.tpsVerySlowThreshold = Math.round(bht.tpsVerySlowThreshold);
+    if (typeof bht.tpsSlowThreshold === 'number' && bht.tpsSlowThreshold > 0)
+      ht.tpsSlowThreshold = Math.round(bht.tpsSlowThreshold);
+    if (typeof bht.tpsVerySlowThreshold === 'number' && bht.tpsVerySlowThreshold > 0)
+      ht.tpsVerySlowThreshold = Math.round(bht.tpsVerySlowThreshold);
     if (typeof bht.ttftSlowMs === 'number' && bht.ttftSlowMs > 0) ht.ttftSlowMs = Math.round(bht.ttftSlowMs);
-    if (typeof bht.minOutputTokens === 'number' && bht.minOutputTokens >= 0) ht.minOutputTokens = Math.round(bht.minOutputTokens);
+    if (typeof bht.minOutputTokens === 'number' && bht.minOutputTokens >= 0)
+      ht.minOutputTokens = Math.round(bht.minOutputTokens);
   }
 
   const updated: MonitorGlobalConfig = {

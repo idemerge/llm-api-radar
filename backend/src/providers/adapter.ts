@@ -81,7 +81,7 @@ export class DynamicProvider extends BaseLLMProvider {
     maxTokens: number,
     _apiKey: string,
     streaming?: boolean,
-    images?: ImageInput[]
+    images?: ImageInput[],
   ): Promise<LLMResponse> {
     const apiKey = this.plainApiKey || decrypt(this.config.apiKey);
 
@@ -115,7 +115,7 @@ export class DynamicProvider extends BaseLLMProvider {
     systemPrompt: string | undefined,
     maxTokens: number,
     apiKey: string,
-    images?: ImageInput[]
+    images?: ImageInput[],
   ): Promise<LLMResponse> {
     const startTime = Date.now();
     const messages: Array<{ role: string; content: string | ContentPart[] }> = [];
@@ -136,7 +136,7 @@ export class DynamicProvider extends BaseLLMProvider {
           max_tokens: maxTokens,
         }),
       },
-      120000
+      120000,
     );
 
     if (!response.ok) {
@@ -144,7 +144,7 @@ export class DynamicProvider extends BaseLLMProvider {
       throw new Error(`API error ${response.status}: ${errText.slice(0, 200)}`);
     }
 
-    const data = await response.json() as Record<string, any>;
+    const data = (await response.json()) as Record<string, any>;
     const responseTime = Date.now() - startTime;
     const inputTokens = data.usage?.prompt_tokens || 0;
     const completionTokens = data.usage?.completion_tokens || 0;
@@ -168,7 +168,7 @@ export class DynamicProvider extends BaseLLMProvider {
     systemPrompt: string | undefined,
     maxTokens: number,
     apiKey: string,
-    images?: ImageInput[]
+    images?: ImageInput[],
   ): Promise<LLMResponse> {
     const startTime = Date.now();
     const messages: Array<{ role: string; content: string | ContentPart[] }> = [];
@@ -191,7 +191,7 @@ export class DynamicProvider extends BaseLLMProvider {
           stream_options: { include_usage: true },
         }),
       },
-      180000
+      180000,
     );
 
     if (!response.ok) {
@@ -229,7 +229,9 @@ export class DynamicProvider extends BaseLLMProvider {
             }
           }
           if (parsed.usage) usageData = parsed.usage;
-        } catch { /* skip */ }
+        } catch {
+          /* skip */
+        }
       }
     }
 
@@ -259,7 +261,7 @@ export class DynamicProvider extends BaseLLMProvider {
     systemPrompt: string | undefined,
     maxTokens: number,
     apiKey: string,
-    images?: ImageInput[]
+    images?: ImageInput[],
   ): Promise<LLMResponse> {
     const startTime = Date.now();
 
@@ -277,7 +279,7 @@ export class DynamicProvider extends BaseLLMProvider {
         headers: buildAnthropicHeaders(apiKey),
         body: JSON.stringify(body),
       },
-      120000
+      120000,
     );
 
     if (!response.ok) {
@@ -285,7 +287,7 @@ export class DynamicProvider extends BaseLLMProvider {
       throw new Error(`Anthropic API error ${response.status}: ${errText.slice(0, 200)}`);
     }
 
-    const data = await response.json() as Record<string, any>;
+    const data = (await response.json()) as Record<string, any>;
     const responseTime = Date.now() - startTime;
     const inputTokens = data.usage?.input_tokens || 0;
     const outputTokens = data.usage?.output_tokens || 0;
@@ -308,7 +310,7 @@ export class DynamicProvider extends BaseLLMProvider {
     systemPrompt: string | undefined,
     maxTokens: number,
     apiKey: string,
-    images?: ImageInput[]
+    images?: ImageInput[],
   ): Promise<LLMResponse> {
     const startTime = Date.now();
 
@@ -327,7 +329,7 @@ export class DynamicProvider extends BaseLLMProvider {
         headers: buildAnthropicHeaders(apiKey),
         body: JSON.stringify(body),
       },
-      180000
+      180000,
     );
 
     if (!response.ok) throw new Error(`Anthropic API error: ${response.status}`);
@@ -368,7 +370,9 @@ export class DynamicProvider extends BaseLLMProvider {
               inputTokens = parsed.usage.input_tokens;
             }
           }
-        } catch { /* skip */ }
+        } catch {
+          /* skip */
+        }
       }
     }
 
@@ -394,7 +398,7 @@ export class DynamicProvider extends BaseLLMProvider {
     systemPrompt: string | undefined,
     maxTokens: number,
     apiKey: string,
-    images?: ImageInput[]
+    images?: ImageInput[],
   ): Promise<LLMResponse> {
     const startTime = Date.now();
 
@@ -407,21 +411,25 @@ export class DynamicProvider extends BaseLLMProvider {
 
     const url = `${this.config.endpoint}/models/${this.modelName}:generateContent?key=${apiKey}`;
 
-    const response = await this.fetchWithTimeout(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents,
-        generationConfig: { maxOutputTokens: maxTokens },
-      }),
-    }, 120000);
+    const response = await this.fetchWithTimeout(
+      url,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents,
+          generationConfig: { maxOutputTokens: maxTokens },
+        }),
+      },
+      120000,
+    );
 
     if (!response.ok) {
       const errText = await response.text().catch(() => '');
       throw new Error(`Gemini API error ${response.status}: ${errText.slice(0, 200)}`);
     }
 
-    const data = await response.json() as Record<string, any>;
+    const data = (await response.json()) as Record<string, any>;
     const responseTime = Date.now() - startTime;
 
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -446,7 +454,7 @@ export class DynamicProvider extends BaseLLMProvider {
     systemPrompt: string | undefined,
     maxTokens: number,
     apiKey: string,
-    images?: ImageInput[]
+    images?: ImageInput[],
   ): Promise<LLMResponse> {
     const startTime = Date.now();
 
@@ -459,14 +467,18 @@ export class DynamicProvider extends BaseLLMProvider {
 
     const url = `${this.config.endpoint}/models/${this.modelName}:streamGenerateContent?key=${apiKey}&alt=sse`;
 
-    const response = await this.fetchWithTimeout(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents,
-        generationConfig: { maxOutputTokens: maxTokens },
-      }),
-    }, 180000);
+    const response = await this.fetchWithTimeout(
+      url,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents,
+          generationConfig: { maxOutputTokens: maxTokens },
+        }),
+      },
+      180000,
+    );
 
     if (!response.ok) {
       const errText = await response.text().catch(() => '');
@@ -508,7 +520,9 @@ export class DynamicProvider extends BaseLLMProvider {
             inputTokens = parsed.usageMetadata.promptTokenCount || inputTokens;
             outputTokens = parsed.usageMetadata.candidatesTokenCount || outputTokens;
           }
-        } catch { /* skip */ }
+        } catch {
+          /* skip */
+        }
       }
     }
 
@@ -534,7 +548,7 @@ export function createDynamicProvider(providerId: string, modelName: string): Dy
   const config = providerStore.get(providerId);
   if (!config) return null;
 
-  const model = config.models.find(m => m.name === modelName || m.id === modelName);
+  const model = config.models.find((m) => m.name === modelName || m.id === modelName);
   if (!model) return null;
 
   // Skip inactive models
@@ -544,9 +558,12 @@ export function createDynamicProvider(providerId: string, modelName: string): Dy
 }
 
 // Test connectivity for a provider config (used by the test endpoint)
-export async function testProviderConnection(
-  config: { endpoint: string; apiKey: string; format: ProviderFormat; modelName: string }
-): Promise<{
+export async function testProviderConnection(config: {
+  endpoint: string;
+  apiKey: string;
+  format: ProviderFormat;
+  modelName: string;
+}): Promise<{
   success: boolean;
   latencyMs: number;
   ttftMs: number;
@@ -563,13 +580,29 @@ export async function testProviderConnection(
       endpoint: config.endpoint,
       apiKey: config.apiKey, // already plaintext for testing
       format: config.format,
-      models: [{ id: 'test', name: config.modelName, contextSize: 4096, supportsVision: false, supportsTools: false, supportsStreaming: true, isActive: true }],
+      models: [
+        {
+          id: 'test',
+          name: config.modelName,
+          contextSize: 4096,
+          supportsVision: false,
+          supportsTools: false,
+          supportsStreaming: true,
+          isActive: true,
+        },
+      ],
       createdAt: '',
       updatedAt: '',
     };
 
     const provider = new DynamicProvider(tempConfig, config.modelName, config.apiKey);
-    const result = await provider.execute('Write a 200-word introduction to artificial intelligence covering its history, current applications, and future potential.', undefined, 1024, '', true);
+    const result = await provider.execute(
+      'Write a 200-word introduction to artificial intelligence covering its history, current applications, and future potential.',
+      undefined,
+      1024,
+      '',
+      true,
+    );
 
     const latencyMs = result.responseTime;
     const outputTokens = result.outputTokens || 0;

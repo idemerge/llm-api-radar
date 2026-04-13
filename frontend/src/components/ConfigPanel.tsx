@@ -29,7 +29,7 @@ interface ConfigPanelProps {
       requestInterval: number;
       randomizeInterval: boolean;
     },
-    apiKeys: Record<string, string>
+    apiKeys: Record<string, string>,
   ) => void;
   isRunning: boolean;
   currentProviders?: string[];
@@ -66,31 +66,43 @@ export function ConfigPanel({ onStart, isRunning, currentProviders, onCancel }: 
 
   const toggleModel = (provider: ProviderConfigResponse, modelName: string) => {
     const key = `${provider.id}:${modelName}`;
-    setSelectedModels(prev => {
-      const exists = prev.find(m => `${m.providerId}:${m.modelName}` === key);
+    setSelectedModels((prev) => {
+      const exists = prev.find((m) => `${m.providerId}:${m.modelName}` === key);
       if (exists) {
-        return prev.filter(m => `${m.providerId}:${m.modelName}` !== key);
+        return prev.filter((m) => `${m.providerId}:${m.modelName}` !== key);
       }
-      return [...prev, {
-        providerId: provider.id,
-        modelName,
-        providerName: provider.name,
-        displayLabel: `${provider.name} / ${modelName}`,
-        color: FORMAT_COLORS[provider.format] || '#999',
-      }];
+      return [
+        ...prev,
+        {
+          providerId: provider.id,
+          modelName,
+          providerName: provider.name,
+          displayLabel: `${provider.name} / ${modelName}`,
+          color: FORMAT_COLORS[provider.format] || '#999',
+        },
+      ];
     });
   };
 
   const isModelSelected = (providerId: string, modelName: string) =>
-    selectedModels.some(m => m.providerId === providerId && m.modelName === modelName);
+    selectedModels.some((m) => m.providerId === providerId && m.modelName === modelName);
 
   const handleStart = () => {
     if (selectedModels.length === 0) return;
-    const providerKeys = selectedModels.map(m => `${m.providerId}:${m.modelName}`);
-    onStart(providerKeys, { prompt, maxTokens, concurrency, iterations, streaming, warmupRuns, requestInterval, randomizeInterval }, {});
+    const providerKeys = selectedModels.map((m) => `${m.providerId}:${m.modelName}`);
+    onStart(
+      providerKeys,
+      { prompt, maxTokens, concurrency, iterations, streaming, warmupRuns, requestInterval, randomizeInterval },
+      {},
+    );
   };
 
-  const QuickButtons = ({ options, value, onChange, color = 'accent-teal' }: {
+  const QuickButtons = ({
+    options,
+    value,
+    onChange,
+    color = 'accent-teal',
+  }: {
     options: { label: string; value: number }[];
     value: number;
     onChange: (v: number) => void;
@@ -107,17 +119,23 @@ export function ConfigPanel({ onStart, isRunning, currentProviders, onCancel }: 
               : 'border-border text-text-tertiary hover:border-border-hover'
           }`}
           style={{
-            ...(value === opt.value ? {
-              borderColor: color === 'accent-teal' ? 'rgba(115,191,105,0.4)' :
-                           color === 'accent-blue' ? 'rgba(61,113,217,0.4)' :
-                           'rgba(255,152,48,0.4)',
-              backgroundColor: color === 'accent-teal' ? 'rgba(115,191,105,0.08)' :
-                               color === 'accent-blue' ? 'rgba(61,113,217,0.08)' :
-                               'rgba(255,152,48,0.08)',
-              color: color === 'accent-teal' ? '#73bf69' :
-                     color === 'accent-blue' ? '#4096ff' :
-                     '#ff9830',
-            } : {}),
+            ...(value === opt.value
+              ? {
+                  borderColor:
+                    color === 'accent-teal'
+                      ? 'rgba(115,191,105,0.4)'
+                      : color === 'accent-blue'
+                        ? 'rgba(61,113,217,0.4)'
+                        : 'rgba(255,152,48,0.4)',
+                  backgroundColor:
+                    color === 'accent-teal'
+                      ? 'rgba(115,191,105,0.08)'
+                      : color === 'accent-blue'
+                        ? 'rgba(61,113,217,0.08)'
+                        : 'rgba(255,152,48,0.08)',
+                  color: color === 'accent-teal' ? '#73bf69' : color === 'accent-blue' ? '#4096ff' : '#ff9830',
+                }
+              : {}),
           }}
         >
           {opt.label}
@@ -127,16 +145,10 @@ export function ConfigPanel({ onStart, isRunning, currentProviders, onCancel }: 
   );
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: -16 }}
-      animate={{ opacity: 1, x: 0 }}
-      className="glass-card p-7 space-y-7"
-    >
+    <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} className="glass-card p-7 space-y-7">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-medium text-text-primary">
-          Configuration
-        </h2>
+        <h2 className="text-sm font-medium text-text-primary">Configuration</h2>
         <Segmented
           size="small"
           value={isAdvancedMode ? 'ADV' : 'QUICK'}
@@ -159,10 +171,10 @@ export function ConfigPanel({ onStart, isRunning, currentProviders, onCancel }: 
           </div>
         ) : (
           <div className="space-y-3">
-            {configuredProviders.map(provider => {
-              const activeModels = provider.models.filter(m => m.isActive !== false);
+            {configuredProviders.map((provider) => {
+              const activeModels = provider.models.filter((m) => m.isActive !== false);
               const color = FORMAT_COLORS[provider.format] || '#999';
-              const hasSelected = activeModels.some(m => isModelSelected(provider.id, m.name));
+              const hasSelected = activeModels.some((m) => isModelSelected(provider.id, m.name));
               return (
                 <div
                   key={provider.id}
@@ -175,12 +187,10 @@ export function ConfigPanel({ onStart, isRunning, currentProviders, onCancel }: 
                   <div className="px-3 py-2 flex items-center gap-2">
                     <div className="w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} />
                     <span className="text-[12px] font-medium text-text-primary">{provider.name}</span>
-                    <span className="text-[10px] text-text-tertiary font-mono">
-                      {provider.format}
-                    </span>
+                    <span className="text-[10px] text-text-tertiary font-mono">{provider.format}</span>
                   </div>
                   <div className="px-3 pb-2.5 flex flex-wrap gap-1.5">
-                    {activeModels.map(model => {
+                    {activeModels.map((model) => {
                       const selected = isModelSelected(provider.id, model.name);
                       return (
                         <button
@@ -213,7 +223,7 @@ export function ConfigPanel({ onStart, isRunning, currentProviders, onCancel }: 
       {/* Selected summary */}
       {selectedModels.length > 0 && (
         <div className="text-[10px] text-text-tertiary px-1 font-mono">
-          Selected: {selectedModels.map(m => m.displayLabel).join(', ')}
+          Selected: {selectedModels.map((m) => m.displayLabel).join(', ')}
         </div>
       )}
 
@@ -258,12 +268,7 @@ export function ConfigPanel({ onStart, isRunning, currentProviders, onCancel }: 
         <div className="grid grid-cols-3 gap-3">
           <div className="space-y-2">
             <label className="text-[11px] text-text-secondary font-medium">Max Tokens</label>
-            <QuickButtons
-              options={QUICK_MAX_TOKENS}
-              value={maxTokens}
-              onChange={setMaxTokens}
-              color="accent-teal"
-            />
+            <QuickButtons options={QUICK_MAX_TOKENS} value={maxTokens} onChange={setMaxTokens} color="accent-teal" />
             <InputNumber
               value={maxTokens}
               onChange={(v) => setMaxTokens(v ?? 4096)}
@@ -294,12 +299,7 @@ export function ConfigPanel({ onStart, isRunning, currentProviders, onCancel }: 
           </div>
           <div className="space-y-2">
             <label className="text-[11px] text-text-secondary font-medium">Iterations</label>
-            <QuickButtons
-              options={QUICK_ITERATIONS}
-              value={iterations}
-              onChange={setIterations}
-              color="accent-teal"
-            />
+            <QuickButtons options={QUICK_ITERATIONS} value={iterations} onChange={setIterations} color="accent-teal" />
             <InputNumber
               value={iterations}
               onChange={(v) => setIterations(v ?? 5)}
@@ -331,11 +331,7 @@ export function ConfigPanel({ onStart, isRunning, currentProviders, onCancel }: 
                     {streaming ? 'Real-time output' : 'Full response'}
                   </span>
                 </div>
-                <Switch
-                  checked={streaming}
-                  onChange={setStreaming}
-                  size="small"
-                />
+                <Switch checked={streaming} onChange={setStreaming} size="small" />
               </div>
 
               <div className="space-y-4">
@@ -386,11 +382,7 @@ export function ConfigPanel({ onStart, isRunning, currentProviders, onCancel }: 
                         {randomizeInterval ? 'Simulates real traffic' : 'Fixed interval'}
                       </span>
                     </div>
-                    <Switch
-                      checked={randomizeInterval}
-                      onChange={setRandomizeInterval}
-                      size="small"
-                    />
+                    <Switch checked={randomizeInterval} onChange={setRandomizeInterval} size="small" />
                   </div>
                 )}
               </div>
@@ -402,9 +394,15 @@ export function ConfigPanel({ onStart, isRunning, currentProviders, onCancel }: 
       {/* Quick mode summary */}
       {!isAdvancedMode && (
         <div className="text-[10px] text-text-tertiary flex flex-wrap gap-3 px-1 font-mono">
-          <span>Stream: <span className="text-accent-teal">{streaming ? 'ON' : 'OFF'}</span></span>
-          <span>Warmup: <span className="text-accent-coral">{warmupRuns}</span></span>
-          <span>Interval: <span className="text-accent-coral">{requestInterval}ms</span></span>
+          <span>
+            Stream: <span className="text-accent-teal">{streaming ? 'ON' : 'OFF'}</span>
+          </span>
+          <span>
+            Warmup: <span className="text-accent-coral">{warmupRuns}</span>
+          </span>
+          <span>
+            Interval: <span className="text-accent-coral">{requestInterval}ms</span>
+          </span>
         </div>
       )}
 
@@ -420,21 +418,12 @@ export function ConfigPanel({ onStart, isRunning, currentProviders, onCancel }: 
         >
           {isRunning
             ? 'Running...'
-            : `Start Benchmark${selectedModels.length > 0 ? ` (${selectedModels.length} models)` : ''}`
-          }
+            : `Start Benchmark${selectedModels.length > 0 ? ` (${selectedModels.length} models)` : ''}`}
         </Button>
 
         {isRunning && onCancel && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-          >
-            <Button
-              danger
-              size="large"
-              onClick={onCancel}
-              style={{ fontWeight: 500 }}
-            >
+          <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}>
+            <Button danger size="large" onClick={onCancel} style={{ fontWeight: 500 }}>
               ✕
             </Button>
           </motion.div>
@@ -442,9 +431,7 @@ export function ConfigPanel({ onStart, isRunning, currentProviders, onCancel }: 
       </div>
 
       {selectedModels.length === 0 && (
-        <p className="text-[11px] text-accent-rose/60 text-center">
-          Select at least one model to benchmark
-        </p>
+        <p className="text-[11px] text-accent-rose/60 text-center">Select at least one model to benchmark</p>
       )}
     </motion.div>
   );

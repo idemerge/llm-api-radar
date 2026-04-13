@@ -106,9 +106,21 @@ export const PROVIDER_COLORS: Record<string, string> = {
 
 // Dynamic color palette for providers not in the static map
 const DYNAMIC_PALETTE = [
-  '#5b8def', '#a78bfa', '#00d4aa', '#ffb224', '#f97066',
-  '#73bf69', '#ff9830', '#36a2eb', '#ff6384', '#4bc0c0',
-  '#9966ff', '#ffcd56', '#c9cbcf', '#ff6b6b', '#48dbfb',
+  '#5b8def',
+  '#a78bfa',
+  '#00d4aa',
+  '#ffb224',
+  '#f97066',
+  '#73bf69',
+  '#ff9830',
+  '#36a2eb',
+  '#ff6384',
+  '#4bc0c0',
+  '#9966ff',
+  '#ffcd56',
+  '#c9cbcf',
+  '#ff6b6b',
+  '#48dbfb',
 ];
 const dynamicColorCache: Record<string, string> = {};
 let nextColorIdx = 0;

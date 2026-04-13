@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      # Install dependencies
+      - name: Install frontend dependencies
+        run: cd frontend && npm ci
+
+      - name: Install backend dependencies
+        run: cd backend && npm ci
+
+      # Type checking
+      - name: Typecheck frontend
+        run: cd frontend && npx tsc --noEmit
+
+      - name: Typecheck backend
+        run: cd backend && npx tsc --noEmit
+
+      # Linting
+      - name: Lint frontend
+        run: cd frontend && npm run lint
+
+      - name: Lint backend
+        run: cd backend && npm run lint
+
+      # Formatting
+      - name: Format check frontend
+        run: cd frontend && npx prettier --check .
+
+      - name: Format check backend
+        run: cd backend && npx prettier --check .
+
+      # Tests
+      - name: Test frontend
+        run: cd frontend && npm test
+
+      - name: Test backend
+        run: cd backend && npm test
+
+      # Build
+      - name: Build frontend
+        run: cd frontend && npx vite build
+
+      - name: Build backend
+        run: cd backend && npm run build

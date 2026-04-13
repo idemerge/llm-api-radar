@@ -11,10 +11,10 @@ export interface MonitorTarget {
 }
 
 export interface HealthThresholds {
-  tpsSlowThreshold: number;     // default 20 — below this is 'slow'
+  tpsSlowThreshold: number; // default 20 — below this is 'slow'
   tpsVerySlowThreshold: number; // default 5  — below this is 'very_slow'
-  ttftSlowMs: number;           // default 1000
-  minOutputTokens: number;      // default 1
+  ttftSlowMs: number; // default 1000
+  minOutputTokens: number; // default 1
 }
 
 export interface MonitorGlobalConfig {
@@ -63,7 +63,9 @@ class MonitorConfigStore {
       // Migration: add interval_minutes column if missing (older table)
       try {
         this.db.exec('ALTER TABLE monitor_targets ADD COLUMN interval_minutes INTEGER NOT NULL DEFAULT 0');
-      } catch { /* column already exists, ignore */ }
+      } catch {
+        /* column already exists, ignore */
+      }
 
       this.db.exec(`
         CREATE TABLE IF NOT EXISTS monitor_config (
@@ -99,22 +101,24 @@ class MonitorConfigStore {
   setConfig(config: MonitorGlobalConfig): void {
     if (!this.db) return;
     const clamped = clampInterval(config.defaultIntervalMinutes);
-    this.db.prepare(
-      "INSERT OR REPLACE INTO monitor_config (key, value) VALUES ('global', ?)"
-    ).run(JSON.stringify({
-      defaultIntervalMinutes: clamped,
-      healthThresholds: { ...DEFAULT_CONFIG.healthThresholds, ...(config.healthThresholds || {}) },
-    }));
+    this.db.prepare("INSERT OR REPLACE INTO monitor_config (key, value) VALUES ('global', ?)").run(
+      JSON.stringify({
+        defaultIntervalMinutes: clamped,
+        healthThresholds: { ...DEFAULT_CONFIG.healthThresholds, ...(config.healthThresholds || {}) },
+      }),
+    );
   }
 
   // ---- Targets ----
 
   getTargets(): MonitorTarget[] {
     if (!this.db) return [];
-    const rows = this.db.prepare(
-      'SELECT provider_id, model_name, provider_name, interval_minutes FROM monitor_targets WHERE enabled = 1 ORDER BY provider_name, model_name'
-    ).all() as any[];
-    return rows.map(r => ({
+    const rows = this.db
+      .prepare(
+        'SELECT provider_id, model_name, provider_name, interval_minutes FROM monitor_targets WHERE enabled = 1 ORDER BY provider_name, model_name',
+      )
+      .all() as any[];
+    return rows.map((r) => ({
       providerId: r.provider_id,
       modelName: r.model_name,
       providerName: r.provider_name,
@@ -127,7 +131,7 @@ class MonitorConfigStore {
     const tx = this.db.transaction(() => {
       this.db!.prepare('DELETE FROM monitor_targets').run();
       const stmt = this.db!.prepare(
-        'INSERT INTO monitor_targets (provider_id, model_name, provider_name, interval_minutes, enabled) VALUES (?, ?, ?, ?, 1)'
+        'INSERT INTO monitor_targets (provider_id, model_name, provider_name, interval_minutes, enabled) VALUES (?, ?, ?, ?, 1)',
       );
       for (const t of targets) {
         stmt.run(t.providerId, t.modelName, t.providerName, t.intervalMinutes || 0);
@@ -138,32 +142,30 @@ class MonitorConfigStore {
 
   addTarget(target: MonitorTarget): void {
     if (!this.db) return;
-    this.db.prepare(
-      'INSERT OR REPLACE INTO monitor_targets (provider_id, model_name, provider_name, interval_minutes, enabled) VALUES (?, ?, ?, ?, 1)'
-    ).run(target.providerId, target.modelName, target.providerName, target.intervalMinutes || 0);
+    this.db
+      .prepare(
+        'INSERT OR REPLACE INTO monitor_targets (provider_id, model_name, provider_name, interval_minutes, enabled) VALUES (?, ?, ?, ?, 1)',
+      )
+      .run(target.providerId, target.modelName, target.providerName, target.intervalMinutes || 0);
   }
 
   removeTarget(providerId: string, modelName: string): void {
     if (!this.db) return;
-    this.db.prepare(
-      'DELETE FROM monitor_targets WHERE provider_id = ? AND model_name = ?'
-    ).run(providerId, modelName);
+    this.db.prepare('DELETE FROM monitor_targets WHERE provider_id = ? AND model_name = ?').run(providerId, modelName);
   }
 
   /** Rename a target's model name (preserves interval and enabled state) */
   renameTarget(providerId: string, oldModelName: string, newModelName: string): void {
     if (!this.db) return;
-    this.db.prepare(
-      'UPDATE monitor_targets SET model_name = ? WHERE provider_id = ? AND model_name = ?'
-    ).run(newModelName, providerId, oldModelName);
+    this.db
+      .prepare('UPDATE monitor_targets SET model_name = ? WHERE provider_id = ? AND model_name = ?')
+      .run(newModelName, providerId, oldModelName);
   }
 
   /** Remove all targets for a given provider */
   removeTargetsByProvider(providerId: string): void {
     if (!this.db) return;
-    this.db.prepare(
-      'DELETE FROM monitor_targets WHERE provider_id = ?'
-    ).run(providerId);
+    this.db.prepare('DELETE FROM monitor_targets WHERE provider_id = ?').run(providerId);
   }
 }
 

@@ -10,7 +10,7 @@ export class OpenAIProvider extends BaseLLMProvider {
     maxTokens: number,
     apiKey: string,
     streaming?: boolean,
-    _images?: any[]
+    _images?: any[],
   ): Promise<LLMResponse> {
     // If a real API key is provided, attempt real API call
     if (apiKey && apiKey.startsWith('sk-') && apiKey.length > 10) {
@@ -32,10 +32,10 @@ export class OpenAIProvider extends BaseLLMProvider {
       maxTokens,
       'OpenAI',
       'gpt-4',
-      0.00003,   // $0.03 per 1K input tokens
-      0.00006,   // $0.06 per 1K output tokens
-      800,       // base latency ms
-      400        // variance
+      0.00003, // $0.03 per 1K input tokens
+      0.00006, // $0.06 per 1K output tokens
+      800, // base latency ms
+      400, // variance
     );
   }
 
@@ -43,7 +43,7 @@ export class OpenAIProvider extends BaseLLMProvider {
     prompt: string,
     systemPrompt: string | undefined,
     maxTokens: number,
-    apiKey: string
+    apiKey: string,
   ): Promise<LLMResponse> {
     const startTime = Date.now();
     const messages: Array<{ role: string; content: string }> = [];
@@ -53,20 +53,24 @@ export class OpenAIProvider extends BaseLLMProvider {
     }
     messages.push({ role: 'user', content: prompt });
 
-    const response = await this.fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
+    const response = await this.fetchWithTimeout(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4',
+          messages,
+          max_tokens: maxTokens,
+          stream: true,
+          stream_options: { include_usage: true },
+        }),
       },
-      body: JSON.stringify({
-        model: 'gpt-4',
-        messages,
-        max_tokens: maxTokens,
-        stream: true,
-        stream_options: { include_usage: true },
-      }),
-    }, 180000);
+      180000,
+    );
 
     if (!response.ok) {
       throw new Error(`OpenAI API error: ${response.status}`);
@@ -127,9 +131,7 @@ export class OpenAIProvider extends BaseLLMProvider {
     }
 
     const responseTime = Date.now() - startTime;
-    const firstTokenLatency = firstTokenTime
-      ? firstTokenTime - startTime
-      : Math.round(responseTime * 0.3);
+    const firstTokenLatency = firstTokenTime ? firstTokenTime - startTime : Math.round(responseTime * 0.3);
 
     if (usageData) {
       const inputTokens = usageData.prompt_tokens || 0;
@@ -138,10 +140,7 @@ export class OpenAIProvider extends BaseLLMProvider {
       const totalTokens = inputTokens + completionTokens;
 
       const nonReasoningOutput = completionTokens - reasoningTokens;
-      const estimatedCost =
-        inputTokens * 0.00003 +
-        nonReasoningOutput * 0.00006 +
-        reasoningTokens * 0.00006;
+      const estimatedCost = inputTokens * 0.00003 + nonReasoningOutput * 0.00006 + reasoningTokens * 0.00006;
 
       return {
         text: '',
@@ -158,7 +157,7 @@ export class OpenAIProvider extends BaseLLMProvider {
     }
 
     // Fallback estimation
-    const inputTokens = Math.ceil(messages.map(m => m.content).join('').length / 4);
+    const inputTokens = Math.ceil(messages.map((m) => m.content).join('').length / 4);
     return {
       text: '',
       inputTokens,
@@ -176,7 +175,7 @@ export class OpenAIProvider extends BaseLLMProvider {
     prompt: string,
     systemPrompt: string | undefined,
     maxTokens: number,
-    apiKey: string
+    apiKey: string,
   ): Promise<LLMResponse> {
     const startTime = Date.now();
     const messages: Array<{ role: string; content: string }> = [];
@@ -186,24 +185,28 @@ export class OpenAIProvider extends BaseLLMProvider {
     }
     messages.push({ role: 'user', content: prompt });
 
-    const response = await this.fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
+    const response = await this.fetchWithTimeout(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4',
+          messages,
+          max_tokens: maxTokens,
+        }),
       },
-      body: JSON.stringify({
-        model: 'gpt-4',
-        messages,
-        max_tokens: maxTokens,
-      }),
-    }, 180000);
+      180000,
+    );
 
     if (!response.ok) {
       throw new Error(`OpenAI API error: ${response.status}`);
     }
 
-    const data = await response.json() as Record<string, any>;
+    const data = (await response.json()) as Record<string, any>;
     const responseTime = Date.now() - startTime;
     const inputTokens = data.usage?.prompt_tokens || 0;
     const completionTokens = data.usage?.completion_tokens || 0;
@@ -216,10 +219,7 @@ export class OpenAIProvider extends BaseLLMProvider {
     // Cost: reasoning tokens may have different pricing for o-series models
     // For standard GPT-4: reasoning_tokens = 0, so this is backward compatible
     const nonReasoningOutput = completionTokens - reasoningTokens;
-    const estimatedCost =
-      inputTokens * 0.00003 +
-      nonReasoningOutput * 0.00006 +
-      reasoningTokens * 0.00006; // same rate for GPT-4; o-series would differ
+    const estimatedCost = inputTokens * 0.00003 + nonReasoningOutput * 0.00006 + reasoningTokens * 0.00006; // same rate for GPT-4; o-series would differ
 
     return {
       text: data.choices?.[0]?.message?.content || '',
@@ -236,8 +236,6 @@ export class OpenAIProvider extends BaseLLMProvider {
   }
 
   private simulateLatency(): Promise<void> {
-    return new Promise((resolve) =>
-      setTimeout(resolve, 200 + Math.random() * 300)
-    );
+    return new Promise((resolve) => setTimeout(resolve, 200 + Math.random() * 300));
   }
 }

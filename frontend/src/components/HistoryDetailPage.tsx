@@ -15,10 +15,14 @@ interface HistoryDetailPageProps {
 
 function statusToTagColor(status: string): string {
   switch (status) {
-    case 'completed': return 'green';
-    case 'running': return 'orange';
-    case 'failed': return 'red';
-    default: return 'default';
+    case 'completed':
+      return 'green';
+    case 'running':
+      return 'orange';
+    case 'failed':
+      return 'red';
+    default:
+      return 'default';
   }
 }
 
@@ -36,8 +40,8 @@ export function HistoryDetailPage({ workflowId, onExport, onBack }: HistoryDetai
     let cancelled = false;
     setLoading(true);
     apiFetch(`/api/workflows/${workflowId}`)
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         if (!cancelled) {
           setWorkflow(data);
           setLoading(false);
@@ -46,7 +50,9 @@ export function HistoryDetailPage({ workflowId, onExport, onBack }: HistoryDetai
       .catch(() => {
         if (!cancelled) setLoading(false);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [workflowId]);
 
   if (loading || !workflow) {
@@ -75,11 +81,7 @@ export function HistoryDetailPage({ workflowId, onExport, onBack }: HistoryDetai
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-6"
-    >
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       {/* Header */}
       <div className="glass-card p-5">
         <div className="flex items-center justify-between">
@@ -92,52 +94,55 @@ export function HistoryDetailPage({ workflowId, onExport, onBack }: HistoryDetai
             />
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-medium text-text-primary">
-                  {workflow.name || workflow.id.slice(0, 8)}
-                </h3>
-                <Tag color={statusToTagColor(workflow.status)} style={{ fontSize: '11px', margin: 0 }} className="font-mono">
+                <h3 className="text-sm font-medium text-text-primary">{workflow.name || workflow.id.slice(0, 8)}</h3>
+                <Tag
+                  color={statusToTagColor(workflow.status)}
+                  style={{ fontSize: '11px', margin: 0 }}
+                  className="font-mono"
+                >
                   {workflow.status}
                 </Tag>
               </div>
               <div className="flex items-center gap-1.5 mt-1 flex-wrap max-w-full">
                 {workflow.summary
                   ? Object.entries(workflow.summary.providerSummaries)
-                    .sort(([, a], [, b]) => {
-                      const cmp = a.provider.localeCompare(b.provider);
-                      if (cmp !== 0) return cmp;
-                      return a.model.localeCompare(b.model);
-                    })
-                    .map(([key, ps]) => (
-                    <Tag
-                      key={key}
-                      style={{
-                        backgroundColor: `${getProviderColor(key)}0a`,
-                        color: getProviderColor(key),
-                        border: `1px solid ${getProviderColor(key)}20`,
-                        fontSize: '10px',
-                        margin: 0,
-                        fontFamily: 'monospace',
-                        maxWidth: '100%',
-                      }}
-                    >
-                      <span className="truncate max-w-[180px] inline-block align-bottom">{ps.provider}/{ps.model}</span>
-                    </Tag>
-                  ))
+                      .sort(([, a], [, b]) => {
+                        const cmp = a.provider.localeCompare(b.provider);
+                        if (cmp !== 0) return cmp;
+                        return a.model.localeCompare(b.model);
+                      })
+                      .map(([key, ps]) => (
+                        <Tag
+                          key={key}
+                          style={{
+                            backgroundColor: `${getProviderColor(key)}0a`,
+                            color: getProviderColor(key),
+                            border: `1px solid ${getProviderColor(key)}20`,
+                            fontSize: '10px',
+                            margin: 0,
+                            fontFamily: 'monospace',
+                            maxWidth: '100%',
+                          }}
+                        >
+                          <span className="truncate max-w-[180px] inline-block align-bottom">
+                            {ps.provider}/{ps.model}
+                          </span>
+                        </Tag>
+                      ))
                   : workflow.providers.map((p) => (
-                    <Tag
-                      key={p}
-                      style={{
-                        backgroundColor: `${getProviderColor(p)}0a`,
-                        color: getProviderColor(p),
-                        border: `1px solid ${getProviderColor(p)}20`,
-                        fontSize: '10px',
-                        margin: 0,
-                      }}
-                    >
-                      {workflow.providerLabels?.[p] || getProviderDisplayName(p)}
-                    </Tag>
-                  ))
-                }
+                      <Tag
+                        key={p}
+                        style={{
+                          backgroundColor: `${getProviderColor(p)}0a`,
+                          color: getProviderColor(p),
+                          border: `1px solid ${getProviderColor(p)}20`,
+                          fontSize: '10px',
+                          margin: 0,
+                        }}
+                      >
+                        {workflow.providerLabels?.[p] || getProviderDisplayName(p)}
+                      </Tag>
+                    ))}
                 <span className="text-[10px] text-text-tertiary font-mono ml-2">
                   {workflow.tasks?.length ?? 0} tasks · {formatDate(workflow.createdAt)}
                 </span>
@@ -160,9 +165,7 @@ export function HistoryDetailPage({ workflowId, onExport, onBack }: HistoryDetai
       <WorkflowProgress workflow={workflow} />
 
       {/* Results */}
-      {workflow.summary && (
-        <WorkflowResults workflow={workflow} />
-      )}
+      {workflow.summary && <WorkflowResults workflow={workflow} />}
     </motion.div>
   );
 }

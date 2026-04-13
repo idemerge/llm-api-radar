@@ -1,13 +1,5 @@
 import { motion } from 'framer-motion';
-import {
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar,
-  ResponsiveContainer,
-  Tooltip,
-} from 'recharts';
+import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts';
 import { ProviderResult, getProviderColor, getProviderDisplayName } from '../types';
 
 interface RadarComparisonProps {
@@ -30,7 +22,10 @@ export function RadarComparison({ results }: RadarComparisonProps) {
     const point: Record<string, string | number> = { metric };
     providers.forEach((p) => {
       const summary = results[p]?.summary;
-      if (!summary) { point[p] = 0; return; }
+      if (!summary) {
+        point[p] = 0;
+        return;
+      }
 
       switch (metric) {
         case 'Speed':
@@ -54,20 +49,13 @@ export function RadarComparison({ results }: RadarComparisonProps) {
   });
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="glass-card p-7"
-    >
+    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="glass-card p-7">
       <h3 className="data-label mb-5">Provider Comparison</h3>
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
           <RadarChart data={data}>
             <PolarGrid stroke="rgba(255,255,255,0.06)" />
-            <PolarAngleAxis
-              dataKey="metric"
-              tick={{ fill: '#8e8fa2', fontSize: 10, fontFamily: 'Inter' }}
-            />
+            <PolarAngleAxis dataKey="metric" tick={{ fill: '#8e8fa2', fontSize: 10, fontFamily: 'Inter' }} />
             <PolarRadiusAxis
               angle={90}
               domain={[0, 100]}
@@ -101,13 +89,8 @@ export function RadarComparison({ results }: RadarComparisonProps) {
       <div className="flex justify-center gap-8 mt-3">
         {providers.map((p) => (
           <div key={p} className="flex items-center gap-2">
-            <div
-              className="w-2.5 h-2.5 rounded-sm"
-              style={{ backgroundColor: getProviderColor(p) }}
-            />
-            <span className="text-[11px] text-text-secondary font-mono">
-              {getProviderDisplayName(p)}
-            </span>
+            <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: getProviderColor(p) }} />
+            <span className="text-[11px] text-text-secondary font-mono">{getProviderDisplayName(p)}</span>
           </div>
         ))}
       </div>

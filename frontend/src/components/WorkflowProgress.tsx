@@ -15,21 +15,31 @@ interface WorkflowProgressProps {
 
 function getStatusTagColor(status: string): string {
   switch (status) {
-    case 'completed': return 'success';
-    case 'running': return 'processing';
-    case 'failed': return 'error';
-    case 'skipped': return 'default';
-    default: return 'default';
+    case 'completed':
+      return 'success';
+    case 'running':
+      return 'processing';
+    case 'failed':
+      return 'error';
+    case 'skipped':
+      return 'default';
+    default:
+      return 'default';
   }
 }
 
 function getTimelineItemColor(status: string): string {
   switch (status) {
-    case 'completed': return 'green';
-    case 'running': return 'blue';
-    case 'failed': return 'red';
-    case 'skipped': return 'gray';
-    default: return 'gray';
+    case 'completed':
+      return 'green';
+    case 'running':
+      return 'blue';
+    case 'failed':
+      return 'red';
+    case 'skipped':
+      return 'gray';
+    default:
+      return 'gray';
   }
 }
 
@@ -70,15 +80,13 @@ export function WorkflowProgress({ workflow }: WorkflowProgressProps) {
   const progress = workflow.tasks.length > 0 ? (completedCount / workflow.tasks.length) * 100 : 0;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="glass-card p-7 space-y-5"
-    >
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-7 space-y-5">
       {/* Overall Progress Bar */}
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs text-text-secondary">
-          <span>{completedCount} / {workflow.tasks.length} tasks completed</span>
+          <span>
+            {completedCount} / {workflow.tasks.length} tasks completed
+          </span>
           <span>{Math.round(progress)}%</span>
         </div>
         <Progress
@@ -98,9 +106,10 @@ export function WorkflowProgress({ workflow }: WorkflowProgressProps) {
             const result = workflow.taskResults[index];
             const status = result?.status || 'pending';
             const isActive = status === 'running';
-            const duration = result?.startedAt && result?.completedAt
-              ? new Date(result.completedAt).getTime() - new Date(result.startedAt).getTime()
-              : null;
+            const duration =
+              result?.startedAt && result?.completedAt
+                ? new Date(result.completedAt).getTime() - new Date(result.startedAt).getTime()
+                : null;
 
             return {
               color: getTimelineItemColor(status),
@@ -111,10 +120,10 @@ export function WorkflowProgress({ workflow }: WorkflowProgressProps) {
                     isActive
                       ? 'border-accent-amber/20 bg-accent-amber/5'
                       : status === 'completed'
-                      ? 'border-border bg-accent-teal/5'
-                      : status === 'failed'
-                      ? 'border-border bg-accent-rose/5'
-                      : 'border-border bg-bg-surface'
+                        ? 'border-border bg-accent-teal/5'
+                        : status === 'failed'
+                          ? 'border-border bg-accent-rose/5'
+                          : 'border-border bg-bg-surface'
                   }`}
                 >
                   <div className="flex-1 min-w-0">
@@ -126,9 +135,7 @@ export function WorkflowProgress({ workflow }: WorkflowProgressProps) {
                         {task.config.concurrency}c × {task.config.iterations}i
                       </span>
                     </div>
-                    {result?.error && (
-                      <p className="text-[10px] text-accent-rose mt-0.5 truncate">{result.error}</p>
-                    )}
+                    {result?.error && <p className="text-[10px] text-accent-rose mt-0.5 truncate">{result.error}</p>}
                   </div>
                   <div className="text-right flex-shrink-0">
                     <Tag
@@ -158,7 +165,8 @@ export function WorkflowProgress({ workflow }: WorkflowProgressProps) {
           <span>Started: {formatDate(workflow.startedAt)}</span>
           {workflow.completedAt && (
             <span>
-              Duration: {formatDuration(new Date(workflow.completedAt).getTime() - new Date(workflow.startedAt).getTime())}
+              Duration:{' '}
+              {formatDuration(new Date(workflow.completedAt).getTime() - new Date(workflow.startedAt).getTime())}
             </span>
           )}
         </div>

@@ -18,6 +18,7 @@ interface UseWorkflowReturn {
   duplicateWorkflow: (id: string) => Promise<string | null>;
   clearError: () => void;
   reconnectActiveWorkflow: () => Promise<boolean>;
+  workflowsLoaded: boolean;
 }
 
 export interface CreateWorkflowData {
@@ -91,45 +92,53 @@ export function useWorkflow(): UseWorkflowReturn {
   }, []);
 
   // Shared SSE connection logic
-  const connectSSE = useCallback((id: string) => {
-    // Close existing connection
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-    }
-
-    activeRunIdRef.current = id;
-    setIsRunning(true);
-
-    const eventSource = new EventSource(sseUrl(`/api/workflows/${id}/stream`));
-    eventSourceRef.current = eventSource;
-
-    eventSource.onmessage = (event) => {
-      const parsed = JSON.parse(event.data);
-
-      if (parsed.type === 'workflow:init' || parsed.type === 'task:start' ||
-          parsed.type === 'task:progress' || parsed.type === 'task:complete' ||
-          parsed.type === 'task:error' || parsed.type === 'cooldown') {
-        fetchWorkflow(id);
+  const connectSSE = useCallback(
+    (id: string) => {
+      // Close existing connection
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
       }
 
-      if (parsed.type === 'workflow:complete') {
+      activeRunIdRef.current = id;
+      setIsRunning(true);
+
+      const eventSource = new EventSource(sseUrl(`/api/workflows/${id}/stream`));
+      eventSourceRef.current = eventSource;
+
+      eventSource.onmessage = (event) => {
+        const parsed = JSON.parse(event.data);
+
+        if (
+          parsed.type === 'workflow:init' ||
+          parsed.type === 'task:start' ||
+          parsed.type === 'task:progress' ||
+          parsed.type === 'task:complete' ||
+          parsed.type === 'task:error' ||
+          parsed.type === 'cooldown'
+        ) {
+          fetchWorkflow(id);
+        }
+
+        if (parsed.type === 'workflow:complete') {
+          eventSource.close();
+          eventSourceRef.current = null;
+          setIsRunning(false);
+          fetchWorkflow(id);
+          fetchWorkflows();
+          activeRunIdRef.current = null;
+        }
+      };
+
+      eventSource.onerror = () => {
         eventSource.close();
         eventSourceRef.current = null;
         setIsRunning(false);
         fetchWorkflow(id);
-        fetchWorkflows();
         activeRunIdRef.current = null;
-      }
-    };
-
-    eventSource.onerror = () => {
-      eventSource.close();
-      eventSourceRef.current = null;
-      setIsRunning(false);
-      fetchWorkflow(id);
-      activeRunIdRef.current = null;
-    };
-  }, [fetchWorkflow, fetchWorkflows]);
+      };
+    },
+    [fetchWorkflow, fetchWorkflows],
+  );
 
   const startWorkflow = useCallback(
     async (data: CreateWorkflowData) => {
@@ -155,7 +164,7 @@ export function useWorkflow(): UseWorkflowReturn {
         activeRunIdRef.current = null;
       }
     },
-    [connectSSE]
+    [connectSSE],
   );
 
   const reconnectActiveWorkflow = useCallback(async (): Promise<boolean> => {
@@ -194,7 +203,7 @@ export function useWorkflow(): UseWorkflowReturn {
         return false;
       }
     },
-    [fetchWorkflow]
+    [fetchWorkflow],
   );
 
   const exportWorkflow = useCallback((id: string, format: 'json' | 'csv') => {
@@ -219,7 +228,7 @@ export function useWorkflow(): UseWorkflowReturn {
         return false;
       }
     },
-    [fetchWorkflows, currentWorkflow]
+    [fetchWorkflows, currentWorkflow],
   );
 
   const duplicateWorkflow = useCallback(
@@ -237,7 +246,7 @@ export function useWorkflow(): UseWorkflowReturn {
         return null;
       }
     },
-    [fetchWorkflows]
+    [fetchWorkflows],
   );
 
   const clearError = useCallback(() => setError(null), []);

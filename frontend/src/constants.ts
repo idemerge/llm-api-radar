@@ -18,11 +18,7 @@ export interface PresetPrompt {
   heavy?: boolean;
 }
 
-function longContextPreset(
-  bucket: keyof typeof shareGPTData.buckets,
-  label: string,
-  index = 0
-): PresetPrompt {
+function longContextPreset(bucket: keyof typeof shareGPTData.buckets, label: string, index = 0): PresetPrompt {
   const item = shareGPTData.buckets[bucket][index];
   return { label, prompt: item.text, tokens: item.tokens, category: 'long-context' };
 }
@@ -34,9 +30,7 @@ function heavyPreset(bucket: '64k' | '256k'): PresetPrompt {
 }
 
 export async function loadHeavyPreset(bucket: '64k' | '256k', index = 0): Promise<string> {
-  const mod = bucket === '64k'
-    ? await import('./data/sharegpt-64k.json')
-    : await import('./data/sharegpt-256k.json');
+  const mod = bucket === '64k' ? await import('./data/sharegpt-64k.json') : await import('./data/sharegpt-256k.json');
   return (mod as any).default.buckets[bucket][index].text;
 }
 
@@ -49,7 +43,8 @@ export const PRESET_PROMPTS: PresetPrompt[] = [
   },
   {
     label: 'Code Generation',
-    prompt: 'Write a TypeScript function that implements a binary search tree with insert, search, and delete operations.',
+    prompt:
+      'Write a TypeScript function that implements a binary search tree with insert, search, and delete operations.',
     tokens: 22,
     category: 'standard',
   },
@@ -61,12 +56,13 @@ export const PRESET_PROMPTS: PresetPrompt[] = [
   },
   {
     label: 'Analysis',
-    prompt: 'Compare and contrast microservices architecture vs monolithic architecture. Include pros, cons, and when to use each.',
+    prompt:
+      'Compare and contrast microservices architecture vs monolithic architecture. Include pros, cons, and when to use each.',
     tokens: 24,
     category: 'standard',
   },
-  longContextPreset('1k',  'Long Context 1K'),
-  longContextPreset('4k',  'Long Context 4K'),
+  longContextPreset('1k', 'Long Context 1K'),
+  longContextPreset('4k', 'Long Context 4K'),
   longContextPreset('16k', 'Long Context 16K'),
   heavyPreset('64k'),
   heavyPreset('256k'),

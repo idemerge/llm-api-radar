@@ -39,7 +39,7 @@ export function useProviders() {
         throw new Error(data.error || 'Failed to create provider');
       }
       const provider = await res.json();
-      setProviders(prev => [provider, ...prev]);
+      setProviders((prev) => [provider, ...prev]);
       return provider;
     } catch (err: any) {
       setError(err.message);
@@ -47,33 +47,36 @@ export function useProviders() {
     }
   }, []);
 
-  const updateProvider = useCallback(async (id: string, input: Partial<ProviderConfigInput>): Promise<ProviderConfigResponse | null> => {
-    setError(null);
-    try {
-      const res = await apiFetch(`${API_BASE}/providers/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(input),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to update provider');
+  const updateProvider = useCallback(
+    async (id: string, input: Partial<ProviderConfigInput>): Promise<ProviderConfigResponse | null> => {
+      setError(null);
+      try {
+        const res = await apiFetch(`${API_BASE}/providers/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(input),
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'Failed to update provider');
+        }
+        const updated = await res.json();
+        setProviders((prev) => prev.map((p) => (p.id === id ? updated : p)));
+        return updated;
+      } catch (err: any) {
+        setError(err.message);
+        return null;
       }
-      const updated = await res.json();
-      setProviders(prev => prev.map(p => p.id === id ? updated : p));
-      return updated;
-    } catch (err: any) {
-      setError(err.message);
-      return null;
-    }
-  }, []);
+    },
+    [],
+  );
 
   const deleteProvider = useCallback(async (id: string): Promise<boolean> => {
     setError(null);
     try {
       const res = await apiFetch(`${API_BASE}/providers/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete provider');
-      setProviders(prev => prev.filter(p => p.id !== id));
+      setProviders((prev) => prev.filter((p) => p.id !== id));
       return true;
     } catch (err: any) {
       setError(err.message);
@@ -94,23 +97,26 @@ export function useProviders() {
     }
   }, []);
 
-  const testRawConnection = useCallback(async (config: {
-    endpoint: string;
-    apiKey: string;
-    format: string;
-    modelName: string;
-  }): Promise<TestConnectionResult | null> => {
-    try {
-      const res = await apiFetch(`${API_BASE}/providers/test-connection`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config),
-      });
-      return await res.json();
-    } catch (err: any) {
-      return { success: false, latencyMs: 0, error: err.message };
-    }
-  }, []);
+  const testRawConnection = useCallback(
+    async (config: {
+      endpoint: string;
+      apiKey: string;
+      format: string;
+      modelName: string;
+    }): Promise<TestConnectionResult | null> => {
+      try {
+        const res = await apiFetch(`${API_BASE}/providers/test-connection`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(config),
+        });
+        return await res.json();
+      } catch (err: any) {
+        return { success: false, latencyMs: 0, error: err.message };
+      }
+    },
+    [],
+  );
 
   return {
     providers,

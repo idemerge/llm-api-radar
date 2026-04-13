@@ -33,18 +33,11 @@ export function MetricCard({ title, value, unit, icon, color = '#73bf69', delay 
         >
           {value}
         </motion.span>
-        {unit && (
-          <span className="text-[11px] text-text-secondary font-medium font-mono">
-            {unit}
-          </span>
-        )}
+        {unit && <span className="text-[11px] text-text-secondary font-medium font-mono">{unit}</span>}
       </div>
 
       {/* Bottom accent line */}
-      <div
-        className="absolute bottom-0 left-0 right-0 h-[2px] opacity-30"
-        style={{ backgroundColor: color }}
-      />
+      <div className="absolute bottom-0 left-0 right-0 h-[2px] opacity-30" style={{ backgroundColor: color }} />
     </motion.div>
   );
 }

@@ -10,7 +10,7 @@ export class GeminiProvider extends BaseLLMProvider {
     maxTokens: number,
     apiKey: string,
     streaming?: boolean,
-    _images?: any[]
+    _images?: any[],
   ): Promise<LLMResponse> {
     if (apiKey && apiKey.startsWith('AI') && apiKey.length > 10) {
       try {
@@ -31,8 +31,8 @@ export class GeminiProvider extends BaseLLMProvider {
       'gemini-pro',
       0.0000005, // $0.50 per 1M input tokens
       0.0000015, // $1.50 per 1M output tokens
-      500,       // base latency ms
-      300        // variance
+      500, // base latency ms
+      300, // variance
     );
   }
 
@@ -40,7 +40,7 @@ export class GeminiProvider extends BaseLLMProvider {
     prompt: string,
     systemPrompt: string | undefined,
     maxTokens: number,
-    apiKey: string
+    apiKey: string,
   ): Promise<LLMResponse> {
     const startTime = Date.now();
     const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt;
@@ -55,7 +55,7 @@ export class GeminiProvider extends BaseLLMProvider {
           generationConfig: { maxOutputTokens: maxTokens },
         }),
       },
-      180000
+      180000,
     );
 
     if (!response.ok) {
@@ -115,9 +115,7 @@ export class GeminiProvider extends BaseLLMProvider {
     }
 
     const responseTime = Date.now() - startTime;
-    const firstTokenLatency = firstTokenTime
-      ? firstTokenTime - startTime
-      : Math.round(responseTime * 0.2);
+    const firstTokenLatency = firstTokenTime ? firstTokenTime - startTime : Math.round(responseTime * 0.2);
 
     // If outputTokens was not retrieved from the API, estimate it
     if (outputTokens === 0) {
@@ -134,9 +132,7 @@ export class GeminiProvider extends BaseLLMProvider {
       totalTokens,
       responseTime,
       firstTokenLatency,
-      estimatedCost: Number(
-        (inputTokens * 0.0000005 + outputTokens * 0.0000015).toFixed(6)
-      ),
+      estimatedCost: Number((inputTokens * 0.0000005 + outputTokens * 0.0000015).toFixed(6)),
       model: 'gemini-pro',
     };
   }
@@ -145,7 +141,7 @@ export class GeminiProvider extends BaseLLMProvider {
     prompt: string,
     systemPrompt: string | undefined,
     maxTokens: number,
-    apiKey: string
+    apiKey: string,
   ): Promise<LLMResponse> {
     const startTime = Date.now();
     const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt;
@@ -160,17 +156,16 @@ export class GeminiProvider extends BaseLLMProvider {
           generationConfig: { maxOutputTokens: maxTokens },
         }),
       },
-      180000
+      180000,
     );
 
     if (!response.ok) {
       throw new Error(`Gemini API error: ${response.status}`);
     }
 
-    const data = await response.json() as Record<string, any>;
+    const data = (await response.json()) as Record<string, any>;
     const responseTime = Date.now() - startTime;
-    const text =
-      data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     // Use usageMetadata from API when available, fall back to character estimation
     const usageMetadata = data.usageMetadata;
@@ -186,16 +181,12 @@ export class GeminiProvider extends BaseLLMProvider {
       totalTokens,
       responseTime,
       firstTokenLatency: Math.round(responseTime * 0.2),
-      estimatedCost: Number(
-        (inputTokens * 0.0000005 + outputTokens * 0.0000015).toFixed(6)
-      ),
+      estimatedCost: Number((inputTokens * 0.0000005 + outputTokens * 0.0000015).toFixed(6)),
       model: 'gemini-pro',
     };
   }
 
   private simulateLatency(): Promise<void> {
-    return new Promise((resolve) =>
-      setTimeout(resolve, 100 + Math.random() * 200)
-    );
+    return new Promise((resolve) => setTimeout(resolve, 100 + Math.random() * 200));
   }
 }

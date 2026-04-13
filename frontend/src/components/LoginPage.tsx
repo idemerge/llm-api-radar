@@ -39,19 +39,14 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
           <h2 className="text-text-primary text-base font-medium mb-4">Sign in</h2>
 
           {error && (
-            <Alert
-              message={error}
-              type="error"
-              showIcon
-              closable
-              onClose={clearError}
-              style={{ marginBottom: 16 }}
-            />
+            <Alert message={error} type="error" showIcon closable onClose={clearError} style={{ marginBottom: 16 }} />
           )}
 
           <form onSubmit={handleSubmit} method="post" action="/api/auth/login">
             <div className="mb-4">
-              <label htmlFor="login-username" className="block text-text-secondary text-xs mb-1.5">Username</label>
+              <label htmlFor="login-username" className="block text-text-secondary text-xs mb-1.5">
+                Username
+              </label>
               <input
                 id="login-username"
                 name="username"
@@ -65,7 +60,9 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
               />
             </div>
             <div className="mb-4">
-              <label htmlFor="login-password" className="block text-text-secondary text-xs mb-1.5">Password</label>
+              <label htmlFor="login-password" className="block text-text-secondary text-xs mb-1.5">
+                Password
+              </label>
               <input
                 id="login-password"
                 name="password"
@@ -77,14 +74,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                 className="w-full h-10 px-3 rounded-md border border-border bg-bg-primary text-text-primary text-sm outline-none focus:border-accent-teal transition-colors"
               />
             </div>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={loading}
-              block
-              size="large"
-              style={{ marginTop: 8 }}
-            >
+            <Button type="primary" htmlType="submit" loading={loading} block size="large" style={{ marginTop: 8 }}>
               Sign in
             </Button>
           </form>

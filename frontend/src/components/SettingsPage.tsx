@@ -66,7 +66,12 @@ export function SettingsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ProviderFormData>({ ...EMPTY_FORM });
   const [testingId, setTestingId] = useState<string | null>(null);
-  const [testResult, setTestResult] = useState<{ id: string; success: boolean; latencyMs: number; error?: string } | null>(null);
+  const [testResult, setTestResult] = useState<{
+    id: string;
+    success: boolean;
+    latencyMs: number;
+    error?: string;
+  } | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -85,7 +90,7 @@ export function SettingsPage() {
       endpoint: provider.endpoint,
       apiKey: '',
       format: provider.format,
-      models: provider.models.map(m => ({
+      models: provider.models.map((m) => ({
         name: m.name,
         displayName: m.displayName || '',
         contextSize: m.contextSize,
@@ -143,29 +148,33 @@ export function SettingsPage() {
   };
 
   const addModel = () => {
-    setForm(prev => ({ ...prev, models: [...prev.models, { ...EMPTY_MODEL }] }));
+    setForm((prev) => ({ ...prev, models: [...prev.models, { ...EMPTY_MODEL }] }));
   };
 
   const removeModel = (index: number) => {
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
       models: prev.models.filter((_, i) => i !== index),
     }));
   };
 
   const updateModel = (index: number, field: keyof ModelFormData, value: any) => {
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
-      models: prev.models.map((m, i) => i === index ? { ...m, [field]: value } : m),
+      models: prev.models.map((m, i) => (i === index ? { ...m, [field]: value } : m)),
     }));
   };
 
-  const isFormValid = form.name.trim() && form.endpoint.trim() &&
+  const isFormValid =
+    form.name.trim() &&
+    form.endpoint.trim() &&
     (editingId || form.apiKey.trim()) &&
-    form.models.length > 0 && form.models.every(m => m.name.trim());
+    form.models.length > 0 &&
+    form.models.every((m) => m.name.trim());
 
-  const isNameDuplicate = form.name.trim() &&
-    providers.some(p => p.name.trim().toLowerCase() === form.name.trim().toLowerCase() && p.id !== editingId);
+  const isNameDuplicate =
+    form.name.trim() &&
+    providers.some((p) => p.name.trim().toLowerCase() === form.name.trim().toLowerCase() && p.id !== editingId);
 
   return (
     <div className="w-full space-y-6">
@@ -175,23 +184,16 @@ export function SettingsPage() {
           <div>
             <div className="section-title !mb-0">Provider Configurations</div>
             <p className="text-[12px] text-text-secondary mt-1">
-              Configure LLM providers with encrypted API key storage. Supports OpenAI, Anthropic, Gemini, and custom endpoints.
+              Configure LLM providers with encrypted API key storage. Supports OpenAI, Anthropic, Gemini, and custom
+              endpoints.
             </p>
           </div>
-          <Button
-            type="primary"
-            ghost
-            icon={<PlusOutlined />}
-            onClick={openCreateForm}
-            size="small"
-          >
+          <Button type="primary" ghost icon={<PlusOutlined />} onClick={openCreateForm} size="small">
             Add Provider
           </Button>
         </div>
 
-        {providerError && (
-          <Alert type="error" message={providerError} showIcon closable />
-        )}
+        {providerError && <Alert type="error" message={providerError} showIcon closable />}
 
         {loading && providers.length === 0 && (
           <div className="text-center py-8 text-text-tertiary text-[13px]">Loading providers...</div>
@@ -208,9 +210,9 @@ export function SettingsPage() {
 
         {/* Provider Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 !mt-6">
-          {providers.map(provider => {
-            const activeModels = provider.models.filter(m => m.isActive !== false);
-            const inactiveModels = provider.models.filter(m => m.isActive === false);
+          {providers.map((provider) => {
+            const activeModels = provider.models.filter((m) => m.isActive !== false);
+            const inactiveModels = provider.models.filter((m) => m.isActive === false);
             return (
               <motion.div
                 key={provider.id}
@@ -227,10 +229,7 @@ export function SettingsPage() {
                       <div className="text-[14px] font-semibold text-text-primary truncate">{provider.name}</div>
                       <Tag>{provider.format}</Tag>
                     </div>
-                    <Button
-                      size="small"
-                      onClick={() => openEditForm(provider)}
-                    >
+                    <Button size="small" onClick={() => openEditForm(provider)}>
                       Edit
                     </Button>
                   </div>
@@ -239,20 +238,17 @@ export function SettingsPage() {
                   <div className="space-y-1.5 text-[11px]">
                     <div className="flex items-center gap-2">
                       <span className="text-text-tertiary w-[52px] flex-shrink-0">Endpoint</span>
-                      <span className="text-text-secondary truncate font-mono">
-                        {provider.endpoint}
-                      </span>
+                      <span className="text-text-secondary truncate font-mono">{provider.endpoint}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-text-tertiary w-[52px] flex-shrink-0">API Key</span>
-                      <span className="text-text-secondary font-mono">
-                        {provider.apiKeyMasked}
-                      </span>
+                      <span className="text-text-secondary font-mono">{provider.apiKeyMasked}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-text-tertiary w-[52px] flex-shrink-0">Models</span>
                       <span className="text-text-secondary">
-                        {activeModels.length} active{inactiveModels.length > 0 && (
+                        {activeModels.length} active
+                        {inactiveModels.length > 0 && (
                           <span className="text-text-tertiary"> · {inactiveModels.length} inactive</span>
                         )}
                       </span>
@@ -262,15 +258,13 @@ export function SettingsPage() {
 
                 {/* Test result */}
                 {testResult && testResult.id === provider.id && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                  >
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
                     <Alert
                       type={testResult.success ? 'success' : 'error'}
-                      message={testResult.success
-                        ? `Connection successful (${testResult.latencyMs}ms)`
-                        : `Connection failed: ${testResult.error}`
+                      message={
+                        testResult.success
+                          ? `Connection successful (${testResult.latencyMs}ms)`
+                          : `Connection failed: ${testResult.error}`
                       }
                       showIcon
                       closable
@@ -285,7 +279,7 @@ export function SettingsPage() {
                 <div className="px-5 pb-4 pt-0 flex-1">
                   <div className="border-t border-border/50 pt-3">
                     <div className="flex flex-wrap gap-1.5">
-                      {provider.models.map(model => (
+                      {provider.models.map((model) => (
                         <div
                           key={model.id}
                           className={`px-2.5 py-1.5 rounded-md bg-bg-card border border-border/50 text-[11px] ${
@@ -298,17 +292,29 @@ export function SettingsPage() {
                                 model.isActive === false ? 'bg-text-tertiary' : 'bg-accent-teal'
                               }`}
                             />
-                            <span className="text-text-primary font-medium font-mono">
-                              {model.name}
-                            </span>
+                            <span className="text-text-primary font-medium font-mono">{model.name}</span>
                           </div>
                           <div className="flex items-center gap-1.5 mt-1 ml-3">
                             <span className="text-text-tertiary text-[10px] font-mono">
-                              {model.contextSize >= 1000 ? `${Math.round(model.contextSize / 1000)}K` : model.contextSize}
+                              {model.contextSize >= 1000
+                                ? `${Math.round(model.contextSize / 1000)}K`
+                                : model.contextSize}
                             </span>
-                            {model.supportsVision && <Tag color="blue" style={{ fontSize: 8, padding: '0 4px', lineHeight: '16px' }}>V</Tag>}
-                            {model.supportsTools && <Tag color="purple" style={{ fontSize: 8, padding: '0 4px', lineHeight: '16px' }}>T</Tag>}
-                            {model.supportsStreaming && <Tag color="green" style={{ fontSize: 8, padding: '0 4px', lineHeight: '16px' }}>S</Tag>}
+                            {model.supportsVision && (
+                              <Tag color="blue" style={{ fontSize: 8, padding: '0 4px', lineHeight: '16px' }}>
+                                V
+                              </Tag>
+                            )}
+                            {model.supportsTools && (
+                              <Tag color="purple" style={{ fontSize: 8, padding: '0 4px', lineHeight: '16px' }}>
+                                T
+                              </Tag>
+                            )}
+                            {model.supportsStreaming && (
+                              <Tag color="green" style={{ fontSize: 8, padding: '0 4px', lineHeight: '16px' }}>
+                                S
+                              </Tag>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -336,7 +342,9 @@ export function SettingsPage() {
                     cancelText="Cancel"
                     okButtonProps={{ danger: true }}
                   >
-                    <Button size="small" danger ghost>Delete</Button>
+                    <Button size="small" danger ghost>
+                      Delete
+                    </Button>
                   </Popconfirm>
                 </div>
               </motion.div>
@@ -351,7 +359,7 @@ export function SettingsPage() {
           onCancel={closeForm}
           onOk={handleSubmit}
           okText={editingId ? 'Update' : 'Save'}
-          okButtonProps={{ disabled: !isFormValid || isNameDuplicate, loading: saving }}
+          okButtonProps={{ disabled: !!(!isFormValid || isNameDuplicate), loading: saving }}
           width={860}
           destroyOnHidden
         >
@@ -364,7 +372,7 @@ export function SettingsPage() {
                   placeholder="e.g. My OpenAI"
                   value={form.name}
                   status={isNameDuplicate ? 'error' : undefined}
-                  onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
                 />
                 {isNameDuplicate && (
                   <span className="text-[10px] text-accent-rose mt-0.5 block">Provider name already exists</span>
@@ -374,8 +382,8 @@ export function SettingsPage() {
                 <label className="text-[11px] text-text-secondary mb-1 block">Format</label>
                 <Select
                   value={form.format}
-                  onChange={(val) => setForm(prev => ({ ...prev, format: val }))}
-                  options={FORMAT_OPTIONS.map(opt => ({ value: opt.value, label: opt.label }))}
+                  onChange={(val) => setForm((prev) => ({ ...prev, format: val }))}
+                  options={FORMAT_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }))}
                   style={{ width: '100%' }}
                 />
               </div>
@@ -386,13 +394,16 @@ export function SettingsPage() {
               <label className="text-[11px] text-text-secondary mb-1 block">Endpoint URL</label>
               <Input
                 placeholder={
-                  form.format === 'openai' ? 'https://api.openai.com/v1' :
-                  form.format === 'anthropic' ? 'https://api.anthropic.com/v1' :
-                  form.format === 'gemini' ? 'https://generativelanguage.googleapis.com/v1beta' :
-                  'https://your-api-endpoint.com/v1'
+                  form.format === 'openai'
+                    ? 'https://api.openai.com/v1'
+                    : form.format === 'anthropic'
+                      ? 'https://api.anthropic.com/v1'
+                      : form.format === 'gemini'
+                        ? 'https://generativelanguage.googleapis.com/v1beta'
+                        : 'https://your-api-endpoint.com/v1'
                 }
                 value={form.endpoint}
-                onChange={e => setForm(prev => ({ ...prev, endpoint: e.target.value }))}
+                onChange={(e) => setForm((prev) => ({ ...prev, endpoint: e.target.value }))}
               />
             </div>
 
@@ -405,7 +416,7 @@ export function SettingsPage() {
               <Input.Password
                 placeholder={editingId ? 'Leave empty to keep current key' : 'Enter API key'}
                 value={form.apiKey}
-                onChange={e => setForm(prev => ({ ...prev, apiKey: e.target.value }))}
+                onChange={(e) => setForm((prev) => ({ ...prev, apiKey: e.target.value }))}
               />
             </div>
 
@@ -419,19 +430,28 @@ export function SettingsPage() {
               </div>
               <div className="grid grid-cols-2 gap-2 max-h-[400px] overflow-y-auto">
                 {form.models.map((model, idx) => (
-                  <div key={idx} className={`p-3 rounded bg-bg-card border border-border space-y-2 ${!model.isActive ? 'opacity-50' : ''}`}>
+                  <div
+                    key={idx}
+                    className={`p-3 rounded bg-bg-card border border-border space-y-2 ${!model.isActive ? 'opacity-50' : ''}`}
+                  >
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-[10px] text-text-tertiary font-medium">Model #{idx + 1}</span>
                       <div className="flex items-center gap-2">
                         <Checkbox
                           checked={model.isActive}
-                          onChange={e => updateModel(idx, 'isActive', e.target.checked)}
+                          onChange={(e) => updateModel(idx, 'isActive', e.target.checked)}
                           style={{ fontSize: 10 }}
                         >
                           <span className="text-[10px] text-text-secondary">Active</span>
                         </Checkbox>
                         {form.models.length > 1 && (
-                          <Button type="link" danger size="small" style={{ fontSize: 10 }} onClick={() => removeModel(idx)}>
+                          <Button
+                            type="link"
+                            danger
+                            size="small"
+                            style={{ fontSize: 10 }}
+                            onClick={() => removeModel(idx)}
+                          >
                             Remove
                           </Button>
                         )}
@@ -444,7 +464,7 @@ export function SettingsPage() {
                           size="small"
                           placeholder="e.g. gpt-4o"
                           value={model.name}
-                          onChange={e => updateModel(idx, 'name', e.target.value)}
+                          onChange={(e) => updateModel(idx, 'name', e.target.value)}
                         />
                       </div>
                       <div>
@@ -453,7 +473,7 @@ export function SettingsPage() {
                           size="small"
                           placeholder="e.g. GPT-4o (optional)"
                           value={model.displayName}
-                          onChange={e => updateModel(idx, 'displayName', e.target.value)}
+                          onChange={(e) => updateModel(idx, 'displayName', e.target.value)}
                         />
                       </div>
                     </div>
@@ -471,19 +491,19 @@ export function SettingsPage() {
                     <div className="flex items-center gap-4">
                       <Checkbox
                         checked={model.supportsVision}
-                        onChange={e => updateModel(idx, 'supportsVision', e.target.checked)}
+                        onChange={(e) => updateModel(idx, 'supportsVision', e.target.checked)}
                       >
                         <span className="text-[11px] text-text-secondary">Vision</span>
                       </Checkbox>
                       <Checkbox
                         checked={model.supportsTools}
-                        onChange={e => updateModel(idx, 'supportsTools', e.target.checked)}
+                        onChange={(e) => updateModel(idx, 'supportsTools', e.target.checked)}
                       >
                         <span className="text-[11px] text-text-secondary">Tool Calling</span>
                       </Checkbox>
                       <Checkbox
                         checked={model.supportsStreaming}
-                        onChange={e => updateModel(idx, 'supportsStreaming', e.target.checked)}
+                        onChange={(e) => updateModel(idx, 'supportsStreaming', e.target.checked)}
                       >
                         <span className="text-[11px] text-text-secondary">Streaming</span>
                       </Checkbox>
@@ -504,7 +524,10 @@ export function SettingsPage() {
             <span className="text-text-primary font-medium">LLM API Radar</span>
             <span className="text-text-tertiary ml-1.5 font-mono">{APP_VERSION}</span>
           </p>
-          <p>A real-time benchmarking tool for comparing LLM provider performance across latency, throughput, and cost metrics.</p>
+          <p>
+            A real-time benchmarking tool for comparing LLM provider performance across latency, throughput, and cost
+            metrics.
+          </p>
         </div>
       </div>
     </div>

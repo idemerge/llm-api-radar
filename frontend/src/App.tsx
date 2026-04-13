@@ -97,14 +97,19 @@ function App() {
   const [workflowToDuplicate, setWorkflowToDuplicate] = useState<BenchmarkWorkflow | null>(null);
   const prevRunningRef = useRef(false);
 
-  const handleDuplicateWorkflow = useCallback(async (id: string) => {
-    try {
-      const res = await apiFetch(`/api/workflows/${id}`);
-      const data = await res.json();
-      setWorkflowToDuplicate(data);
-      navigate('/workflow', { replace: true });
-    } catch { /* ignore */ }
-  }, [navigate]);
+  const handleDuplicateWorkflow = useCallback(
+    async (id: string) => {
+      try {
+        const res = await apiFetch(`/api/workflows/${id}`);
+        const data = await res.json();
+        setWorkflowToDuplicate(data);
+        navigate('/workflow', { replace: true });
+      } catch {
+        /* ignore */
+      }
+    },
+    [navigate],
+  );
 
   const handleDuplicateConsumed = useCallback(() => {
     setWorkflowToDuplicate(null);
@@ -138,7 +143,7 @@ function App() {
   useEffect(() => {
     if (!authed || activePage !== 'history') return;
     fetchWorkflows();
-    const hasRunning = workflows.some(w => w.status === 'running');
+    const hasRunning = workflows.some((w) => w.status === 'running');
     if (!hasRunning) return;
     const timer = setInterval(() => fetchWorkflows(), 30000);
     return () => clearInterval(timer);
@@ -185,7 +190,12 @@ function App() {
           },
         }}
       >
-        <LoginPage onLoginSuccess={() => { setAuthed(true); navigate(returnTo, { replace: true }); }} />
+        <LoginPage
+          onLoginSuccess={() => {
+            setAuthed(true);
+            navigate(returnTo, { replace: true });
+          }}
+        />
       </ConfigProvider>
     );
   }
@@ -330,261 +340,267 @@ function App() {
         },
       }}
     >
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sidebar
-        activePage={activePage}
-        onNavigate={(page) => navigate(PAGE_ROUTES[page])}
-        isRunning={isRunning}
-        runningLabel={runningLabel}
-        onLogout={() => { clearToken(); setAuthed(false); navigate('/login', { replace: true }); }}
-      />
-
-      {/* Mobile navigation drawer */}
-      <Drawer
-        open={mobileMenuOpen}
-        onClose={() => setMobileMenuOpen(false)}
-        placement="left"
-        styles={{
-          wrapper: { width: 240 },
-          header: { background: '#141414', borderBottom: '1px solid #303030' },
-          body: { background: '#141414', padding: 0 },
-        }}
-        title={
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded bg-accent-teal flex items-center justify-center text-bg-primary text-xs font-bold flex-shrink-0">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <rect x="1" y="7" width="4" height="6" rx="1" fill="currentColor" opacity="0.9" />
-                <rect x="5" y="4" width="4" height="9" rx="1" fill="currentColor" />
-                <rect x="9" y="1" width="4" height="12" rx="1" fill="currentColor" opacity="0.9" />
-              </svg>
-            </div>
-            <div>
-              <div className="text-[13px] font-semibold text-text-primary leading-none">LLM API Radar</div>
-              <div className="text-[9px] text-text-tertiary mt-0.5 font-mono">{APP_VERSION}</div>
-            </div>
-          </div>
-        }
-      >
-        <Menu
-          mode="inline"
-          theme="dark"
-          selectedKeys={[activePage === 'history-detail' ? 'history' : activePage]}
-          onClick={({ key }) => {
-            navigate(PAGE_ROUTES[key]);
-            setMobileMenuOpen(false);
+      <Layout style={{ minHeight: '100vh' }}>
+        <Sidebar
+          activePage={activePage === 'login' ? 'workflow' : activePage}
+          onNavigate={(page) => navigate(PAGE_ROUTES[page])}
+          isRunning={isRunning}
+          runningLabel={runningLabel}
+          onLogout={() => {
+            clearToken();
+            setAuthed(false);
+            navigate('/login', { replace: true });
           }}
-          items={getMenuItems()}
-          style={{ borderRight: 0, background: '#141414' }}
         />
-      </Drawer>
 
-      <Layout className="app-layout-main" style={{ marginLeft: 200 }}>
-        {/* Top bar */}
-        <Layout.Header style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 10,
-          padding: '0 24px',
-          height: 56,
-          lineHeight: '56px',
-          backdropFilter: 'blur(12px)',
-          background: 'rgba(0, 0, 0, 0.8)',
-          borderBottom: '1px solid #303030',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}>
-          <div className="flex items-center gap-3">
-            <button
-              className="md:hidden text-text-secondary hover:text-text-primary p-1"
-              onClick={() => setMobileMenuOpen(true)}
-              aria-label="Open navigation menu"
-            >
-              <MenuOutlined style={{ fontSize: 18 }} />
-            </button>
-            <h1 className="app-topbar-title">{pageConfig[activePage].title}</h1>
-            <span className="text-[12px] text-text-tertiary hidden sm:inline">
-              {pageConfig[activePage].subtitle}
-            </span>
-          </div>
-          <div className="flex items-center gap-3" />
-        </Layout.Header>
+        {/* Mobile navigation drawer */}
+        <Drawer
+          open={mobileMenuOpen}
+          onClose={() => setMobileMenuOpen(false)}
+          placement="left"
+          styles={{
+            wrapper: { width: 240 },
+            header: { background: '#141414', borderBottom: '1px solid #303030' },
+            body: { background: '#141414', padding: 0 },
+          }}
+          title={
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded bg-accent-teal flex items-center justify-center text-bg-primary text-xs font-bold flex-shrink-0">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <rect x="1" y="7" width="4" height="6" rx="1" fill="currentColor" opacity="0.9" />
+                  <rect x="5" y="4" width="4" height="9" rx="1" fill="currentColor" />
+                  <rect x="9" y="1" width="4" height="12" rx="1" fill="currentColor" opacity="0.9" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-[13px] font-semibold text-text-primary leading-none">LLM API Radar</div>
+                <div className="text-[9px] text-text-tertiary mt-0.5 font-mono">{APP_VERSION}</div>
+              </div>
+            </div>
+          }
+        >
+          <Menu
+            mode="inline"
+            theme="dark"
+            selectedKeys={[activePage === 'history-detail' ? 'history' : activePage]}
+            onClick={({ key }) => {
+              navigate(PAGE_ROUTES[key]);
+              setMobileMenuOpen(false);
+            }}
+            items={getMenuItems()}
+            style={{ borderRight: 0, background: '#141414' }}
+          />
+        </Drawer>
 
-        {/* Content */}
-        <Layout.Content className="app-content">
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-4 p-3 rounded bg-accent-rose/10 border border-accent-rose/20 text-accent-rose text-sm flex items-center justify-between"
-            >
-              <span className="font-medium text-[13px]">{error}</span>
+        <Layout className="app-layout-main" style={{ marginLeft: 200 }}>
+          {/* Top bar */}
+          <Layout.Header
+            style={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 10,
+              padding: '0 24px',
+              height: 56,
+              lineHeight: '56px',
+              backdropFilter: 'blur(12px)',
+              background: 'rgba(0, 0, 0, 0.8)',
+              borderBottom: '1px solid #303030',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div className="flex items-center gap-3">
               <button
-                onClick={() => {
-                  clearWorkflowError();
-                  window.location.reload();
-                }}
-                className="text-xs underline hover:no-underline ml-4 opacity-70 hover:opacity-100"
+                className="md:hidden text-text-secondary hover:text-text-primary p-1"
+                onClick={() => setMobileMenuOpen(true)}
+                aria-label="Open navigation menu"
               >
-                Dismiss
+                <MenuOutlined style={{ fontSize: 18 }} />
               </button>
-            </motion.div>
-          )}
+              <h1 className="app-topbar-title">{pageConfig[activePage].title}</h1>
+              <span className="text-[12px] text-text-tertiary hidden sm:inline">{pageConfig[activePage].subtitle}</span>
+            </div>
+            <div className="flex items-center gap-3" />
+          </Layout.Header>
 
-          <AnimatePresence mode="wait">
-            {activePage === 'workflow' && (
+          {/* Content */}
+          <Layout.Content className="app-content">
+            {error && (
               <motion.div
-                key="workflow"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.12 }}
-                className="space-y-6"
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-4 p-3 rounded bg-accent-rose/10 border border-accent-rose/20 text-accent-rose text-sm flex items-center justify-between"
               >
-                {/* Getting Started Hint */}
-                {!currentWorkflow && !isWorkflowRunning && workflows.length === 0 && (
-                  <div className="p-4 rounded-md border border-accent-blue/20 bg-accent-blue/5 flex items-start gap-3">
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="text-accent-blue flex-shrink-0 mt-0.5">
-                      <circle cx="9" cy="9" r="8" stroke="currentColor" strokeWidth="1.5" />
-                      <path d="M9 5v5M9 12.5v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                    </svg>
-                    <div>
-                      <p className="text-sm text-text-primary font-medium mb-1">Getting Started</p>
-                      <p className="text-xs text-text-secondary leading-relaxed">
-                        1. Choose a template or name your workflow &nbsp;
-                        2. Select providers to benchmark &nbsp;
-                        3. Configure tasks (prompt, concurrency, iterations) &nbsp;
-                        4. Click Start to run all tasks sequentially and compare results.
-                      </p>
+                <span className="font-medium text-[13px]">{error}</span>
+                <button
+                  onClick={() => {
+                    clearWorkflowError();
+                    window.location.reload();
+                  }}
+                  className="text-xs underline hover:no-underline ml-4 opacity-70 hover:opacity-100"
+                >
+                  Dismiss
+                </button>
+              </motion.div>
+            )}
+
+            <AnimatePresence mode="wait">
+              {activePage === 'workflow' && (
+                <motion.div
+                  key="workflow"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.12 }}
+                  className="space-y-6"
+                >
+                  {/* Getting Started Hint */}
+                  {!currentWorkflow && !isWorkflowRunning && workflows.length === 0 && (
+                    <div className="p-4 rounded-md border border-accent-blue/20 bg-accent-blue/5 flex items-start gap-3">
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 18 18"
+                        fill="none"
+                        className="text-accent-blue flex-shrink-0 mt-0.5"
+                      >
+                        <circle cx="9" cy="9" r="8" stroke="currentColor" strokeWidth="1.5" />
+                        <path d="M9 5v5M9 12.5v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                      </svg>
+                      <div>
+                        <p className="text-sm text-text-primary font-medium mb-1">Getting Started</p>
+                        <p className="text-xs text-text-secondary leading-relaxed">
+                          1. Choose a template or name your workflow &nbsp; 2. Select providers to benchmark &nbsp; 3.
+                          Configure tasks (prompt, concurrency, iterations) &nbsp; 4. Click Start to run all tasks
+                          sequentially and compare results.
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Config Panel — full width */}
-                <WorkflowConfigPanel
-                  onStart={startWorkflow}
-                  isRunning={isWorkflowRunning}
-                  templates={templates}
-                  onCancel={currentWorkflow ? () => cancelWorkflow(currentWorkflow.id) : undefined}
-                  initialWorkflow={workflowToDuplicate}
-                  onInitialWorkflowConsumed={handleDuplicateConsumed}
-                />
+                  {/* Config Panel — full width */}
+                  <WorkflowConfigPanel
+                    onStart={startWorkflow}
+                    isRunning={isWorkflowRunning}
+                    templates={templates}
+                    onCancel={currentWorkflow ? () => cancelWorkflow(currentWorkflow.id) : undefined}
+                    initialWorkflow={workflowToDuplicate}
+                    onInitialWorkflowConsumed={handleDuplicateConsumed}
+                  />
 
-                {/* Live Progress & Results */}
-                {currentWorkflow && (
-                  <WorkflowProgress workflow={currentWorkflow} />
-                )}
-                {currentWorkflow?.summary && (
-                  <WorkflowResults workflow={currentWorkflow} onExport={exportWorkflow} />
-                )}
+                  {/* Live Progress & Results */}
+                  {currentWorkflow && <WorkflowProgress workflow={currentWorkflow} />}
+                  {currentWorkflow?.summary && <WorkflowResults workflow={currentWorkflow} onExport={exportWorkflow} />}
 
-                {/* Recent Workflows */}
-                {!currentWorkflow && !isWorkflowRunning && workflows.length > 0 && (
-                  <div className="glass-card p-5 space-y-3">
-                    <h3 className="text-sm font-medium text-text-primary">
-                      Recent Workflows
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
-                      {workflows.slice(0, 9).map((wf) => (
-                        <button
-                          key={wf.id}
-                          onClick={() => handleRecentWorkflowClick(wf.id)}
-                          className="w-full text-left p-3 rounded border border-border bg-bg-surface hover:border-accent-violet/30 transition-all flex items-center gap-3"
-                        >
-                          <span className={`text-[11px] px-2 py-0.5 rounded font-medium ${
-                            wf.status === 'completed' ? 'bg-accent-teal/10 text-accent-teal' :
-                            wf.status === 'failed' ? 'bg-accent-rose/10 text-accent-rose' :
-                            wf.status === 'running' ? 'bg-accent-amber/10 text-accent-amber' :
-                            'bg-white/5 text-text-secondary'
-                          }`}>
-                            {wf.status}
-                          </span>
-                          <span className="text-[13px] text-text-primary flex-1 truncate">{wf.name}</span>
-                          <span className="text-[11px] text-text-tertiary font-mono">
-                            {wf.tasks.length} tasks
-                          </span>
-                        </button>
-                      ))}
+                  {/* Recent Workflows */}
+                  {!currentWorkflow && !isWorkflowRunning && workflows.length > 0 && (
+                    <div className="glass-card p-5 space-y-3">
+                      <h3 className="text-sm font-medium text-text-primary">Recent Workflows</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+                        {workflows.slice(0, 9).map((wf) => (
+                          <button
+                            key={wf.id}
+                            onClick={() => handleRecentWorkflowClick(wf.id)}
+                            className="w-full text-left p-3 rounded border border-border bg-bg-surface hover:border-accent-violet/30 transition-all flex items-center gap-3"
+                          >
+                            <span
+                              className={`text-[11px] px-2 py-0.5 rounded font-medium ${
+                                wf.status === 'completed'
+                                  ? 'bg-accent-teal/10 text-accent-teal'
+                                  : wf.status === 'failed'
+                                    ? 'bg-accent-rose/10 text-accent-rose'
+                                    : wf.status === 'running'
+                                      ? 'bg-accent-amber/10 text-accent-amber'
+                                      : 'bg-white/5 text-text-secondary'
+                              }`}
+                            >
+                              {wf.status}
+                            </span>
+                            <span className="text-[13px] text-text-primary flex-1 truncate">{wf.name}</span>
+                            <span className="text-[11px] text-text-tertiary font-mono">{wf.tasks.length} tasks</span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </motion.div>
-            )}
+                  )}
+                </motion.div>
+              )}
 
-            {activePage === 'history' && (
-              <motion.div
-                key="history"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.12 }}
-              >
-                <HistoryPanel
-                  workflows={workflows}
-                  onSelectWorkflow={handleHistorySelect}
-                  onDeleteWorkflow={deleteWorkflow}
-                  onDuplicateWorkflow={handleDuplicateWorkflow}
-                  onRefresh={fetchWorkflows}
-                  loading={!workflowsLoaded}
-                />
-              </motion.div>
-            )}
+              {activePage === 'history' && (
+                <motion.div
+                  key="history"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.12 }}
+                >
+                  <HistoryPanel
+                    workflows={workflows}
+                    onSelectWorkflow={handleHistorySelect}
+                    onDeleteWorkflow={deleteWorkflow}
+                    onDuplicateWorkflow={handleDuplicateWorkflow}
+                    onRefresh={fetchWorkflows}
+                    loading={!workflowsLoaded}
+                  />
+                </motion.div>
+              )}
 
-            {activePage === 'history-detail' && historyDetailId && (
-              <motion.div
-                key={`history-detail-${historyDetailId}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.12 }}
-              >
-                <HistoryDetailPage
-                  workflowId={historyDetailId}
-                  onExport={exportWorkflow}
-                  onBack={() => navigate('/history')}
-                />
-              </motion.div>
-            )}
+              {activePage === 'history-detail' && historyDetailId && (
+                <motion.div
+                  key={`history-detail-${historyDetailId}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.12 }}
+                >
+                  <HistoryDetailPage
+                    workflowId={historyDetailId}
+                    onExport={exportWorkflow}
+                    onBack={() => navigate('/history')}
+                  />
+                </motion.div>
+              )}
 
-            {activePage === 'playground' && (
-              <motion.div
-                key="playground"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.12 }}
-              >
-                <PlaygroundPage />
-              </motion.div>
-            )}
+              {activePage === 'playground' && (
+                <motion.div
+                  key="playground"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.12 }}
+                >
+                  <PlaygroundPage />
+                </motion.div>
+              )}
 
-            {activePage === 'monitor' && (
-              <motion.div
-                key="monitor"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.12 }}
-              >
-                <MonitorPage />
-              </motion.div>
-            )}
+              {activePage === 'monitor' && (
+                <motion.div
+                  key="monitor"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.12 }}
+                >
+                  <MonitorPage />
+                </motion.div>
+              )}
 
-            {activePage === 'settings' && (
-              <motion.div
-                key="settings"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.12 }}
-              >
-                <SettingsPage />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </Layout.Content>
+              {activePage === 'settings' && (
+                <motion.div
+                  key="settings"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.12 }}
+                >
+                  <SettingsPage />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Layout.Content>
+        </Layout>
       </Layout>
-    </Layout>
     </ConfigProvider>
   );
 }

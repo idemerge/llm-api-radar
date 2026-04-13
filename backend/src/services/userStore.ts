@@ -59,10 +59,14 @@ class UserStore {
         const now = new Date().toISOString();
         const id = uuidv4();
 
-        this.db.prepare(`
+        this.db
+          .prepare(
+            `
           INSERT INTO users (id, username, password_hash, created_at, updated_at)
           VALUES (?, ?, ?, ?, ?)
-        `).run(id, username, hash, now, now);
+        `,
+          )
+          .run(id, username, hash, now, now);
 
         console.log(`Admin user created: ${username}`);
       }
@@ -96,8 +100,7 @@ class UserStore {
     try {
       const hash = bcrypt.hashSync(newPassword, 10);
       const now = new Date().toISOString();
-      this.db.prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE username = ?')
-        .run(hash, now, username);
+      this.db.prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE username = ?').run(hash, now, username);
       return true;
     } catch {
       return false;

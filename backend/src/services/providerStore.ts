@@ -79,7 +79,7 @@ class ProviderStore {
       endpoint: input.endpoint,
       apiKey: encrypt(input.apiKey),
       format: input.format,
-      models: input.models.map(m => ({
+      models: input.models.map((m) => ({
         ...m,
         id: m.id || uuidv4(),
         supportsStreaming: m.supportsStreaming ?? true,
@@ -93,19 +93,23 @@ class ProviderStore {
 
     if (this.db) {
       try {
-        this.db.prepare(`
+        this.db
+          .prepare(
+            `
           INSERT INTO providers (id, name, endpoint, api_key_encrypted, format, models, created_at, updated_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-          provider.id,
-          provider.name,
-          provider.endpoint,
-          provider.apiKey,
-          provider.format,
-          JSON.stringify(provider.models),
-          provider.createdAt,
-          provider.updatedAt,
-        );
+        `,
+          )
+          .run(
+            provider.id,
+            provider.name,
+            provider.endpoint,
+            provider.apiKey,
+            provider.format,
+            JSON.stringify(provider.models),
+            provider.createdAt,
+            provider.updatedAt,
+          );
       } catch (err) {
         console.error('Failed to save provider:', err);
       }
@@ -120,7 +124,7 @@ class ProviderStore {
 
   getAll(): ProviderConfig[] {
     return Array.from(this.providers.values()).sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
   }
 
@@ -135,7 +139,7 @@ class ProviderStore {
       apiKey: input.apiKey ? encrypt(input.apiKey) : existing.apiKey,
       format: input.format ?? existing.format,
       models: input.models
-        ? input.models.map(m => ({
+        ? input.models.map((m) => ({
             ...m,
             id: m.id || uuidv4(),
             supportsStreaming: m.supportsStreaming ?? true,
@@ -149,19 +153,23 @@ class ProviderStore {
 
     if (this.db) {
       try {
-        this.db.prepare(`
+        this.db
+          .prepare(
+            `
           UPDATE providers
           SET name = ?, endpoint = ?, api_key_encrypted = ?, format = ?, models = ?, updated_at = ?
           WHERE id = ?
-        `).run(
-          updated.name,
-          updated.endpoint,
-          updated.apiKey,
-          updated.format,
-          JSON.stringify(updated.models),
-          updated.updatedAt,
-          id,
-        );
+        `,
+          )
+          .run(
+            updated.name,
+            updated.endpoint,
+            updated.apiKey,
+            updated.format,
+            JSON.stringify(updated.models),
+            updated.updatedAt,
+            id,
+          );
       } catch (err) {
         console.error('Failed to update provider:', err);
       }
@@ -196,7 +204,9 @@ class ProviderStore {
     let maskedKey = '****';
     try {
       maskedKey = maskApiKey(decrypt(provider.apiKey));
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
     return {
       id: provider.id,

@@ -26,7 +26,7 @@ export class ClaudeProvider extends BaseLLMProvider {
     maxTokens: number,
     apiKey: string,
     streaming?: boolean,
-    _images?: any[]
+    _images?: any[],
   ): Promise<LLMResponse> {
     if (apiKey && apiKey.startsWith('sk-ant-') && apiKey.length > 15) {
       try {
@@ -45,10 +45,10 @@ export class ClaudeProvider extends BaseLLMProvider {
       maxTokens,
       'Claude',
       'claude-3-sonnet',
-      0.000003,  // $3 per 1M input tokens
-      0.000015,  // $15 per 1M output tokens
-      600,       // base latency ms
-      350        // variance
+      0.000003, // $3 per 1M input tokens
+      0.000015, // $15 per 1M output tokens
+      600, // base latency ms
+      350, // variance
     );
   }
 
@@ -56,7 +56,7 @@ export class ClaudeProvider extends BaseLLMProvider {
     prompt: string,
     systemPrompt: string | undefined,
     maxTokens: number,
-    apiKey: string
+    apiKey: string,
   ): Promise<LLMResponse> {
     const startTime = Date.now();
 
@@ -71,11 +71,15 @@ export class ClaudeProvider extends BaseLLMProvider {
       body.system = systemPrompt;
     }
 
-    const response = await this.fetchWithTimeout('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: buildClaudeHeaders(apiKey),
-      body: JSON.stringify(body),
-    }, 180000);
+    const response = await this.fetchWithTimeout(
+      'https://api.anthropic.com/v1/messages',
+      {
+        method: 'POST',
+        headers: buildClaudeHeaders(apiKey),
+        body: JSON.stringify(body),
+      },
+      180000,
+    );
 
     if (!response.ok) {
       throw new Error(`Claude API error: ${response.status}`);
@@ -136,9 +140,7 @@ export class ClaudeProvider extends BaseLLMProvider {
     }
 
     const responseTime = Date.now() - startTime;
-    const firstTokenLatency = firstTokenTime
-      ? firstTokenTime - startTime
-      : Math.round(responseTime * 0.25);
+    const firstTokenLatency = firstTokenTime ? firstTokenTime - startTime : Math.round(responseTime * 0.25);
 
     const totalTokens = inputTokens + outputTokens;
     const estimatedCost = inputTokens * 0.000003 + outputTokens * 0.000015;
@@ -160,7 +162,7 @@ export class ClaudeProvider extends BaseLLMProvider {
     prompt: string,
     systemPrompt: string | undefined,
     maxTokens: number,
-    apiKey: string
+    apiKey: string,
   ): Promise<LLMResponse> {
     const startTime = Date.now();
 
@@ -174,17 +176,21 @@ export class ClaudeProvider extends BaseLLMProvider {
       body.system = systemPrompt;
     }
 
-    const response = await this.fetchWithTimeout('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: buildClaudeHeaders(apiKey),
-      body: JSON.stringify(body),
-    }, 180000);
+    const response = await this.fetchWithTimeout(
+      'https://api.anthropic.com/v1/messages',
+      {
+        method: 'POST',
+        headers: buildClaudeHeaders(apiKey),
+        body: JSON.stringify(body),
+      },
+      180000,
+    );
 
     if (!response.ok) {
       throw new Error(`Claude API error: ${response.status}`);
     }
 
-    const data = await response.json() as Record<string, any>;
+    const data = (await response.json()) as Record<string, any>;
     const responseTime = Date.now() - startTime;
     const inputTokens = data.usage?.input_tokens || 0;
     const outputTokens = data.usage?.output_tokens || 0;
@@ -216,8 +222,6 @@ export class ClaudeProvider extends BaseLLMProvider {
   }
 
   private simulateLatency(): Promise<void> {
-    return new Promise((resolve) =>
-      setTimeout(resolve, 150 + Math.random() * 250)
-    );
+    return new Promise((resolve) => setTimeout(resolve, 150 + Math.random() * 250));
   }
 }

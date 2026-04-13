@@ -21,7 +21,7 @@ class BenchmarkStore {
       }
 
       this.db = new Database(DB_PATH);
-      
+
       // Create table
       this.db.exec(`
         CREATE TABLE IF NOT EXISTS benchmarks (
@@ -92,7 +92,7 @@ class BenchmarkStore {
       // SQLite persistence is handled in create/update methods
       return;
     }
-    
+
     // Fallback: save to file
     const fs = require('fs');
     const DATA_FILE = path.join(__dirname, '../../data/benchmarks.json');
@@ -110,13 +110,15 @@ class BenchmarkStore {
 
   create(run: BenchmarkRun): BenchmarkRun {
     this.runs.set(run.id, run);
-    
+
     if (this.db) {
       try {
-        this.db!.prepare(`
+        this.db!.prepare(
+          `
           INSERT INTO benchmarks (id, status, providers, config, results, capability_tests, created_at, completed_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
+        `,
+        ).run(
           run.id,
           run.status,
           JSON.stringify(run.providers),
@@ -124,7 +126,7 @@ class BenchmarkStore {
           JSON.stringify(run.results),
           run.capabilityTests ? JSON.stringify(run.capabilityTests) : null,
           run.createdAt,
-          run.completedAt || null
+          run.completedAt || null,
         );
       } catch (err) {
         console.error('Failed to save to SQLite:', err);
@@ -133,7 +135,7 @@ class BenchmarkStore {
     } else {
       this.save();
     }
-    
+
     return run;
   }
 
@@ -143,7 +145,7 @@ class BenchmarkStore {
 
   getAll(): BenchmarkRun[] {
     return Array.from(this.runs.values()).sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
   }
 
@@ -152,19 +154,21 @@ class BenchmarkStore {
     if (!run) return undefined;
     const updated = { ...run, ...updates };
     this.runs.set(id, updated);
-    
+
     if (this.db) {
       try {
-        this.db!.prepare(`
+        this.db!.prepare(
+          `
           UPDATE benchmarks 
           SET status = ?, results = ?, capability_tests = ?, completed_at = ?
           WHERE id = ?
-        `).run(
+        `,
+        ).run(
           updated.status,
           JSON.stringify(updated.results),
           updated.capabilityTests ? JSON.stringify(updated.capabilityTests) : null,
           updated.completedAt || null,
-          id
+          id,
         );
       } catch (err) {
         console.error('Failed to update SQLite:', err);
@@ -173,7 +177,7 @@ class BenchmarkStore {
     } else {
       this.save();
     }
-    
+
     return updated;
   }
 

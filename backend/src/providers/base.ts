@@ -9,7 +9,7 @@ export abstract class BaseLLMProvider implements LLMProvider {
     maxTokens: number,
     apiKey: string,
     streaming?: boolean,
-    images?: ImageInput[]
+    images?: ImageInput[],
   ): Promise<LLMResponse>;
 
   protected fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 120000): Promise<Response> {
@@ -26,22 +26,17 @@ export abstract class BaseLLMProvider implements LLMProvider {
     costPerInputToken: number,
     costPerOutputToken: number,
     baseLatency: number,
-    latencyVariance: number
+    latencyVariance: number,
   ): LLMResponse {
     const startTime = Date.now();
     const inputTokens = Math.ceil(prompt.length / 4);
-    const outputTokens = Math.min(
-      maxTokens,
-      Math.floor(50 + Math.random() * 200)
-    );
+    const outputTokens = Math.min(maxTokens, Math.floor(50 + Math.random() * 200));
     const totalTokens = inputTokens + outputTokens;
 
-    const responseTime =
-      baseLatency + Math.random() * latencyVariance + outputTokens * (2 + Math.random() * 3);
+    const responseTime = baseLatency + Math.random() * latencyVariance + outputTokens * (2 + Math.random() * 3);
     const firstTokenLatency = baseLatency * 0.3 + Math.random() * (baseLatency * 0.4);
 
-    const estimatedCost =
-      inputTokens * costPerInputToken + outputTokens * costPerOutputToken;
+    const estimatedCost = inputTokens * costPerInputToken + outputTokens * costPerOutputToken;
 
     return {
       text: `[Simulated ${providerName} response - ${outputTokens} tokens generated]`,

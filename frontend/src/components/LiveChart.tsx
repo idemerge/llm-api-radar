@@ -1,13 +1,5 @@
 import { motion } from 'framer-motion';
-import {
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Area,
-  AreaChart,
-} from 'recharts';
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { ProviderResult, getProviderColor, getProviderDisplayName } from '../types';
 
 interface LiveChartProps {
@@ -21,9 +13,7 @@ export function LiveChart({ results, metric, title, unit }: LiveChartProps) {
   const providers = Object.keys(results);
   if (providers.length === 0) return null;
 
-  const maxIterations = Math.max(
-    ...providers.map((p) => results[p]?.iterations?.length || 0)
-  );
+  const maxIterations = Math.max(...providers.map((p) => results[p]?.iterations?.length || 0));
 
   const data = Array.from({ length: maxIterations }, (_, i) => {
     const point: Record<string, number> = { iteration: i + 1 };
@@ -37,11 +27,7 @@ export function LiveChart({ results, metric, title, unit }: LiveChartProps) {
   });
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="glass-card p-7"
-    >
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-7">
       <h3 className="data-label mb-5">{title}</h3>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>

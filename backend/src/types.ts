@@ -102,7 +102,7 @@ export interface LLMProvider {
     maxTokens: number,
     apiKey: string,
     streaming?: boolean,
-    images?: ImageInput[]
+    images?: ImageInput[],
   ): Promise<LLMResponse>;
 }
 
@@ -228,7 +228,7 @@ export interface ProviderConfig {
   id: string;
   name: string;
   endpoint: string;
-  apiKey: string;         // encrypted at rest
+  apiKey: string; // encrypted at rest
   format: ProviderFormat;
   models: ModelConfig[];
   createdAt: string;

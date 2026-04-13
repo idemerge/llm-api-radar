@@ -119,17 +119,29 @@ class PlaygroundHistoryStore {
 
     if (this.db) {
       try {
-        this.db.prepare(`
+        this.db
+          .prepare(
+            `
           INSERT INTO playground_history (id, provider_id, provider_name, model_name, prompt, system_prompt, max_tokens, use_streaming, enable_thinking, response_text, reasoning_text, metrics, error, created_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-          entry.id, entry.providerId, entry.providerName, entry.modelName,
-          entry.prompt, entry.systemPrompt || null, entry.maxTokens,
-          entry.useStreaming ? 1 : 0, entry.enableThinking ? 1 : 0,
-          entry.responseText || null, entry.reasoningText || null,
-          entry.metrics ? JSON.stringify(entry.metrics) : null,
-          entry.error || null, entry.createdAt
-        );
+        `,
+          )
+          .run(
+            entry.id,
+            entry.providerId,
+            entry.providerName,
+            entry.modelName,
+            entry.prompt,
+            entry.systemPrompt || null,
+            entry.maxTokens,
+            entry.useStreaming ? 1 : 0,
+            entry.enableThinking ? 1 : 0,
+            entry.responseText || null,
+            entry.reasoningText || null,
+            entry.metrics ? JSON.stringify(entry.metrics) : null,
+            entry.error || null,
+            entry.createdAt,
+          );
       } catch (err) {
         console.error('Failed to save playground history entry:', err);
       }
@@ -144,7 +156,7 @@ class PlaygroundHistoryStore {
   getList(): PlaygroundHistoryListItem[] {
     return Array.from(this.entries.values())
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-      .map(e => ({
+      .map((e) => ({
         id: e.id,
         providerName: e.providerName,
         providerId: e.providerId,
@@ -159,7 +171,11 @@ class PlaygroundHistoryStore {
   delete(id: string): boolean {
     const existed = this.entries.delete(id);
     if (this.db) {
-      try { this.db.prepare('DELETE FROM playground_history WHERE id = ?').run(id); } catch { /* ignore */ }
+      try {
+        this.db.prepare('DELETE FROM playground_history WHERE id = ?').run(id);
+      } catch {
+        /* ignore */
+      }
     }
     return existed;
   }
@@ -167,7 +183,11 @@ class PlaygroundHistoryStore {
   deleteAll(): void {
     this.entries.clear();
     if (this.db) {
-      try { this.db.prepare('DELETE FROM playground_history').run(); } catch { /* ignore */ }
+      try {
+        this.db.prepare('DELETE FROM playground_history').run();
+      } catch {
+        /* ignore */
+      }
     }
   }
 }

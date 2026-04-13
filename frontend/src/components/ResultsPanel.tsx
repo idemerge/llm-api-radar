@@ -12,12 +12,7 @@ import {
 } from 'recharts';
 import { BenchmarkRun, getProviderColor, getProviderDisplayName, ErrorCategory } from '../types';
 import { Button, Table, Tag, Segmented, Card, Tooltip, Space } from '../antdImports';
-import {
-  AppstoreOutlined,
-  TableOutlined,
-  DownloadOutlined,
-  BarChartOutlined,
-} from '@ant-design/icons';
+import { AppstoreOutlined, TableOutlined, DownloadOutlined, BarChartOutlined } from '@ant-design/icons';
 
 interface ResultsPanelProps {
   run: BenchmarkRun | null;
@@ -30,24 +25,18 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('cards');
   const [showCharts, setShowCharts] = useState(false);
 
-  const providers = useMemo(
-    () => (run ? Object.keys(run.results) : []),
-    [run]
-  );
+  const providers = useMemo(() => (run ? Object.keys(run.results) : []), [run]);
 
   const tableDataSource = useMemo(
     () =>
       run
         ? providers.map((p) => {
             const s = run.results[p].summary;
-            const totalReasoning = run.results[p].iterations.reduce(
-              (a, b) => a + (b.reasoningTokens || 0),
-              0
-            );
+            const totalReasoning = run.results[p].iterations.reduce((a, b) => a + (b.reasoningTokens || 0), 0);
             return { key: p, provider: p, summary: s, totalReasoning };
           })
         : [],
-    [providers, run]
+    [providers, run],
   );
 
   if (!run || providers.length === 0) {
@@ -83,13 +72,8 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
       key: 'provider',
       render: (p: string) => (
         <div className="flex items-center gap-2">
-          <div
-            className="w-2 h-2 rounded-sm"
-            style={{ backgroundColor: getProviderColor(p) }}
-          />
-          <span className="text-text-primary font-medium">
-            {getProviderDisplayName(p)}
-          </span>
+          <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: getProviderColor(p) }} />
+          <span className="text-text-primary font-medium">{getProviderDisplayName(p)}</span>
         </div>
       ),
     },
@@ -117,10 +101,7 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
       key: 'tokensPerSec',
       align: 'right' as const,
       render: (p: string) => (
-        <span
-          className="data-value text-xs font-medium"
-          style={{ color: getProviderColor(p) }}
-        >
+        <span className="data-value text-xs font-medium" style={{ color: getProviderColor(p) }}>
           {run.results[p].summary.avgTokensPerSecond}
         </span>
       ),
@@ -131,10 +112,7 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
       key: 'sysTp',
       align: 'right' as const,
       render: (p: string) => (
-        <span
-          className="data-value text-xs"
-          style={{ color: getProviderColor(p), opacity: 0.7 }}
-        >
+        <span className="data-value text-xs" style={{ color: getProviderColor(p), opacity: 0.7 }}>
           {run.results[p].summary.systemThroughput || '-'}
         </span>
       ),
@@ -146,7 +124,9 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
       align: 'right' as const,
       render: (s: BenchmarkRun['results'][string]['summary']) => (
         <span className="data-value text-xs text-text-primary">
-          {(s.p50FirstTokenLatency || s.avgFirstTokenLatency) ? `${s.p50FirstTokenLatency || s.avgFirstTokenLatency}ms` : 'N/A'}
+          {s.p50FirstTokenLatency || s.avgFirstTokenLatency
+            ? `${s.p50FirstTokenLatency || s.avgFirstTokenLatency}ms`
+            : 'N/A'}
         </span>
       ),
     },
@@ -169,6 +149,7 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
       render: (s: BenchmarkRun['results'][string]['summary']) => (
         <span className="data-value text-xs text-text-primary">
           {s.p99FirstTokenLatency ? `${s.p99FirstTokenLatency}ms` : 'N/A'}
+        </span>
       ),
     },
     {
@@ -177,9 +158,7 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
       key: 'reasoning',
       align: 'right' as const,
       render: (v: number) => (
-        <span className="data-value text-xs text-accent-violet">
-          {v > 0 ? v.toLocaleString() : '-'}
-        </span>
+        <span className="data-value text-xs text-accent-violet">{v > 0 ? v.toLocaleString() : '-'}</span>
       ),
     },
     {
@@ -188,9 +167,7 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
       key: 'cost',
       align: 'right' as const,
       render: (s: BenchmarkRun['results'][string]['summary']) => (
-        <span className="data-value text-xs text-accent-amber">
-          ${s.estimatedCost.toFixed(4)}
-        </span>
+        <span className="data-value text-xs text-accent-amber">${s.estimatedCost.toFixed(4)}</span>
       ),
     },
     {
@@ -207,11 +184,7 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
   ];
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-8"
-    >
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
       {/* Header */}
       <div className="glass-card p-5">
         <div className="flex items-center justify-between">
@@ -223,10 +196,7 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
               options={[
                 {
                   label: (
-                    <span
-                      className="flex items-center gap-1 font-mono"
-                      style={{ fontSize: '11px' }}
-                    >
+                    <span className="flex items-center gap-1 font-mono" style={{ fontSize: '11px' }}>
                       <AppstoreOutlined style={{ fontSize: 12 }} />
                       Cards
                     </span>
@@ -235,10 +205,7 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
                 },
                 {
                   label: (
-                    <span
-                      className="flex items-center gap-1 font-mono"
-                      style={{ fontSize: '11px' }}
-                    >
+                    <span className="flex items-center gap-1 font-mono" style={{ fontSize: '11px' }}>
                       <TableOutlined style={{ fontSize: 12 }} />
                       Table
                     </span>
@@ -274,10 +241,7 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {providers.map((p, i) => {
             const s = run.results[p].summary;
-            const totalReasoning = run.results[p].iterations.reduce(
-              (a, b) => a + (b.reasoningTokens || 0),
-              0
-            );
+            const totalReasoning = run.results[p].iterations.reduce((a, b) => a + (b.reasoningTokens || 0), 0);
 
             return (
               <motion.div
@@ -320,23 +284,16 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
                     <div className="grid grid-cols-2 gap-4 mb-5">
                       <div>
                         <div className="data-label mb-1.5">Throughput</div>
-                        <div
-                          className="data-value text-2xl"
-                          style={{ color: getProviderColor(p) }}
-                        >
+                        <div className="data-value text-2xl" style={{ color: getProviderColor(p) }}>
                           {s.avgTokensPerSecond}
-                          <span className="text-xs font-normal text-text-secondary ml-1">
-                            tok/s
-                          </span>
+                          <span className="text-xs font-normal text-text-secondary ml-1">tok/s</span>
                         </div>
                       </div>
                       <div>
                         <div className="data-label mb-1.5">Avg Response</div>
                         <div className="data-value text-2xl text-text-primary">
                           {s.avgResponseTime}
-                          <span className="text-xs font-normal text-text-secondary ml-1">
-                            ms
-                          </span>
+                          <span className="text-xs font-normal text-text-secondary ml-1">ms</span>
                         </div>
                       </div>
                     </div>
@@ -344,22 +301,19 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
                     <div className="grid grid-cols-3 gap-2 text-xs">
                       <div className="p-2.5 rounded-md bg-bg-surface border border-border text-center">
                         <div className="text-text-secondary mb-1 text-[10px]">P95</div>
-                        <div className="data-value text-text-primary text-xs">
-                          {s.p95ResponseTime}ms
-                        </div>
+                        <div className="data-value text-text-primary text-xs">{s.p95ResponseTime}ms</div>
                       </div>
                       <div className="p-2.5 rounded-md bg-bg-surface border border-border text-center">
                         <div className="text-text-secondary mb-1 text-[10px]">TTFT P50</div>
                         <div className="data-value text-text-primary text-xs">
-                          {(s.p50FirstTokenLatency || s.avgFirstTokenLatency) ? `${s.p50FirstTokenLatency || s.avgFirstTokenLatency}ms` : 'N/A'}
+                          {s.p50FirstTokenLatency || s.avgFirstTokenLatency
+                            ? `${s.p50FirstTokenLatency || s.avgFirstTokenLatency}ms`
+                            : 'N/A'}
                         </div>
                       </div>
                       <div className="p-2.5 rounded-md bg-bg-surface border border-border text-center">
                         <div className="text-text-secondary mb-1 text-[10px]">Sys TP</div>
-                        <div
-                          className="data-value text-xs"
-                          style={{ color: getProviderColor(p) }}
-                        >
+                        <div className="data-value text-xs" style={{ color: getProviderColor(p) }}>
                           {s.systemThroughput || '-'}
                         </div>
                       </div>
@@ -371,9 +325,7 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
                       </div>
                       <div className="p-2.5 rounded-md bg-bg-surface border border-border text-center">
                         <div className="text-text-secondary mb-1 text-[10px]">Cost</div>
-                        <div className="data-value text-accent-amber text-xs">
-                          ${s.estimatedCost.toFixed(4)}
-                        </div>
+                        <div className="data-value text-accent-amber text-xs">${s.estimatedCost.toFixed(4)}</div>
                       </div>
                       <div className="p-2.5 rounded-md bg-bg-surface border border-border text-center">
                         <div className="text-text-secondary mb-1 text-[10px]">Reasoning</div>
@@ -393,12 +345,7 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
       {/* Table View */}
       {viewMode === 'table' && (
         <div className="glass-card p-7">
-          <Table
-            dataSource={tableDataSource}
-            columns={tableColumns}
-            pagination={false}
-            size="small"
-          />
+          <Table dataSource={tableDataSource} columns={tableColumns} pagination={false} size="small" />
         </div>
       )}
 
@@ -427,17 +374,8 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
                 <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                   <BarChart data={responseTimeData} barGap={8}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                    <XAxis
-                      dataKey="name"
-                      stroke="#585a6e"
-                      tick={{ fontSize: 10 }}
-                      className="font-mono"
-                    />
-                    <YAxis
-                      stroke="#585a6e"
-                      tick={{ fontSize: 10 }}
-                      className="font-mono"
-                    />
+                    <XAxis dataKey="name" stroke="#585a6e" tick={{ fontSize: 10 }} className="font-mono" />
+                    <YAxis stroke="#585a6e" tick={{ fontSize: 10 }} className="font-mono" />
                     <RechartsTooltip
                       contentStyle={tooltipStyle}
                       wrapperClassName="font-mono"
@@ -445,20 +383,12 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
                     />
                     <Bar dataKey="avg" name="Average" radius={[4, 4, 0, 0]}>
                       {responseTimeData.map((entry) => (
-                        <Cell
-                          key={entry.provider}
-                          fill={getProviderColor(entry.provider)}
-                          fillOpacity={0.7}
-                        />
+                        <Cell key={entry.provider} fill={getProviderColor(entry.provider)} fillOpacity={0.7} />
                       ))}
                     </Bar>
                     <Bar dataKey="p95" name="P95" radius={[4, 4, 0, 0]}>
                       {responseTimeData.map((entry) => (
-                        <Cell
-                          key={entry.provider}
-                          fill={getProviderColor(entry.provider)}
-                          fillOpacity={0.25}
-                        />
+                        <Cell key={entry.provider} fill={getProviderColor(entry.provider)} fillOpacity={0.25} />
                       ))}
                     </Bar>
                   </BarChart>
@@ -472,49 +402,27 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
                 <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                   <BarChart data={throughputData} barGap={8}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                    <XAxis
-                      dataKey="name"
-                      stroke="#585a6e"
-                      tick={{ fontSize: 10 }}
-                      className="font-mono"
-                    />
-                    <YAxis
-                      stroke="#585a6e"
-                      tick={{ fontSize: 10 }}
-                      className="font-mono"
-                    />
+                    <XAxis dataKey="name" stroke="#585a6e" tick={{ fontSize: 10 }} className="font-mono" />
+                    <YAxis stroke="#585a6e" tick={{ fontSize: 10 }} className="font-mono" />
                     <RechartsTooltip
                       contentStyle={tooltipStyle}
                       wrapperClassName="font-mono"
-                      formatter={(value, name) => [
-                        `${value} tok/s`,
-                        name === 'value' ? 'Per Request' : 'System',
-                      ]}
+                      formatter={(value, name) => [`${value} tok/s`, name === 'value' ? 'Per Request' : 'System']}
                     />
                     <Bar dataKey="value" name="value" radius={[4, 4, 0, 0]}>
                       {throughputData.map((entry) => (
-                        <Cell
-                          key={entry.provider}
-                          fill={getProviderColor(entry.provider)}
-                          fillOpacity={0.7}
-                        />
+                        <Cell key={entry.provider} fill={getProviderColor(entry.provider)} fillOpacity={0.7} />
                       ))}
                     </Bar>
                     <Bar dataKey="systemValue" name="systemValue" radius={[4, 4, 0, 0]}>
                       {throughputData.map((entry) => (
-                        <Cell
-                          key={entry.provider}
-                          fill={getProviderColor(entry.provider)}
-                          fillOpacity={0.25}
-                        />
+                        <Cell key={entry.provider} fill={getProviderColor(entry.provider)} fillOpacity={0.25} />
                       ))}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <div
-                className="flex items-center justify-center gap-6 mt-3 text-[11px] text-text-secondary font-mono"
-              >
+              <div className="flex items-center justify-center gap-6 mt-3 text-[11px] text-text-secondary font-mono">
                 <span className="flex items-center gap-1.5">
                   <span className="inline-block w-3 h-3 rounded bg-white/60" /> Per Request
                 </span>

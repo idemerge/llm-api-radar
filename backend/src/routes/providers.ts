@@ -12,7 +12,7 @@ const VALID_FORMATS: ProviderFormat[] = ['openai', 'anthropic', 'gemini', 'custo
 // GET /api/providers - List all providers (masked keys)
 router.get('/', (_req: Request, res: Response) => {
   const providers = providerStore.getAll();
-  res.json(providers.map(p => providerStore.toResponse(p)));
+  res.json(providers.map((p) => providerStore.toResponse(p)));
 });
 
 // POST /api/providers - Create provider
@@ -46,7 +46,7 @@ router.post('/', (req: Request, res: Response) => {
     endpoint: endpoint.trim().replace(/\/+$/, ''),
     apiKey: apiKey.trim(),
     format,
-    models: models.map(m => ({
+    models: models.map((m) => ({
       id: m.id || uuidv4(),
       name: m.name.trim(),
       displayName: m.displayName?.trim() || undefined,
@@ -126,8 +126,8 @@ router.put('/:id', (req: Request, res: Response) => {
   }
 
   // Sync monitor targets: rename changed models, remove deleted ones
-  const oldModelsById = new Map(existing.models.map(m => [m.id, m.name]));
-  const newModelsById = new Map(updated.models.map(m => [m.id, m.name]));
+  const oldModelsById = new Map(existing.models.map((m) => [m.id, m.name]));
+  const newModelsById = new Map(updated.models.map((m) => [m.id, m.name]));
   for (const [id, oldName] of oldModelsById) {
     const newName = newModelsById.get(id);
     if (!newName) {
@@ -160,7 +160,7 @@ router.post('/:id/test', async (req: Request, res: Response) => {
     return res.status(404).json({ error: 'Provider not found' });
   }
 
-  const activeModels = provider.models.filter(m => m.isActive !== false);
+  const activeModels = provider.models.filter((m) => m.isActive !== false);
   const modelName = req.body.modelName || activeModels[0]?.name;
   if (!modelName) {
     return res.status(400).json({ error: 'No model specified' });

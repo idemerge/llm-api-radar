@@ -42,30 +42,39 @@ export function usePlaygroundHistory() {
         const data = await res.json();
         setItems(data);
       }
-    } catch { /* ignore */ }
-    finally { setLoading(false); }
+    } catch {
+      /* ignore */
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const getDetail = useCallback(async (id: string): Promise<PlaygroundHistoryDetail | null> => {
     try {
       const res = await apiFetch(`/api/playground/history/${id}`);
       if (res.ok) return await res.json();
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     return null;
   }, []);
 
   const deleteEntry = useCallback(async (id: string) => {
     try {
       await apiFetch(`/api/playground/history/${id}`, { method: 'DELETE' });
-      setItems(prev => prev.filter(i => i.id !== id));
-    } catch { /* ignore */ }
+      setItems((prev) => prev.filter((i) => i.id !== id));
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   const clearAll = useCallback(async () => {
     try {
       await apiFetch('/api/playground/history', { method: 'DELETE' });
       setItems([]);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   return { items, loading, fetchHistory, getDetail, deleteEntry, clearAll };

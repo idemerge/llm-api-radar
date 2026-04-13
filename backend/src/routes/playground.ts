@@ -88,7 +88,7 @@ function resolveProvider(providerId: string, modelName: string) {
   const config = providerStore.get(providerId);
   if (!config) return { error: 'Provider not found' };
 
-  const model = config.models.find(m => m.name === modelName || m.id === modelName);
+  const model = config.models.find((m) => m.name === modelName || m.id === modelName);
   if (!model) return { error: `Model "${modelName}" not found in provider` };
   if (model.isActive === false) return { error: `Model "${modelName}" is inactive` };
 
@@ -99,13 +99,20 @@ function resolveProvider(providerId: string, modelName: string) {
 }
 
 /** Fetch with timeout + AbortController. Accepts optional external signal to abort on client disconnect. */
-function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 180000, externalSignal?: AbortSignal): Promise<globalThis.Response> {
+function fetchWithTimeout(
+  url: string,
+  options: RequestInit,
+  timeoutMs = 180000,
+  externalSignal?: AbortSignal,
+): Promise<globalThis.Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   const onExternalAbort = () => controller.abort();
   if (externalSignal) {
-    if (externalSignal.aborted) { clearTimeout(timer); controller.abort(); }
-    else externalSignal.addEventListener('abort', onExternalAbort, { once: true });
+    if (externalSignal.aborted) {
+      clearTimeout(timer);
+      controller.abort();
+    } else externalSignal.addEventListener('abort', onExternalAbort, { once: true });
   }
   return fetch(url, { ...options, signal: controller.signal }).finally(() => {
     clearTimeout(timer);
@@ -120,7 +127,7 @@ function validateImages(images?: ImageInput[]): string | null {
   for (let i = 0; i < images.length; i++) {
     const img = images[i];
     if (img.type === 'base64' && img.data) {
-      const sizeBytes = Math.ceil(img.data.length * 3 / 4);
+      const sizeBytes = Math.ceil((img.data.length * 3) / 4);
       if (sizeBytes > MAX_IMAGE_SIZE_BYTES) {
         return `Image ${i + 1} exceeds 10MB limit (${Math.round(sizeBytes / 1024 / 1024)}MB)`;
       }
@@ -133,9 +140,22 @@ function validateImages(images?: ImageInput[]): string | null {
 // ---- POST /api/playground/run (non-streaming) ----
 
 router.post('/run', async (req: Request, res: ExpressResponse) => {
-  const { providerId, modelName, prompt, systemPrompt, maxTokens = 4096, images, enableThinking }: {
-    providerId: string; modelName: string; prompt: string;
-    systemPrompt?: string; maxTokens?: number; images?: ImageInput[]; enableThinking?: boolean;
+  const {
+    providerId,
+    modelName,
+    prompt,
+    systemPrompt,
+    maxTokens = 4096,
+    images,
+    enableThinking,
+  }: {
+    providerId: string;
+    modelName: string;
+    prompt: string;
+    systemPrompt?: string;
+    maxTokens?: number;
+    images?: ImageInput[];
+    enableThinking?: boolean;
   } = req.body;
 
   if (!providerId || !modelName || !prompt) {
@@ -156,13 +176,20 @@ router.post('/run', async (req: Request, res: ExpressResponse) => {
     const provider = new DynamicProvider(config, model.name, apiKey);
     const response = await provider.execute(prompt, systemPrompt, maxTokens, '', false, images);
 
-    const tokensPerSecond = response.outputTokens > 0 && response.responseTime > 0
-      ? Math.round((response.outputTokens / response.responseTime) * 1000)
-      : 0;
+    const tokensPerSecond =
+      response.outputTokens > 0 && response.responseTime > 0
+        ? Math.round((response.outputTokens / response.responseTime) * 1000)
+        : 0;
 
     playgroundHistoryStore.create({
-      providerId, providerName: config.name, modelName: model.name,
-      prompt, systemPrompt, maxTokens, useStreaming: false, enableThinking: !!enableThinking,
+      providerId,
+      providerName: config.name,
+      modelName: model.name,
+      prompt,
+      systemPrompt,
+      maxTokens,
+      useStreaming: false,
+      enableThinking: !!enableThinking,
       responseText: response.text,
       metrics: { ...response, tokensPerSecond },
     });
@@ -175,8 +202,14 @@ router.post('/run', async (req: Request, res: ExpressResponse) => {
     });
   } catch (err: any) {
     playgroundHistoryStore.create({
-      providerId, providerName: config.name, modelName: model.name,
-      prompt, systemPrompt, maxTokens, useStreaming: false, enableThinking: !!enableThinking,
+      providerId,
+      providerName: config.name,
+      modelName: model.name,
+      prompt,
+      systemPrompt,
+      maxTokens,
+      useStreaming: false,
+      enableThinking: !!enableThinking,
       error: err.message || 'Request failed',
     });
     return res.status(502).json({
@@ -191,9 +224,22 @@ router.post('/run', async (req: Request, res: ExpressResponse) => {
 // ---- POST /api/playground/stream (SSE streaming) ----
 
 router.post('/stream', async (req: Request, res: ExpressResponse) => {
-  const { providerId, modelName, prompt, systemPrompt, maxTokens = 4096, images, enableThinking }: {
-    providerId: string; modelName: string; prompt: string;
-    systemPrompt?: string; maxTokens?: number; images?: ImageInput[]; enableThinking?: boolean;
+  const {
+    providerId,
+    modelName,
+    prompt,
+    systemPrompt,
+    maxTokens = 4096,
+    images,
+    enableThinking,
+  }: {
+    providerId: string;
+    modelName: string;
+    prompt: string;
+    systemPrompt?: string;
+    maxTokens?: number;
+    images?: ImageInput[];
+    enableThinking?: boolean;
   } = req.body;
 
   if (!providerId || !modelName || !prompt) {
@@ -214,7 +260,7 @@ router.post('/stream', async (req: Request, res: ExpressResponse) => {
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
+    Connection: 'keep-alive',
     'X-Accel-Buffering': 'no',
   });
 
@@ -224,7 +270,10 @@ router.post('/stream', async (req: Request, res: ExpressResponse) => {
 
   let aborted = false;
   const upstreamAbort = new AbortController();
-  res.on('close', () => { aborted = true; upstreamAbort.abort(); });
+  res.on('close', () => {
+    aborted = true;
+    upstreamAbort.abort();
+  });
 
   const startTime = Date.now();
   const streamResult: StreamResult = { fullText: '', reasoningText: '', metrics: {} };
@@ -234,16 +283,69 @@ router.post('/stream', async (req: Request, res: ExpressResponse) => {
     switch (config.format) {
       case 'openai':
       case 'custom':
-        await streamOpenAI(config.endpoint, model.name, apiKey, prompt, systemPrompt, maxTokens, images, startTime, sendEvent, () => aborted, upstreamAbort.signal, enableThinking, streamResult);
+        await streamOpenAI(
+          config.endpoint,
+          model.name,
+          apiKey,
+          prompt,
+          systemPrompt,
+          maxTokens,
+          images,
+          startTime,
+          sendEvent,
+          () => aborted,
+          upstreamAbort.signal,
+          enableThinking,
+          streamResult,
+        );
         break;
       case 'anthropic':
-        await streamAnthropic(config.endpoint, apiKey, model.name, prompt, systemPrompt, maxTokens, images, startTime, sendEvent, () => aborted, upstreamAbort.signal, enableThinking, streamResult);
+        await streamAnthropic(
+          config.endpoint,
+          apiKey,
+          model.name,
+          prompt,
+          systemPrompt,
+          maxTokens,
+          images,
+          startTime,
+          sendEvent,
+          () => aborted,
+          upstreamAbort.signal,
+          enableThinking,
+          streamResult,
+        );
         break;
       case 'gemini':
-        await streamGemini(config.endpoint, model.name, apiKey, prompt, systemPrompt, maxTokens, images, startTime, sendEvent, () => aborted, upstreamAbort.signal, streamResult);
+        await streamGemini(
+          config.endpoint,
+          model.name,
+          apiKey,
+          prompt,
+          systemPrompt,
+          maxTokens,
+          images,
+          startTime,
+          sendEvent,
+          () => aborted,
+          upstreamAbort.signal,
+          streamResult,
+        );
         break;
       default:
-        await streamFallback(config, model.name, apiKey, prompt, systemPrompt, maxTokens, images, startTime, sendEvent, () => aborted, streamResult);
+        await streamFallback(
+          config,
+          model.name,
+          apiKey,
+          prompt,
+          systemPrompt,
+          maxTokens,
+          images,
+          startTime,
+          sendEvent,
+          () => aborted,
+          streamResult,
+        );
     }
   } catch (err: any) {
     streamError = err.message || 'Stream failed';
@@ -259,8 +361,14 @@ router.post('/stream', async (req: Request, res: ExpressResponse) => {
   // Save to history
   if (!aborted) {
     playgroundHistoryStore.create({
-      providerId, providerName: config.name, modelName: model.name,
-      prompt, systemPrompt, maxTokens, useStreaming: true, enableThinking: !!enableThinking,
+      providerId,
+      providerName: config.name,
+      modelName: model.name,
+      prompt,
+      systemPrompt,
+      maxTokens,
+      useStreaming: true,
+      enableThinking: !!enableThinking,
       responseText: streamResult.fullText || undefined,
       reasoningText: streamResult.reasoningText || undefined,
       metrics: streamResult.metrics,
@@ -275,11 +383,19 @@ router.post('/stream', async (req: Request, res: ExpressResponse) => {
 // Uses fetch + AbortController + getReader(), matching adapter.ts exactly
 
 async function streamOpenAI(
-  endpoint: string, modelName: string, apiKey: string,
-  prompt: string, systemPrompt: string | undefined, maxTokens: number,
+  endpoint: string,
+  modelName: string,
+  apiKey: string,
+  prompt: string,
+  systemPrompt: string | undefined,
+  maxTokens: number,
   images: ImageInput[] | undefined,
-  startTime: number, sendEvent: (d: any) => void, isAborted: () => boolean,
-  clientSignal?: AbortSignal, enableThinking?: boolean, resultOut?: StreamResult
+  startTime: number,
+  sendEvent: (d: any) => void,
+  isAborted: () => boolean,
+  clientSignal?: AbortSignal,
+  enableThinking?: boolean,
+  resultOut?: StreamResult,
 ) {
   const messages: Array<{ role: string; content: string | ContentPart[] }> = [];
   if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
@@ -308,7 +424,7 @@ async function streamOpenAI(
       body: JSON.stringify(requestBody),
     },
     180000,
-    clientSignal
+    clientSignal,
   );
 
   if (!response.ok) {
@@ -362,28 +478,48 @@ async function streamOpenAI(
           }
 
           if (parsed.usage) usageData = parsed.usage;
-        } catch { /* skip malformed chunk */ }
+        } catch {
+          /* skip malformed chunk */
+        }
       }
     }
   } finally {
     reader.releaseLock();
   }
 
-  emitDone(sendEvent, isAborted, startTime, firstTokenTime, modelName, fullText, reasoningText, {
-    inputTokens: usageData?.prompt_tokens || 0,
-    outputTokens: usageData?.completion_tokens || 0,
-    reasoningTokens: usageData?.completion_tokens_details?.reasoning_tokens || 0,
-  }, resultOut);
+  emitDone(
+    sendEvent,
+    isAborted,
+    startTime,
+    firstTokenTime,
+    modelName,
+    fullText,
+    reasoningText,
+    {
+      inputTokens: usageData?.prompt_tokens || 0,
+      outputTokens: usageData?.completion_tokens || 0,
+      reasoningTokens: usageData?.completion_tokens_details?.reasoning_tokens || 0,
+    },
+    resultOut,
+  );
 }
 
 // ---- Stream: Anthropic format ----
 
 async function streamAnthropic(
-  endpoint: string, apiKey: string, modelName: string,
-  prompt: string, systemPrompt: string | undefined, maxTokens: number,
+  endpoint: string,
+  apiKey: string,
+  modelName: string,
+  prompt: string,
+  systemPrompt: string | undefined,
+  maxTokens: number,
   images: ImageInput[] | undefined,
-  startTime: number, sendEvent: (d: any) => void, isAborted: () => boolean,
-  clientSignal?: AbortSignal, enableThinking?: boolean, resultOut?: StreamResult
+  startTime: number,
+  sendEvent: (d: any) => void,
+  isAborted: () => boolean,
+  clientSignal?: AbortSignal,
+  enableThinking?: boolean,
+  resultOut?: StreamResult,
 ) {
   const body: Record<string, any> = {
     model: modelName,
@@ -411,7 +547,7 @@ async function streamAnthropic(
       body: JSON.stringify(body),
     },
     180000,
-    clientSignal
+    clientSignal,
   );
 
   if (!response.ok) {
@@ -476,18 +612,30 @@ async function streamAnthropic(
               inputTokens = parsed.usage.input_tokens;
             }
           }
-        } catch { /* skip */ }
+        } catch {
+          /* skip */
+        }
       }
     }
   } finally {
     reader.releaseLock();
   }
 
-  emitDone(sendEvent, isAborted, startTime, firstTokenTime, modelName, fullText, reasoningText, {
-    inputTokens,
-    outputTokens,
-    reasoningTokens: reasoningText.length > 0 ? Math.ceil(reasoningText.length / 4) : 0,
-  }, resultOut);
+  emitDone(
+    sendEvent,
+    isAborted,
+    startTime,
+    firstTokenTime,
+    modelName,
+    fullText,
+    reasoningText,
+    {
+      inputTokens,
+      outputTokens,
+      reasoningTokens: reasoningText.length > 0 ? Math.ceil(reasoningText.length / 4) : 0,
+    },
+    resultOut,
+  );
 }
 
 // ---- Stream: Gemini format ----
@@ -505,11 +653,18 @@ async function buildGeminiParts(prompt: string, images?: ImageInput[]): Promise<
 }
 
 async function streamGemini(
-  endpoint: string, modelName: string, apiKey: string,
-  prompt: string, systemPrompt: string | undefined, maxTokens: number,
+  endpoint: string,
+  modelName: string,
+  apiKey: string,
+  prompt: string,
+  systemPrompt: string | undefined,
+  maxTokens: number,
   images: ImageInput[] | undefined,
-  startTime: number, sendEvent: (d: any) => void, isAborted: () => boolean,
-  clientSignal?: AbortSignal, resultOut?: StreamResult
+  startTime: number,
+  sendEvent: (d: any) => void,
+  isAborted: () => boolean,
+  clientSignal?: AbortSignal,
+  resultOut?: StreamResult,
 ) {
   const contents: any[] = [];
   contents.push({ role: 'user', parts: await buildGeminiParts(prompt, images) });
@@ -524,11 +679,16 @@ async function streamGemini(
     requestBody.systemInstruction = { parts: [{ text: systemPrompt }] };
   }
 
-  const response = await fetchWithTimeout(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(requestBody),
-  }, 180000, clientSignal);
+  const response = await fetchWithTimeout(
+    url,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody),
+    },
+    180000,
+    clientSignal,
+  );
 
   if (!response.ok) {
     const errText = await response.text().catch(() => '');
@@ -571,28 +731,46 @@ async function streamGemini(
             inputTokens = parsed.usageMetadata.promptTokenCount || inputTokens;
             outputTokens = parsed.usageMetadata.candidatesTokenCount || outputTokens;
           }
-        } catch { /* skip */ }
+        } catch {
+          /* skip */
+        }
       }
     }
   } finally {
     reader.releaseLock();
   }
 
-  emitDone(sendEvent, isAborted, startTime, firstTokenTime, modelName, fullText, '', {
-    inputTokens,
-    outputTokens,
-    reasoningTokens: 0,
-  }, resultOut);
+  emitDone(
+    sendEvent,
+    isAborted,
+    startTime,
+    firstTokenTime,
+    modelName,
+    fullText,
+    '',
+    {
+      inputTokens,
+      outputTokens,
+      reasoningTokens: 0,
+    },
+    resultOut,
+  );
 }
 
 // ---- Fallback: non-streaming via DynamicProvider ----
 
 async function streamFallback(
-  config: any, modelName: string, apiKey: string,
-  prompt: string, systemPrompt: string | undefined, maxTokens: number,
+  config: any,
+  modelName: string,
+  apiKey: string,
+  prompt: string,
+  systemPrompt: string | undefined,
+  maxTokens: number,
   images: ImageInput[] | undefined,
-  startTime: number, sendEvent: (d: any) => void, isAborted: () => boolean,
-  resultOut?: StreamResult
+  startTime: number,
+  sendEvent: (d: any) => void,
+  isAborted: () => boolean,
+  resultOut?: StreamResult,
 ) {
   const provider = new DynamicProvider(config, modelName, apiKey);
   const response = await provider.execute(prompt, systemPrompt, maxTokens, '', false, images);
@@ -601,11 +779,21 @@ async function streamFallback(
     if (response.text) {
       sendEvent({ type: 'chunk', text: response.text });
     }
-    emitDone(sendEvent, isAborted, startTime, null, modelName, response.text, '', {
-      inputTokens: response.inputTokens,
-      outputTokens: response.outputTokens,
-      reasoningTokens: response.reasoningTokens,
-    }, resultOut);
+    emitDone(
+      sendEvent,
+      isAborted,
+      startTime,
+      null,
+      modelName,
+      response.text,
+      '',
+      {
+        inputTokens: response.inputTokens,
+        outputTokens: response.outputTokens,
+        reasoningTokens: response.reasoningTokens,
+      },
+      resultOut,
+    );
   }
 }
 
@@ -626,7 +814,7 @@ function emitDone(
   fullText: string,
   reasoningText: string,
   tokens: { inputTokens: number; outputTokens: number; reasoningTokens: number },
-  resultOut?: StreamResult
+  resultOut?: StreamResult,
 ) {
   if (isAborted()) return;
   const responseTime = Date.now() - startTime;

@@ -25,8 +25,23 @@ export function Dashboard({ run, isRunning }: DashboardProps) {
         >
           <div className="flex flex-col items-center">
             <svg width="64" height="64" viewBox="0 0 64 64" fill="none" className="mb-4 opacity-20">
-              <rect x="8" y="8" width="48" height="48" rx="8" stroke="currentColor" strokeWidth="1.5" className="text-text-secondary" />
-              <path d="M24 32h16M32 24v16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-text-secondary" />
+              <rect
+                x="8"
+                y="8"
+                width="48"
+                height="48"
+                rx="8"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                className="text-text-secondary"
+              />
+              <path
+                d="M24 32h16M32 24v16"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                className="text-text-secondary"
+              />
             </svg>
             <span className="text-base font-medium text-text-primary mb-1">
               {isRunning ? 'Running Benchmark...' : 'Ready to Benchmark'}
@@ -42,51 +57,35 @@ export function Dashboard({ run, isRunning }: DashboardProps) {
             <div className="flex flex-col items-center gap-5 mt-6">
               <div className="flex gap-2">
                 {run.providers.map((p) => (
-                  <div
-                    key={p}
-                    className="w-2.5 h-2.5 rounded-sm"
-                    style={{ backgroundColor: getProviderColor(p) }}
-                  />
+                  <div key={p} className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: getProviderColor(p) }} />
                 ))}
               </div>
-              <p className="text-[11px] text-text-tertiary font-mono">
-                Waiting for first results...
-              </p>
+              <p className="text-[11px] text-text-tertiary font-mono">Waiting for first results...</p>
             </div>
           )}
         </motion.div>
 
         {isRunning && run && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="glass-card p-7"
-          >
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-7">
             <h3 className="section-title">Test Progress</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="p-3 rounded-md bg-bg-surface border border-border">
                 <div className="data-label mb-1.5">Providers</div>
                 <div className="data-value text-base text-accent-blue">
-                  {run.providers.map(p => getProviderDisplayName(p)).join(', ')}
+                  {run.providers.map((p) => getProviderDisplayName(p)).join(', ')}
                 </div>
               </div>
               <div className="p-3 rounded-md bg-bg-surface border border-border">
                 <div className="data-label mb-1.5">Concurrency</div>
-                <div className="data-value text-base text-accent-violet">
-                  {run.config.concurrency}
-                </div>
+                <div className="data-value text-base text-accent-violet">{run.config.concurrency}</div>
               </div>
               <div className="p-3 rounded-md bg-bg-surface border border-border">
                 <div className="data-label mb-1.5">Iterations</div>
-                <div className="data-value text-base text-accent-teal">
-                  {run.config.iterations}
-                </div>
+                <div className="data-value text-base text-accent-teal">{run.config.iterations}</div>
               </div>
               <div className="p-3 rounded-md bg-bg-surface border border-border">
                 <div className="data-label mb-1.5">Streaming</div>
-                <div className="data-value text-base text-accent-amber">
-                  {run.config.streaming ? 'ON' : 'OFF'}
-                </div>
+                <div className="data-value text-base text-accent-amber">{run.config.streaming ? 'ON' : 'OFF'}</div>
               </div>
             </div>
             <div className="mt-4 p-3 rounded-md bg-accent-teal/6 border border-accent-teal/15">
@@ -106,53 +105,35 @@ export function Dashboard({ run, isRunning }: DashboardProps) {
   const providers = Object.keys(run.results);
 
   const avgResponseTime = Math.round(
-    providers.reduce((sum, p) => sum + (run.results[p]?.summary?.avgResponseTime || 0), 0) / providers.length
+    providers.reduce((sum, p) => sum + (run.results[p]?.summary?.avgResponseTime || 0), 0) / providers.length,
   );
   const avgThroughput = Math.round(
-    providers.reduce((sum, p) => sum + (run.results[p]?.summary?.avgTokensPerSecond || 0), 0) / providers.length
+    providers.reduce((sum, p) => sum + (run.results[p]?.summary?.avgTokensPerSecond || 0), 0) / providers.length,
   );
   const avgSystemThroughput = Math.round(
-    providers.reduce((sum, p) => sum + (run.results[p]?.summary?.systemThroughput || 0), 0) / providers.length
+    providers.reduce((sum, p) => sum + (run.results[p]?.summary?.systemThroughput || 0), 0) / providers.length,
   );
   const totalCost = Number(
-    providers.reduce((sum, p) => sum + (run.results[p]?.summary?.estimatedCost || 0), 0).toFixed(4)
+    providers.reduce((sum, p) => sum + (run.results[p]?.summary?.estimatedCost || 0), 0).toFixed(4),
   );
-  const totalIterations = providers.reduce(
-    (sum, p) => sum + (run.results[p]?.iterations?.length || 0),
-    0
-  );
+  const totalIterations = providers.reduce((sum, p) => sum + (run.results[p]?.iterations?.length || 0), 0);
 
   const totalExpected = run.providers.length * (run.config?.iterations || 1);
-  const totalCompleted = providers.reduce(
-    (sum, p) => sum + (run.results[p]?.iterations?.length || 0),
-    0
-  );
+  const totalCompleted = providers.reduce((sum, p) => sum + (run.results[p]?.iterations?.length || 0), 0);
   const progressPercent = Math.min(Math.round((totalCompleted / totalExpected) * 100), 100);
   const showProgress = isRunning || run.status === 'running';
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="space-y-8"
-    >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
       {/* Progress Bar */}
       {showProgress && (
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass-card p-7"
-        >
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-7">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Spin indicator={<LoadingOutlined style={{ fontSize: 14 }} spin />} />
-              <span className="text-sm font-semibold text-text-primary">
-                Benchmark Running
-              </span>
+              <span className="text-sm font-semibold text-text-primary">Benchmark Running</span>
             </div>
-            <span className="data-value text-sm text-accent-teal">
-              {progressPercent}%
-            </span>
+            <span className="data-value text-sm text-accent-teal">{progressPercent}%</span>
           </div>
 
           <Progress

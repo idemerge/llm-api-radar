@@ -1,11 +1,23 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { Button, Tooltip, Checkbox, Select } from '../antdImports';
-import { ReloadOutlined, ClockCircleOutlined, SettingOutlined, WarningOutlined, LineChartOutlined } from '@ant-design/icons';
+import {
+  ReloadOutlined,
+  ClockCircleOutlined,
+  SettingOutlined,
+  WarningOutlined,
+  LineChartOutlined,
+} from '@ant-design/icons';
 import { useMonitor, PingResult, MonitorTarget, HealthThresholds } from '../hooks/useMonitor';
 import { useProviders } from '../hooks/useProviders';
 import {
-  XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, ResponsiveContainer,
-  Area, AreaChart, ReferenceLine,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RTooltip,
+  ResponsiveContainer,
+  Area,
+  AreaChart,
+  ReferenceLine,
 } from 'recharts';
 
 const INTERVAL_OPTIONS = [
@@ -96,9 +108,11 @@ function TrendCharts({ history, providerId, modelName, thresholds }: TrendCharts
   const data = useMemo(() => {
     const cutoff = Date.now() - range * 60 * 60 * 1000;
     return history
-      .filter(p => p.providerId === providerId && p.modelName === modelName && new Date(p.checkedAt).getTime() >= cutoff)
+      .filter(
+        (p) => p.providerId === providerId && p.modelName === modelName && new Date(p.checkedAt).getTime() >= cutoff,
+      )
       .sort((a, b) => new Date(a.checkedAt).getTime() - new Date(b.checkedAt).getTime())
-      .map(p => ({
+      .map((p) => ({
         time: formatChartTime(p.checkedAt),
         ttft: p.status === 'ok' ? +(p.ttftMs / 1000).toFixed(2) : undefined,
         tps: p.status === 'ok' && p.latencyMs > 0 ? Math.round((p.outputTokens / p.latencyMs) * 1000) : undefined,
@@ -112,22 +126,34 @@ function TrendCharts({ history, providerId, modelName, thresholds }: TrendCharts
   }
 
   const charts: { key: string; label: string; dataKey: string; color: string; unit: string; refLine?: number }[] = [
-    { key: 'ttft', label: 'TTFT', dataKey: 'ttft', color: CHART_COLORS.ttft, unit: 's', refLine: +(thresholds.ttftSlowMs / 1000).toFixed(2) },
-    { key: 'tps', label: 'TPS', dataKey: 'tps', color: CHART_COLORS.tps, unit: 'tok/s', refLine: thresholds.tpsSlowThreshold },
+    {
+      key: 'ttft',
+      label: 'TTFT',
+      dataKey: 'ttft',
+      color: CHART_COLORS.ttft,
+      unit: 's',
+      refLine: +(thresholds.ttftSlowMs / 1000).toFixed(2),
+    },
+    {
+      key: 'tps',
+      label: 'TPS',
+      dataKey: 'tps',
+      color: CHART_COLORS.tps,
+      unit: 'tok/s',
+      refLine: thresholds.tpsSlowThreshold,
+    },
     { key: 'latency', label: 'Latency', dataKey: 'latency', color: CHART_COLORS.latency, unit: 's' },
   ];
 
   return (
     <div className="space-y-2 pt-2">
       <div className="flex items-center gap-1">
-        {TIME_RANGES.map(r => (
+        {TIME_RANGES.map((r) => (
           <button
             key={r.hours}
             onClick={() => setRange(r.hours)}
             className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
-              range === r.hours
-                ? 'bg-white/10 text-text-primary'
-                : 'text-text-tertiary hover:text-text-secondary'
+              range === r.hours ? 'bg-white/10 text-text-primary' : 'text-text-tertiary hover:text-text-secondary'
             }`}
           >
             {r.label}
@@ -135,9 +161,11 @@ function TrendCharts({ history, providerId, modelName, thresholds }: TrendCharts
         ))}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-        {charts.map(c => (
+        {charts.map((c) => (
           <div key={c.key} className="rounded border border-border bg-[#060606] p-2">
-            <div className="text-[10px] text-text-tertiary mb-1">{c.label} <span className="text-text-tertiary/50">({c.unit})</span></div>
+            <div className="text-[10px] text-text-tertiary mb-1">
+              {c.label} <span className="text-text-tertiary/50">({c.unit})</span>
+            </div>
             <div className="h-[100px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
@@ -164,7 +192,7 @@ function TrendCharts({ history, providerId, modelName, thresholds }: TrendCharts
                   <RTooltip
                     contentStyle={CHART_TOOLTIP_STYLE}
                     labelStyle={{ color: '#d8d9da' }}
-                    formatter={(value: number) => [`${value} ${c.unit}`, c.label]}
+                    formatter={(value) => [`${value ?? ''} ${c.unit}`, c.label]}
                   />
                   {c.refLine != null && (
                     <ReferenceLine
@@ -195,10 +223,16 @@ function TrendCharts({ history, providerId, modelName, thresholds }: TrendCharts
   );
 }
 
-function HistoryBar({ history, providerId, modelName }: { history: PingResult[]; providerId: string; modelName: string }) {
-  const pings = history
-    .filter(p => p.providerId === providerId && p.modelName === modelName)
-    .slice(-144);
+function HistoryBar({
+  history,
+  providerId,
+  modelName,
+}: {
+  history: PingResult[];
+  providerId: string;
+  modelName: string;
+}) {
+  const pings = history.filter((p) => p.providerId === providerId && p.modelName === modelName).slice(-144);
 
   if (pings.length === 0) {
     return (
@@ -226,13 +260,20 @@ function HistoryBar({ history, providerId, modelName }: { history: PingResult[];
                   <span className="text-white/60">{formatTime(p.checkedAt)}</span>
                 </div>
                 <div className="flex gap-3 text-white/70 pl-3">
-                  <span>TPS <span className="text-white font-mono">{p.latencyMs > 0 ? Math.round((p.outputTokens / p.latencyMs) * 1000) : 0}</span></span>
-                  <span>TTFT <span className="text-white font-mono">{formatLatency(p.ttftMs)}</span></span>
-                  <span>Latency <span className="text-white font-mono">{formatLatency(p.latencyMs)}</span></span>
+                  <span>
+                    TPS{' '}
+                    <span className="text-white font-mono">
+                      {p.latencyMs > 0 ? Math.round((p.outputTokens / p.latencyMs) * 1000) : 0}
+                    </span>
+                  </span>
+                  <span>
+                    TTFT <span className="text-white font-mono">{formatLatency(p.ttftMs)}</span>
+                  </span>
+                  <span>
+                    Latency <span className="text-white font-mono">{formatLatency(p.latencyMs)}</span>
+                  </span>
                 </div>
-                {p.errorMessage && (
-                  <div className="text-red-300 pl-3 truncate max-w-[240px]">{p.errorMessage}</div>
-                )}
+                {p.errorMessage && <div className="text-red-300 pl-3 truncate max-w-[240px]">{p.errorMessage}</div>}
               </div>
             }
           >
@@ -245,7 +286,18 @@ function HistoryBar({ history, providerId, modelName }: { history: PingResult[];
 }
 
 export function MonitorPage() {
-  const { statuses, history, targets, globalConfig, loading: monitorLoading, running, fetchAll, saveTargets, saveConfig, triggerRun } = useMonitor();
+  const {
+    statuses,
+    history,
+    targets,
+    globalConfig,
+    loading: monitorLoading,
+    running,
+    fetchAll,
+    saveTargets,
+    saveConfig,
+    triggerRun,
+  } = useMonitor();
   const { providers, loading: providersLoading, fetchProviders } = useProviders();
   const [lastChecked, setLastChecked] = useState<string>('');
   const [showConfig, setShowConfig] = useState(false);
@@ -262,9 +314,10 @@ export function MonitorPage() {
   const [expandedModels, setExpandedModels] = useState<Set<string>>(new Set());
 
   const toggleExpanded = useCallback((key: string) => {
-    setExpandedModels(prev => {
+    setExpandedModels((prev) => {
       const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   }, []);
@@ -288,7 +341,9 @@ export function MonitorPage() {
   useEffect(() => {
     const intervalChanged = draftInterval !== globalConfig.defaultIntervalMinutes;
     const thresholdsChanged = Object.keys(thresholdTexts).some(
-      k => thresholdTexts[k as keyof HealthThresholds] !== String(globalConfig.healthThresholds[k as keyof HealthThresholds])
+      (k) =>
+        thresholdTexts[k as keyof HealthThresholds] !==
+        String(globalConfig.healthThresholds[k as keyof HealthThresholds]),
     );
     const targetsChanged = JSON.stringify(draftTargets) !== JSON.stringify(targets);
     setConfigDirty(intervalChanged || thresholdsChanged || targetsChanged);
@@ -307,7 +362,7 @@ export function MonitorPage() {
     });
     saveTargets(draftTargets);
   };
-  const refreshRef = useRef<ReturnType<typeof setInterval>>();
+  const refreshRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
   useEffect(() => {
     Promise.all([fetchProviders(), fetchAll()]).then(() => setInitialLoaded(true));
@@ -325,8 +380,10 @@ export function MonitorPage() {
 
   useEffect(() => {
     if (statuses.length > 0) {
-      const latestTime = statuses.reduce((latest, s) =>
-        s.checkedAt > latest ? s.checkedAt : latest, statuses[0].checkedAt);
+      const latestTime = statuses.reduce(
+        (latest, s) => (s.checkedAt > latest ? s.checkedAt : latest),
+        statuses[0].checkedAt,
+      );
       setLastChecked(latestTime);
     }
   }, [statuses]);
@@ -336,9 +393,9 @@ export function MonitorPage() {
   // Summary stats — only count statuses that match current targets
   const summary = useMemo(() => {
     const totalModels = targets.length;
-    const providerCount = new Set(targets.map(t => t.providerId)).size;
-    const targetKeys = new Set(targets.map(t => `${t.providerId}::${t.modelName}`));
-    const targetStatuses = statuses.filter(s => targetKeys.has(`${s.providerId}::${s.modelName}`));
+    const providerCount = new Set(targets.map((t) => t.providerId)).size;
+    const targetKeys = new Set(targets.map((t) => `${t.providerId}::${t.modelName}`));
+    const targetStatuses = statuses.filter((s) => targetKeys.has(`${s.providerId}::${s.modelName}`));
     let healthyCount = 0;
     let slowCount = 0;
     let verySlowCount = 0;
@@ -354,13 +411,13 @@ export function MonitorPage() {
   }, [targets, statuses]);
 
   // Build draft target key set for quick lookup
-  const draftTargetKeys = new Set(draftTargets.map(t => `${t.providerId}::${t.modelName}`));
+  const draftTargetKeys = new Set(draftTargets.map((t) => `${t.providerId}::${t.modelName}`));
 
   const toggleDraftTarget = (providerId: string, modelName: string, providerName: string) => {
     const key = `${providerId}::${modelName}`;
     let next: MonitorTarget[];
     if (draftTargetKeys.has(key)) {
-      next = draftTargets.filter(t => `${t.providerId}::${t.modelName}` !== key);
+      next = draftTargets.filter((t) => `${t.providerId}::${t.modelName}` !== key);
     } else {
       next = [...draftTargets, { providerId, modelName, providerName }];
     }
@@ -368,11 +425,11 @@ export function MonitorPage() {
   };
 
   const updateDraftTargetInterval = (providerId: string, modelName: string, intervalMinutes: number) => {
-    setDraftTargets(draftTargets.map(t =>
-      t.providerId === providerId && t.modelName === modelName
-        ? { ...t, intervalMinutes }
-        : t
-    ));
+    setDraftTargets(
+      draftTargets.map((t) =>
+        t.providerId === providerId && t.modelName === modelName ? { ...t, intervalMinutes } : t,
+      ),
+    );
   };
 
   const selectAllForProvider = (provider: any) => {
@@ -388,7 +445,7 @@ export function MonitorPage() {
   };
 
   const removeAllForProvider = (provider: any) => {
-    setDraftTargets(draftTargets.filter(t => t.providerId !== provider.id));
+    setDraftTargets(draftTargets.filter((t) => t.providerId !== provider.id));
   };
 
   // Group targets by provider
@@ -408,7 +465,9 @@ export function MonitorPage() {
             <div className="flex items-center gap-1.5 mt-1">
               <ClockCircleOutlined className="text-[11px] text-text-tertiary" />
               <span className="text-[11px] text-text-tertiary">Last checked: {formatTime(lastChecked)}</span>
-              <span className="text-[10px] text-text-tertiary ml-2">Auto-refresh 60s · Check every {globalConfig.defaultIntervalMinutes} min</span>
+              <span className="text-[10px] text-text-tertiary ml-2">
+                Auto-refresh 60s · Check every {globalConfig.defaultIntervalMinutes} min
+              </span>
             </div>
           )}
         </div>
@@ -440,7 +499,9 @@ export function MonitorPage() {
             <div className="w-2 h-2 rounded-full bg-accent-blue" />
             <div>
               <div className="text-[10px] text-text-tertiary">Monitoring</div>
-              <div className="text-[13px] font-semibold text-text-primary font-mono">{summary.totalModels} models · {summary.providerCount} providers</div>
+              <div className="text-[13px] font-semibold text-text-primary font-mono">
+                {summary.totalModels} models · {summary.providerCount} providers
+              </div>
             </div>
           </div>
           <div className="glass-card px-3 py-2 flex items-center gap-2">
@@ -496,7 +557,10 @@ export function MonitorPage() {
                 <Select
                   size="small"
                   value={draftInterval}
-                  onChange={(v) => { setDraftInterval(v); setConfigDirty(true); }}
+                  onChange={(v) => {
+                    setDraftInterval(v);
+                    setConfigDirty(true);
+                  }}
                   options={DEFAULT_INTERVAL_OPTIONS}
                   style={{ width: 100 }}
                 />
@@ -568,9 +632,9 @@ export function MonitorPage() {
           {/* Provider/Model Selection */}
           <div className="space-y-2">
             <div className="text-[12px] font-medium text-text-primary">Targets</div>
-            {providers.map(provider => {
+            {providers.map((provider) => {
               const activeModels = provider.models.filter((m: any) => m.isActive !== false);
-              const providerDraftTargets = draftTargets.filter(t => t.providerId === provider.id);
+              const providerDraftTargets = draftTargets.filter((t) => t.providerId === provider.id);
               const allSelected = activeModels.length > 0 && providerDraftTargets.length === activeModels.length;
 
               return (
@@ -580,27 +644,32 @@ export function MonitorPage() {
                       <Checkbox
                         checked={allSelected}
                         indeterminate={providerDraftTargets.length > 0 && !allSelected}
-                        onChange={() => allSelected ? removeAllForProvider(provider) : selectAllForProvider(provider)}
+                        onChange={() => (allSelected ? removeAllForProvider(provider) : selectAllForProvider(provider))}
                       />
                       <span className="text-[12px] font-medium text-text-primary">{provider.name}</span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/8 text-text-tertiary font-mono">{provider.format}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/8 text-text-tertiary font-mono">
+                        {provider.format}
+                      </span>
                     </label>
                   </div>
                   <div className="flex flex-wrap gap-2 ml-6">
                     {activeModels.map((m: any) => {
                       const key = `${provider.id}::${m.name}`;
                       const checked = draftTargetKeys.has(key);
-                      const targetData = draftTargets.find(t => t.providerId === provider.id && t.modelName === m.name);
+                      const targetData = draftTargets.find(
+                        (t) => t.providerId === provider.id && t.modelName === m.name,
+                      );
                       return (
                         <div key={m.name} className="flex items-center gap-1.5">
                           <label className="flex items-center gap-1.5 cursor-pointer">
                             <Checkbox
                               checked={checked}
                               onChange={() => toggleDraftTarget(provider.id, m.name, provider.name)}
-                              size="small"
                             />
                             <span className="text-[11px] text-text-secondary font-mono">{m.displayName || m.name}</span>
-                            {m.supportsVision && <span className="text-[8px] px-1 rounded bg-accent-teal/15 text-accent-teal">V</span>}
+                            {m.supportsVision && (
+                              <span className="text-[8px] px-1 rounded bg-accent-teal/15 text-accent-teal">V</span>
+                            )}
                           </label>
                           {checked && (
                             <Select
@@ -639,10 +708,10 @@ export function MonitorPage() {
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
           {Array.from(grouped.entries()).map(([providerId, providerTargets]) => {
-            const provider = providers.find(p => p.id === providerId);
+            const provider = providers.find((p) => p.id === providerId);
             if (!provider) return null;
 
-            const pings = statuses.filter(s => s.providerId === providerId);
+            const pings = statuses.filter((s) => s.providerId === providerId);
 
             return (
               <div key={providerId} className="glass-card p-4 space-y-3">
@@ -651,7 +720,9 @@ export function MonitorPage() {
                   <div>
                     <div className="text-[13px] font-medium text-text-primary">{provider.name}</div>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/8 text-text-tertiary font-mono">{provider.format}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/8 text-text-tertiary font-mono">
+                        {provider.format}
+                      </span>
                       <span className="text-[10px] text-text-tertiary">{providerTargets.length} models</span>
                     </div>
                   </div>
@@ -659,8 +730,8 @@ export function MonitorPage() {
 
                 {/* Model Cards */}
                 <div className="space-y-2">
-                  {providerTargets.map(target => {
-                    const ping = pings.find(p => p.modelName === target.modelName);
+                  {providerTargets.map((target) => {
+                    const ping = pings.find((p) => p.modelName === target.modelName);
                     const cls = ping ? ping.healthStatus : null;
                     const modelInfo = provider.models.find((m: any) => m.name === target.modelName);
                     const modelLabel = modelInfo?.displayName || target.modelName;
@@ -671,26 +742,39 @@ export function MonitorPage() {
                             {cls && <div className={`w-2 h-2 rounded-full ${getStatusDotColor(cls)}`} />}
                             <span className="font-mono text-[12px] text-text-primary">{modelLabel}</span>
                             {cls && (
-                              <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${
-                                cls === 'healthy' ? 'bg-emerald-500/10 text-emerald-400' :
-                                cls === 'slow' ? 'bg-amber-500/10 text-amber-400' :
-                                cls === 'very_slow' ? 'bg-orange-500/10 text-orange-400' :
-                                'bg-red-500/10 text-red-400'
-                              }`}>{getStatusLabel(cls)}</span>
+                              <span
+                                className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${
+                                  cls === 'healthy'
+                                    ? 'bg-emerald-500/10 text-emerald-400'
+                                    : cls === 'slow'
+                                      ? 'bg-amber-500/10 text-amber-400'
+                                      : cls === 'very_slow'
+                                        ? 'bg-orange-500/10 text-orange-400'
+                                        : 'bg-red-500/10 text-red-400'
+                                }`}
+                              >
+                                {getStatusLabel(cls)}
+                              </span>
                             )}
                             {ping && ping.outputTokens > 0 && ping.latencyMs > 0 && (
-                              <span className="text-[9px] text-text-tertiary font-mono">{Math.round((ping.outputTokens / ping.latencyMs) * 1000)} tok/s</span>
+                              <span className="text-[9px] text-text-tertiary font-mono">
+                                {Math.round((ping.outputTokens / ping.latencyMs) * 1000)} tok/s
+                              </span>
                             )}
                           </div>
                           {ping ? (
                             <div className="flex items-center gap-1.5 text-[11px] font-mono text-text-tertiary">
                               <Tooltip title="TTFT (first token)">
-                                <span className={cls !== 'healthy' ? getStatusTextColor(cls!) : ''}>{formatLatency(ping.ttftMs)}</span>
+                                <span className={cls !== 'healthy' ? getStatusTextColor(cls!) : ''}>
+                                  {formatLatency(ping.ttftMs)}
+                                </span>
                               </Tooltip>
                               <span>·</span>
                               <Tooltip title="Tokens per second">
                                 <span className={`font-medium ${getStatusTextColor(cls!)}`}>
-                                  {ping.status === 'error' ? 'FAIL' : `${ping.latencyMs > 0 ? Math.round((ping.outputTokens / ping.latencyMs) * 1000) : 0} tok/s`}
+                                  {ping.status === 'error'
+                                    ? 'FAIL'
+                                    : `${ping.latencyMs > 0 ? Math.round((ping.outputTokens / ping.latencyMs) * 1000) : 0} tok/s`}
                                 </span>
                               </Tooltip>
                             </div>
@@ -709,7 +793,11 @@ export function MonitorPage() {
                         )}
                         <div className="flex items-center justify-between">
                           <HistoryBar history={history} providerId={providerId} modelName={target.modelName} />
-                          <Tooltip title={expandedModels.has(`${providerId}::${target.modelName}`) ? 'Hide trends' : 'Show trends'}>
+                          <Tooltip
+                            title={
+                              expandedModels.has(`${providerId}::${target.modelName}`) ? 'Hide trends' : 'Show trends'
+                            }
+                          >
                             <button
                               onClick={() => toggleExpanded(`${providerId}::${target.modelName}`)}
                               className={`ml-2 shrink-0 text-[11px] p-1 rounded transition-colors ${
@@ -723,7 +811,12 @@ export function MonitorPage() {
                           </Tooltip>
                         </div>
                         {expandedModels.has(`${providerId}::${target.modelName}`) && (
-                          <TrendCharts history={history} providerId={providerId} modelName={target.modelName} thresholds={thresholds} />
+                          <TrendCharts
+                            history={history}
+                            providerId={providerId}
+                            modelName={target.modelName}
+                            thresholds={thresholds}
+                          />
                         )}
                       </div>
                     );

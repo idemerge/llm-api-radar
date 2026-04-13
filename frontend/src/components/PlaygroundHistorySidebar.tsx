@@ -23,7 +23,15 @@ interface Props {
   selectedId?: string;
 }
 
-export function PlaygroundHistorySidebar({ items, loading, onSelect, onDelete, onClearAll, onClose, selectedId }: Props) {
+export function PlaygroundHistorySidebar({
+  items,
+  loading,
+  onSelect,
+  onDelete,
+  onClearAll,
+  onClose,
+  selectedId,
+}: Props) {
   return (
     <div className="w-80 shrink-0 glass-card p-4 space-y-3 self-start sticky top-4">
       {/* Header */}
@@ -31,7 +39,9 @@ export function PlaygroundHistorySidebar({ items, loading, onSelect, onDelete, o
         <div className="flex items-center gap-2">
           <span className="text-[13px] font-medium text-text-primary">History</span>
           {items.length > 0 && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/8 text-text-tertiary font-mono">{items.length}</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/8 text-text-tertiary font-mono">
+              {items.length}
+            </span>
           )}
         </div>
         <div className="flex items-center gap-1">
@@ -44,7 +54,10 @@ export function PlaygroundHistorySidebar({ items, loading, onSelect, onDelete, o
               </Tooltip>
             </Popconfirm>
           )}
-          <button onClick={onClose} className="text-[12px] text-text-tertiary hover:text-text-primary transition-colors p-1">
+          <button
+            onClick={onClose}
+            className="text-[12px] text-text-tertiary hover:text-text-primary transition-colors p-1"
+          >
             <CloseOutlined />
           </button>
         </div>
@@ -56,9 +69,11 @@ export function PlaygroundHistorySidebar({ items, loading, onSelect, onDelete, o
           <div className="text-center py-4 text-text-tertiary text-[12px] animate-pulse">Loading...</div>
         )}
         {!loading && items.length === 0 && (
-          <div className="text-center py-6 text-text-tertiary text-[12px]">No history yet. Run a prompt to see it here.</div>
+          <div className="text-center py-6 text-text-tertiary text-[12px]">
+            No history yet. Run a prompt to see it here.
+          </div>
         )}
-        {items.map(item => (
+        {items.map((item) => (
           <button
             key={item.id}
             onClick={() => onSelect(item.id)}
@@ -72,7 +87,9 @@ export function PlaygroundHistorySidebar({ items, loading, onSelect, onDelete, o
               <span className="font-mono text-[11px] text-text-primary truncate max-w-[180px]">{item.modelName}</span>
               <div className="flex items-center gap-1.5">
                 {item.responseTime && (
-                  <span className="text-[10px] text-text-tertiary font-mono">{item.responseTime < 1000 ? `${item.responseTime}ms` : `${(item.responseTime / 1000).toFixed(1)}s`}</span>
+                  <span className="text-[10px] text-text-tertiary font-mono">
+                    {item.responseTime < 1000 ? `${item.responseTime}ms` : `${(item.responseTime / 1000).toFixed(1)}s`}
+                  </span>
                 )}
                 {item.error && <span className="w-1.5 h-1.5 rounded-full bg-accent-rose" />}
               </div>
@@ -81,7 +98,10 @@ export function PlaygroundHistorySidebar({ items, loading, onSelect, onDelete, o
             <div className="flex items-center justify-between">
               <span className="text-[10px] text-text-tertiary">{timeAgo(item.createdAt)}</span>
               <button
-                onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(item.id);
+                }}
                 className="text-[10px] text-text-tertiary hover:text-accent-rose opacity-0 group-hover:opacity-100 transition-all p-0.5"
               >
                 <DeleteOutlined />

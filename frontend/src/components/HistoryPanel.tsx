@@ -22,14 +22,26 @@ function formatDate(dateStr: string): string {
 
 function statusToTagColor(status: string): string {
   switch (status) {
-    case 'completed': return 'green';
-    case 'running': return 'orange';
-    case 'failed': return 'red';
-    default: return 'default';
+    case 'completed':
+      return 'green';
+    case 'running':
+      return 'orange';
+    case 'failed':
+      return 'red';
+    default:
+      return 'default';
   }
 }
 
-export function HistoryPanel({ workflows, onSelectWorkflow, onDeleteWorkflow, onDuplicateWorkflow, onRefresh, selectedId, loading }: HistoryPanelProps) {
+export function HistoryPanel({
+  workflows,
+  onSelectWorkflow,
+  onDeleteWorkflow,
+  onDuplicateWorkflow,
+  onRefresh,
+  selectedId,
+  loading,
+}: HistoryPanelProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
 
@@ -78,18 +90,12 @@ export function HistoryPanel({ workflows, onSelectWorkflow, onDeleteWorkflow, on
   const sorted = [...workflows].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="space-y-6"
-    >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="text-base font-semibold text-text-primary">
           History
-          <span className="ml-2 text-sm text-text-secondary font-normal font-mono">
-            ({sorted.length})
-          </span>
+          <span className="ml-2 text-sm text-text-secondary font-normal font-mono">({sorted.length})</span>
         </h2>
         {onRefresh && (
           <button
@@ -111,9 +117,7 @@ export function HistoryPanel({ workflows, onSelectWorkflow, onDeleteWorkflow, on
             key: 'date',
             width: 180,
             render: (val: string) => (
-              <span className="text-[12px] text-text-secondary font-mono">
-                {formatDate(val)}
-              </span>
+              <span className="text-[12px] text-text-secondary font-mono">{formatDate(val)}</span>
             ),
           },
           {
@@ -174,9 +178,7 @@ export function HistoryPanel({ workflows, onSelectWorkflow, onDeleteWorkflow, on
                       {m.label}
                     </Tag>
                   ))}
-                  {models.length > 3 && (
-                    <span className="text-[10px] text-text-tertiary">+{models.length - 3}</span>
-                  )}
+                  {models.length > 3 && <span className="text-[10px] text-text-tertiary">+{models.length - 3}</span>}
                 </div>
               );
             },
@@ -187,9 +189,7 @@ export function HistoryPanel({ workflows, onSelectWorkflow, onDeleteWorkflow, on
             width: 60,
             align: 'right' as const,
             render: (_: unknown, record: BenchmarkWorkflow) => (
-              <span className="text-[12px] text-accent-violet font-mono">
-                {record.tasks?.length ?? '-'}
-              </span>
+              <span className="text-[12px] text-accent-violet font-mono">{record.tasks?.length ?? '-'}</span>
             ),
           },
           {
@@ -230,9 +230,7 @@ export function HistoryPanel({ workflows, onSelectWorkflow, onDeleteWorkflow, on
         rowKey="id"
         size="small"
         pagination={sorted.length > 20 ? { pageSize: 20, size: 'small' } : false}
-        rowClassName={(record) =>
-          record.id === selectedId ? 'history-row-selected' : ''
-        }
+        rowClassName={(record) => (record.id === selectedId ? 'history-row-selected' : '')}
         onRow={(record) => ({
           onClick: () => onSelectWorkflow(record.id),
           style: { cursor: 'pointer' },

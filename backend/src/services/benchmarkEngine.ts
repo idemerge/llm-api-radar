@@ -44,7 +44,7 @@ function resolveProvider(providerName: string, apiKey: string): LLMProvider | nu
   // Try as a bare config ID — use first active model
   const config = providerStore.get(providerName);
   if (config) {
-    const activeModel = config.models.find(m => m.isActive !== false);
+    const activeModel = config.models.find((m) => m.isActive !== false);
     if (activeModel) {
       const dp = createDynamicProvider(providerName, activeModel.name);
       if (dp) return dp;
@@ -112,7 +112,12 @@ function classifyError(error: unknown): ErrorCategory {
   if (message.includes('rate limit') || message.includes('429') || message.includes('too many requests')) {
     return 'rate_limit';
   }
-  if (message.includes('fetch') || message.includes('network') || message.includes('econnrefused') || message.includes('dns')) {
+  if (
+    message.includes('fetch') ||
+    message.includes('network') ||
+    message.includes('econnrefused') ||
+    message.includes('dns')
+  ) {
     return 'network';
   }
   if (message.includes('api') || message.includes('401') || message.includes('403') || message.includes('500')) {
@@ -148,7 +153,7 @@ async function executeWithRetry(
   apiKey: string,
   streaming: boolean | undefined,
   images: ImageInput[] | undefined,
-  maxRetries: number = 2
+  maxRetries: number = 2,
 ): Promise<{ response: ReturnType<LLMProvider['execute']> extends Promise<infer R> ? R : never; retries: number }> {
   let lastError: unknown;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -211,25 +216,17 @@ function calculateSummary(iterations: IterationResult[], totalTestDurationMs?: n
   const errorBreakdown = buildErrorBreakdown(iterations);
 
   return {
-    avgResponseTime: Math.round(
-      responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
-    ),
+    avgResponseTime: Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length),
     p50ResponseTime: Math.round(calculatePercentile(responseTimes, 50)),
     p95ResponseTime: Math.round(calculatePercentile(responseTimes, 95)),
     p99ResponseTime: Math.round(calculatePercentile(responseTimes, 99)),
-    avgTokensPerSecond: Math.round(
-      successful.reduce((a, b) => a + b.tokensPerSecond, 0) / successful.length
-    ),
-    avgFirstTokenLatency: Math.round(
-      firstTokenLatencies.reduce((a, b) => a + b, 0) / firstTokenLatencies.length
-    ),
+    avgTokensPerSecond: Math.round(successful.reduce((a, b) => a + b.tokensPerSecond, 0) / successful.length),
+    avgFirstTokenLatency: Math.round(firstTokenLatencies.reduce((a, b) => a + b, 0) / firstTokenLatencies.length),
     p50FirstTokenLatency: Math.round(calculatePercentile(firstTokenLatencies, 50)),
     p95FirstTokenLatency: Math.round(calculatePercentile(firstTokenLatencies, 95)),
     p99FirstTokenLatency: Math.round(calculatePercentile(firstTokenLatencies, 99)),
     totalTokens: iterations.reduce((a, b) => a + b.totalTokens, 0),
-    estimatedCost: Number(
-      iterations.reduce((a, b) => a + b.estimatedCost, 0).toFixed(6)
-    ),
+    estimatedCost: Number(iterations.reduce((a, b) => a + b.estimatedCost, 0).toFixed(6)),
     successRate: successful.length / iterations.length,
     errorCount: iterations.length - successful.length,
     systemThroughput,
@@ -246,9 +243,11 @@ function buildErrorBreakdown(iterations: IterationResult[]): Record<ErrorCategor
     network: 0,
     unknown: 0,
   };
-  iterations.filter((i) => !i.success && i.errorCategory).forEach((i) => {
-    breakdown[i.errorCategory!]++;
-  });
+  iterations
+    .filter((i) => !i.success && i.errorCategory)
+    .forEach((i) => {
+      breakdown[i.errorCategory!]++;
+    });
   return breakdown;
 }
 
@@ -256,7 +255,7 @@ async function runProviderBenchmark(
   benchmarkId: string,
   providerName: string,
   config: BenchmarkConfig,
-  apiKey: string
+  apiKey: string,
 ): Promise<ProviderResult> {
   const provider = resolveProvider(providerName, apiKey);
   if (!provider) {
@@ -286,7 +285,14 @@ async function runProviderBenchmark(
         throw new Error('Benchmark cancelled by user');
       }
       try {
-        await provider.execute(config.prompt, config.systemPrompt, config.maxTokens, apiKey, config.streaming, config.images);
+        await provider.execute(
+          config.prompt,
+          config.systemPrompt,
+          config.maxTokens,
+          apiKey,
+          config.streaming,
+          config.images,
+        );
       } catch {
         // Warmup errors are silently ignored
       }
@@ -313,9 +319,7 @@ async function runProviderBenchmark(
 
     // Request interval between batches (skip before first batch)
     if (i > 0 && requestInterval > 0) {
-      const interval = randomizeInterval
-        ? Math.round(requestInterval * (0.5 + Math.random()))
-        : requestInterval;
+      const interval = randomizeInterval ? Math.round(requestInterval * (0.5 + Math.random())) : requestInterval;
       await sleep(interval, benchmarkId);
       if (isCancelled(benchmarkId)) {
         throw new Error('Benchmark cancelled by user');
@@ -335,16 +339,14 @@ async function runProviderBenchmark(
             config.maxTokens,
             apiKey,
             config.streaming,
-            config.images
+            config.images,
           );
 
           const result: IterationResult = {
             iteration: iterIndex + 1,
             responseTime: response.responseTime,
             firstTokenLatency: response.firstTokenLatency,
-            tokensPerSecond: Math.round(
-              (response.outputTokens / response.responseTime) * 1000
-            ),
+            tokensPerSecond: Math.round((response.outputTokens / response.responseTime) * 1000),
             inputTokens: response.inputTokens,
             outputTokens: response.outputTokens,
             reasoningTokens: response.reasoningTokens,
@@ -371,7 +373,7 @@ async function runProviderBenchmark(
             errorCategory,
           } as IterationResult;
         }
-      })
+      }),
     );
 
     iterations.push(...batchResults);
@@ -395,11 +397,16 @@ async function runProviderBenchmark(
   if (providerName.includes(':')) {
     model = providerName.split(':', 2)[1];
   } else {
-    model = providerName === 'openai' ? 'gpt-4' :
-      providerName === 'claude' ? 'claude-3-sonnet' :
-      providerName === 'gemini' ? 'gemini-pro' :
-      providerName === 'zai' ? 'glm-4.7' :
-      provider.name || 'unknown';
+    model =
+      providerName === 'openai'
+        ? 'gpt-4'
+        : providerName === 'claude'
+          ? 'claude-3-sonnet'
+          : providerName === 'gemini'
+            ? 'gemini-pro'
+            : providerName === 'zai'
+              ? 'glm-4.7'
+              : provider.name || 'unknown';
   }
 
   const result: ProviderResult = {
@@ -420,7 +427,7 @@ async function runProviderBenchmark(
 export async function startBenchmark(
   providerNames: string[],
   config: BenchmarkConfig,
-  apiKeys: Record<string, string>
+  apiKeys: Record<string, string>,
 ): Promise<BenchmarkRun> {
   const id = `bench_${uuidv4().slice(0, 8)}`;
 
@@ -437,12 +444,7 @@ export async function startBenchmark(
 
   const providerPromises = providerNames.map(async (name) => {
     try {
-      const result = await runProviderBenchmark(
-        id,
-        name,
-        config,
-        apiKeys[name] || ''
-      );
+      const result = await runProviderBenchmark(id, name, config, apiKeys[name] || '');
       run.results[name] = result;
     } catch (error) {
       emit(id, {
@@ -468,10 +470,7 @@ export async function startBenchmark(
     try {
       const testProvider = providerNames.find((name) => apiKeys[name]);
       if (testProvider) {
-        run.capabilityTests = await testCapabilities(
-          testProvider,
-          apiKeys[testProvider]
-        );
+        run.capabilityTests = await testCapabilities(testProvider, apiKeys[testProvider]);
       }
     } catch (err) {
       console.error('Capability tests failed:', err);

@@ -25,7 +25,11 @@ function formatDuration(ms: number): string {
 }
 
 /** Horizontal bar chart comparing providers on a single metric */
-function MetricBarChart({ label, items, unit }: {
+function MetricBarChart({
+  label,
+  items,
+  unit,
+}: {
   label: string;
   items: { providerKey: string; label: string; value: number }[];
   unit?: string;
@@ -50,13 +54,25 @@ function MetricBarChart({ label, items, unit }: {
           const color = getProviderColor(item.providerKey);
           return (
             <g key={item.providerKey}>
-              <text x={labelWidth - 6} y={y + barHeight * 0.75} textAnchor="end" fill="rgba(255,255,255,0.5)" fontSize="8">
+              <text
+                x={labelWidth - 6}
+                y={y + barHeight * 0.75}
+                textAnchor="end"
+                fill="rgba(255,255,255,0.5)"
+                fontSize="8"
+              >
                 {item.label}
               </text>
               <rect x={labelWidth} y={y} width={barAreaWidth} height={barHeight} rx="2" fill="rgba(255,255,255,0.03)" />
               <rect x={labelWidth} y={y} width={barW} height={barHeight} rx="2" fill={color} opacity="0.75" />
-              <text x={labelWidth + barAreaWidth + 4} y={y + barHeight * 0.75} fill="rgba(255,255,255,0.6)" fontSize="8">
-                {formatNumber(item.value)}{unit || ''}
+              <text
+                x={labelWidth + barAreaWidth + 4}
+                y={y + barHeight * 0.75}
+                fill="rgba(255,255,255,0.6)"
+                fontSize="8"
+              >
+                {formatNumber(item.value)}
+                {unit || ''}
               </text>
             </g>
           );
@@ -92,15 +108,19 @@ function PromptPreview({ text }: { text: string }) {
 
 /** Shared provider column definitions */
 function providerColumns(hasP95: boolean) {
-  const cols = [
+  const cols: Array<{
+    title: string;
+    dataIndex: string;
+    key: string;
+    align?: 'left' | 'right' | 'center';
+    render?: (value: any, record: any) => any;
+  }> = [
     {
       title: 'Provider',
       dataIndex: 'providerName',
       key: 'providerName',
       render: (name: string, record: { providerKey: string }) => (
-        <span style={{ color: getProviderColor(record.providerKey), fontWeight: 500 }}>
-          {name}
-        </span>
+        <span style={{ color: getProviderColor(record.providerKey), fontWeight: 500 }}>{name}</span>
       ),
     },
     {
@@ -108,7 +128,9 @@ function providerColumns(hasP95: boolean) {
       dataIndex: 'model',
       key: 'model',
       render: (model: string, record: { providerKey: string }) => (
-        <span style={{ color: getProviderColor(record.providerKey), opacity: 0.8 }} className="font-mono text-[12px]">{model}</span>
+        <span style={{ color: getProviderColor(record.providerKey), opacity: 0.8 }} className="font-mono text-[12px]">
+          {model}
+        </span>
       ),
     },
     {
@@ -136,7 +158,7 @@ function providerColumns(hasP95: boolean) {
       dataIndex: 'avgFirstTokenLatency',
       key: 'avgFirstTokenLatency',
       align: 'right' as const,
-      render: (val: number) => val > 0 ? `${formatNumber(val)}ms` : 'N/A',
+      render: (val: number) => (val > 0 ? `${formatNumber(val)}ms` : 'N/A'),
     },
     {
       title: 'TPS',
@@ -176,7 +198,11 @@ function TaskCharts({ chartData }: { chartData: { providerKey: string; label: st
       <div className="p-3 rounded border border-border/50 bg-bg-primary/50">
         <MetricBarChart
           label="Avg Response Time"
-          items={chartData.map((d) => ({ providerKey: d.providerKey, label: d.label, value: d.metric.avgResponseTime }))}
+          items={chartData.map((d) => ({
+            providerKey: d.providerKey,
+            label: d.label,
+            value: d.metric.avgResponseTime,
+          }))}
           unit="ms"
         />
       </div>
@@ -208,20 +234,22 @@ export function WorkflowResults({ workflow, onExport }: WorkflowResultsProps) {
     metricsByProvider[provider] = [...ps.perTaskMetrics].sort((a, b) => a.taskOrder - b.taskOrder);
   }
 
-  const overviewDataSource = providers.map((p) => {
-    const ps = summary.providerSummaries[p];
-    return {
-      key: p,
-      providerKey: p,
-      providerName: ps.provider,
-      model: ps.model,
-      ...ps,
-    };
-  }).sort((a, b) => {
-    const cmp = a.providerName.localeCompare(b.providerName);
-    if (cmp !== 0) return cmp;
-    return a.model.localeCompare(b.model);
-  });
+  const overviewDataSource = providers
+    .map((p) => {
+      const ps = summary.providerSummaries[p];
+      return {
+        ...ps,
+        key: p,
+        providerKey: p,
+        providerName: ps.provider,
+        model: ps.model,
+      };
+    })
+    .sort((a, b) => {
+      const cmp = a.providerName.localeCompare(b.providerName);
+      if (cmp !== 0) return cmp;
+      return a.model.localeCompare(b.model);
+    });
 
   /** Build chart data for a specific task */
   function buildChartData(taskId: string) {
@@ -272,18 +300,25 @@ export function WorkflowResults({ workflow, onExport }: WorkflowResultsProps) {
     });
 
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="glass-card p-7 space-y-6"
-      >
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-7 space-y-6">
         {/* Summary bar */}
         <div className="flex flex-wrap gap-4 text-xs text-text-secondary">
-          <span>Duration: <span className="text-accent-blue">{formatDuration(summary.totalDuration)}</span></span>
-          <span>Tokens: <span className="text-accent-violet">{formatNumber(summary.totalTokens)}</span></span>
-          <span>Tasks: <span className="text-text-primary">{summary.completedTaskCount}/{summary.taskCount}</span></span>
+          <span>
+            Duration: <span className="text-accent-blue">{formatDuration(summary.totalDuration)}</span>
+          </span>
+          <span>
+            Tokens: <span className="text-accent-violet">{formatNumber(summary.totalTokens)}</span>
+          </span>
+          <span>
+            Tasks:{' '}
+            <span className="text-text-primary">
+              {summary.completedTaskCount}/{summary.taskCount}
+            </span>
+          </span>
           {summary.failedTaskCount > 0 && (
-            <span>Failed: <span className="text-accent-rose">{summary.failedTaskCount}</span></span>
+            <span>
+              Failed: <span className="text-accent-rose">{summary.failedTaskCount}</span>
+            </span>
           )}
         </div>
 
@@ -320,12 +355,7 @@ export function WorkflowResults({ workflow, onExport }: WorkflowResultsProps) {
       key: 'overview',
       label: 'Overview',
       children: (
-        <Table
-          columns={providerColumns(false)}
-          dataSource={overviewDataSource}
-          pagination={false}
-          size="small"
-        />
+        <Table columns={providerColumns(false)} dataSource={overviewDataSource} pagination={false} size="small" />
       ),
     },
     {
@@ -358,12 +388,7 @@ export function WorkflowResults({ workflow, onExport }: WorkflowResultsProps) {
                   </span>
                 </div>
 
-                <Table
-                  columns={providerColumns(true)}
-                  dataSource={taskDataSource}
-                  pagination={false}
-                  size="small"
-                />
+                <Table columns={providerColumns(true)} dataSource={taskDataSource} pagination={false} size="small" />
 
                 <TaskCharts chartData={chartData} />
 
@@ -388,28 +413,30 @@ export function WorkflowResults({ workflow, onExport }: WorkflowResultsProps) {
   ];
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="glass-card p-7 space-y-8"
-    >
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-7 space-y-8">
       {/* Summary bar */}
       <div className="flex flex-wrap gap-4 text-xs text-text-secondary">
-        <span>Duration: <span className="text-accent-blue">{formatDuration(summary.totalDuration)}</span></span>
-        <span>Tokens: <span className="text-accent-violet">{formatNumber(summary.totalTokens)}</span></span>
-        <span>Tasks: <span className="text-text-primary">{summary.completedTaskCount}/{summary.taskCount}</span></span>
+        <span>
+          Duration: <span className="text-accent-blue">{formatDuration(summary.totalDuration)}</span>
+        </span>
+        <span>
+          Tokens: <span className="text-accent-violet">{formatNumber(summary.totalTokens)}</span>
+        </span>
+        <span>
+          Tasks:{' '}
+          <span className="text-text-primary">
+            {summary.completedTaskCount}/{summary.taskCount}
+          </span>
+        </span>
         {summary.failedTaskCount > 0 && (
-          <span>Failed: <span className="text-accent-rose">{summary.failedTaskCount}</span></span>
+          <span>
+            Failed: <span className="text-accent-rose">{summary.failedTaskCount}</span>
+          </span>
         )}
       </div>
 
       {/* Tabs */}
-      <Tabs
-        activeKey={activeTab}
-        onChange={(key) => setActiveTab(key as TabType)}
-        items={tabItems}
-        size="small"
-      />
+      <Tabs activeKey={activeTab} onChange={(key) => setActiveTab(key as TabType)} items={tabItems} size="small" />
     </motion.div>
   );
 }

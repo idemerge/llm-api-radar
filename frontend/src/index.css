@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @source "../src/**/*.{tsx,ts,jsx,js}";
 
@@ -64,7 +64,11 @@
   body {
     background-color: var(--color-bg-primary);
     color: var(--color-text-primary);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family:
+      'Inter',
+      -apple-system,
+      BlinkMacSystemFont,
+      sans-serif;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -78,17 +82,40 @@
   z-index: 1;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: 'Inter', sans-serif;
   letter-spacing: -0.01em;
 }
 
-h1 { font-size: 24px; font-weight: 600; }
-h2 { font-size: 18px; font-weight: 600; }
-h3 { font-size: 15px; font-weight: 600; }
-h4 { font-size: 13px; font-weight: 500; }
-h5 { font-size: 12px; font-weight: 500; }
-h6 { font-size: 11px; font-weight: 500; }
+h1 {
+  font-size: 24px;
+  font-weight: 600;
+}
+h2 {
+  font-size: 18px;
+  font-weight: 600;
+}
+h3 {
+  font-size: 15px;
+  font-weight: 600;
+}
+h4 {
+  font-size: 13px;
+  font-weight: 500;
+}
+h5 {
+  font-size: 12px;
+  font-weight: 500;
+}
+h6 {
+  font-size: 11px;
+  font-weight: 500;
+}
 
 /* ==========================================
    Cards — Grafana panel style
@@ -157,22 +184,28 @@ h6 { font-size: 11px; font-weight: 500; }
 }
 
 @keyframes breathe {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 
 /* ==========================================
    Focus & Interaction
    ========================================== */
 
-button, [role="button"] {
+button,
+[role='button'] {
   cursor: pointer;
 }
 
 button:focus-visible,
 .ant-btn:focus-visible,
 a:focus-visible,
-[role="button"]:focus-visible {
+[role='button']:focus-visible {
   outline: 2px solid rgba(64, 150, 255, 0.5) !important;
   outline-offset: 2px !important;
 }
@@ -193,17 +226,30 @@ a:focus-visible,
    Scrollbar — thin, Grafana-like
    ========================================== */
 
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
 
 /* ==========================================
    Reduced Motion
    ========================================== */
 
 @media (prefers-reduced-motion: reduce) {
-  * { animation: none !important; transition-duration: 0.01ms !important; }
+  * {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* ==========================================
@@ -215,7 +261,9 @@ a:focus-visible,
     padding: 16px;
   }
 
-  .glass-card { border-radius: 4px; }
+  .glass-card {
+    border-radius: 4px;
+  }
 
   /* Collapse sidebar on mobile */
   .ant-layout-sider {
@@ -233,5 +281,7 @@ a:focus-visible,
 }
 
 @media (max-width: 640px) {
-  .glass-card { border-radius: 4px; }
+  .glass-card {
+    border-radius: 4px;
+  }
 }

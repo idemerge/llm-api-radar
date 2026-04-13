@@ -1,0 +1,9 @@
+dist
+node_modules
+*.db
+*.sqlite
+*.sqlite3
+data
+nohup.out
+frontend/dist
+backend/dist

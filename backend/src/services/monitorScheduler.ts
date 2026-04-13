@@ -4,12 +4,7 @@ import { monitorConfigStore, MonitorTarget } from './monitorConfigStore';
 import { testProviderConnection } from '../providers/adapter';
 import { monitorStore, HealthStatus } from './monitorStore';
 
-function classifyHealth(
-  status: string,
-  latencyMs: number,
-  ttftMs: number,
-  outputTokens: number,
-): HealthStatus {
+function classifyHealth(status: string, latencyMs: number, ttftMs: number, outputTokens: number): HealthStatus {
   const thresholds = monitorConfigStore.getConfig().healthThresholds;
   if (status === 'error' || status === 'timeout') return 'down';
   // Only enforce minOutputTokens when streaming provides real token counts.
@@ -37,7 +32,7 @@ function shouldCheck(target: MonitorTarget, now: number): boolean {
 
   const last = lastCheckMap.get(key);
   if (!last) return true; // Never checked before
-  return (now - last) >= intervalMs;
+  return now - last >= intervalMs;
 }
 
 async function probeTarget(target: MonitorTarget, isoNow: string): Promise<void> {
@@ -96,7 +91,7 @@ async function runCheck(forceAll = false) {
     if (targets.length === 0) return;
 
     const now = Date.now();
-    const toCheck = forceAll ? targets : targets.filter(t => shouldCheck(t, now));
+    const toCheck = forceAll ? targets : targets.filter((t) => shouldCheck(t, now));
 
     if (toCheck.length === 0) return;
 
@@ -110,13 +105,13 @@ async function runCheck(forceAll = false) {
     }
 
     await Promise.all(
-      Array.from(providerGroups.values()).map(providerTargets =>
+      Array.from(providerGroups.values()).map((providerTargets) =>
         (async () => {
           for (const target of providerTargets) {
             await probeTarget(target, isoNow);
           }
-        })()
-      )
+        })(),
+      ),
     );
   } finally {
     isRunning = false;
@@ -131,7 +126,7 @@ export function startScheduler() {
 
   // Check every minute to see which targets need probing
   scheduledTask = cron.schedule('* * * * *', () => {
-    runCheck(false).catch(err => {
+    runCheck(false).catch((err) => {
       console.error('[Monitor] Scheduled check failed:', err);
     });
   });
@@ -141,11 +136,13 @@ export function startScheduler() {
   // Initial check after startup
   setTimeout(() => {
     console.log('[Monitor] Running initial health check...');
-    runCheck(true).then(() => {
-      console.log('[Monitor] Initial check complete');
-    }).catch(err => {
-      console.error('[Monitor] Initial check failed:', err);
-    });
+    runCheck(true)
+      .then(() => {
+        console.log('[Monitor] Initial check complete');
+      })
+      .catch((err) => {
+        console.error('[Monitor] Initial check failed:', err);
+      });
   }, 5000);
 }
 

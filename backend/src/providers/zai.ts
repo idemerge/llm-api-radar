@@ -3,7 +3,7 @@ import { LLMResponse } from '../types';
 
 export class ZaiProvider extends BaseLLMProvider {
   name = 'zai';
-  
+
   private baseUrl = 'http://REDACTED:4001/v1';
   private model = 'z-ai/glm-4.7';
 
@@ -13,7 +13,7 @@ export class ZaiProvider extends BaseLLMProvider {
     maxTokens: number,
     apiKey: string,
     streaming: boolean = false,
-    _images?: any[]
+    _images?: any[],
   ): Promise<LLMResponse> {
     const key = apiKey || 'REDACTED';
     const startTime = Date.now();
@@ -31,25 +31,29 @@ export class ZaiProvider extends BaseLLMProvider {
       }
 
       // Non-streaming mode
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${key}`,
+      const response = await this.fetchWithTimeout(
+        `${this.baseUrl}/chat/completions`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${key}`,
+          },
+          body: JSON.stringify({
+            model: this.model,
+            messages,
+            max_tokens: maxTokens,
+            stream: false,
+          }),
         },
-        body: JSON.stringify({
-          model: this.model,
-          messages,
-          max_tokens: maxTokens,
-          stream: false,
-        }),
-      }, 180000);
+        180000,
+      );
 
       if (!response.ok) {
         throw new Error(`API error: ${response.status} ${response.statusText}`);
       }
 
-      const data = await response.json() as {
+      const data = (await response.json()) as {
         choices?: Array<{ message?: { content?: string; reasoning_content?: string } }>;
         usage?: {
           prompt_tokens?: number;
@@ -58,9 +62,8 @@ export class ZaiProvider extends BaseLLMProvider {
           completion_tokens_details?: { reasoning_tokens?: number };
         };
       };
-      
-      return this.buildResponse(data, startTime);
 
+      return this.buildResponse(data, startTime);
     } catch (error) {
       console.error('Zai API error:', error);
       throw error;
@@ -71,22 +74,26 @@ export class ZaiProvider extends BaseLLMProvider {
     messages: Array<{ role: string; content: string }>,
     maxTokens: number,
     apiKey: string,
-    startTime: number
+    startTime: number,
   ): Promise<LLMResponse> {
-    const response = await this.fetchWithTimeout(`${this.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+    const response = await this.fetchWithTimeout(
+      `${this.baseUrl}/chat/completions`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages,
+          max_tokens: maxTokens,
+          stream: true,
+          stream_options: { include_usage: true }, // Request usage data in response
+        }),
       },
-      body: JSON.stringify({
-        model: this.model,
-        messages,
-        max_tokens: maxTokens,
-        stream: true,
-        stream_options: { include_usage: true },  // Request usage data in response
-      }),
-    }, 180000);
+      180000,
+    );
 
     if (!response.ok) {
       throw new Error(`API error: ${response.status} ${response.statusText}`);
@@ -124,11 +131,11 @@ export class ZaiProvider extends BaseLLMProvider {
 
         try {
           const parsed = JSON.parse(data) as {
-            choices?: Array<{ 
-              delta?: { 
+            choices?: Array<{
+              delta?: {
                 content?: string;
                 reasoning_content?: string;
-              } 
+              };
             }>;
             usage?: {
               prompt_tokens?: number;
@@ -137,7 +144,7 @@ export class ZaiProvider extends BaseLLMProvider {
               completion_tokens_details?: { reasoning_tokens?: number };
             };
           };
-          
+
           // Detect first token time (including reasoning_content)
           const delta = parsed.choices?.[0]?.delta;
           if (delta?.content || delta?.reasoning_content) {
@@ -145,7 +152,7 @@ export class ZaiProvider extends BaseLLMProvider {
               firstTokenTime = Date.now();
             }
           }
-          
+
           // Read usage data (returned at the end of the stream)
           if (parsed.usage) {
             usageData = parsed.usage;
@@ -158,9 +165,7 @@ export class ZaiProvider extends BaseLLMProvider {
 
     const endTime = Date.now();
     const responseTime = endTime - startTime;
-    const firstTokenLatency = firstTokenTime 
-      ? firstTokenTime - startTime 
-      : Math.round(responseTime * 0.6);  // GLM-4.7 first-token latency is typically 60% of total
+    const firstTokenLatency = firstTokenTime ? firstTokenTime - startTime : Math.round(responseTime * 0.6); // GLM-4.7 first-token latency is typically 60% of total
 
     // Build response from usage data
     if (usageData) {
@@ -172,8 +177,7 @@ export class ZaiProvider extends BaseLLMProvider {
       const totalTokens = inputTokens + completionTokens;
 
       // GLM-4.7 pricing: $0.5/M input, $1.5/M output
-      const estimatedCost =
-        inputTokens * 0.0000005 + completionTokens * 0.0000015;
+      const estimatedCost = inputTokens * 0.0000005 + completionTokens * 0.0000015;
 
       return {
         text: '',
@@ -190,7 +194,7 @@ export class ZaiProvider extends BaseLLMProvider {
     }
 
     // Fallback: estimate if no usage data available
-    const inputTokens = Math.ceil(messages.map(m => m.content).join('').length / 4);
+    const inputTokens = Math.ceil(messages.map((m) => m.content).join('').length / 4);
     const estimatedOutput = Math.min(maxTokens, Math.floor(500 + Math.random() * 500));
 
     return {
@@ -216,7 +220,7 @@ export class ZaiProvider extends BaseLLMProvider {
         completion_tokens_details?: { reasoning_tokens?: number };
       };
     },
-    startTime: number
+    startTime: number,
   ): LLMResponse {
     const endTime = Date.now();
     const responseTime = endTime - startTime;
@@ -229,13 +233,13 @@ export class ZaiProvider extends BaseLLMProvider {
     // total_tokens = prompt_tokens + completion_tokens
     // reasoning_tokens inferred from the presence of reasoning_content field
     const reasoningContent = data.choices?.[0]?.message?.reasoning_content;
-    const reasoningTokens = usage.completion_tokens_details?.reasoning_tokens
-      || (reasoningContent ? Math.ceil(reasoningContent.length / 4) : 0);
+    const reasoningTokens =
+      usage.completion_tokens_details?.reasoning_tokens ||
+      (reasoningContent ? Math.ceil(reasoningContent.length / 4) : 0);
 
     const totalTokens = inputTokens + completionTokens;
 
-    const estimatedCost =
-      inputTokens * 0.0000005 + completionTokens * 0.0000015;
+    const estimatedCost = inputTokens * 0.0000005 + completionTokens * 0.0000015;
 
     // In non-streaming mode, first-token latency is estimated as 60% of total time
     const firstTokenLatency = Math.round(responseTime * 0.6);

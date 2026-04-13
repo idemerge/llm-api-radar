@@ -51,7 +51,9 @@ export function useMonitor() {
       const res = await apiFetch('/api/monitor/status');
       const data = await res.json();
       setStatuses(data);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   const fetchHistory = useCallback(async (hours = 24) => {
@@ -59,7 +61,9 @@ export function useMonitor() {
       const res = await apiFetch(`/api/monitor/history?hours=${hours}`);
       const data = await res.json();
       setHistory(data);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   const fetchTargets = useCallback(async () => {
@@ -67,7 +71,9 @@ export function useMonitor() {
       const res = await apiFetch('/api/monitor/targets');
       const data = await res.json();
       setTargets(data);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   const fetchConfig = useCallback(async () => {
@@ -75,7 +81,9 @@ export function useMonitor() {
       const res = await apiFetch('/api/monitor/config');
       const data = await res.json();
       setGlobalConfig(data);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   const saveConfig = useCallback(async (config: MonitorGlobalConfig) => {
@@ -86,7 +94,9 @@ export function useMonitor() {
         body: JSON.stringify(config),
       });
       setGlobalConfig(config);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   const fetchAll = useCallback(async () => {
@@ -103,7 +113,9 @@ export function useMonitor() {
         body: JSON.stringify(newTargets),
       });
       setTargets(newTargets);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   const triggerRun = useCallback(async () => {
@@ -115,11 +127,27 @@ export function useMonitor() {
         setStatuses(data.results || []);
       }
       await fetchHistory(24);
-    } catch { /* ignore */ }
-    finally {
+    } catch {
+      /* ignore */
+    } finally {
       setRunning(false);
     }
   }, [fetchHistory]);
 
-  return { statuses, history, targets, globalConfig, loading, running, fetchStatus, fetchHistory, fetchTargets, fetchConfig, saveConfig, fetchAll, saveTargets, triggerRun };
+  return {
+    statuses,
+    history,
+    targets,
+    globalConfig,
+    loading,
+    running,
+    fetchStatus,
+    fetchHistory,
+    fetchTargets,
+    fetchConfig,
+    saveConfig,
+    fetchAll,
+    saveTargets,
+    triggerRun,
+  };
 }

@@ -72,10 +72,26 @@ class MonitorStore {
       `);
 
       // Migrations: add columns if missing (older table)
-      try { this.db.exec('ALTER TABLE monitor_pings ADD COLUMN ttft_ms INTEGER NOT NULL DEFAULT 0'); } catch { /* exists */ }
-      try { this.db.exec('ALTER TABLE monitor_pings ADD COLUMN output_tokens INTEGER NOT NULL DEFAULT 0'); } catch { /* exists */ }
-      try { this.db.exec('ALTER TABLE monitor_pings ADD COLUMN response_text TEXT'); } catch { /* exists */ }
-      try { this.db.exec('ALTER TABLE monitor_pings ADD COLUMN health_status TEXT NOT NULL DEFAULT \'down\''); } catch { /* exists */ }
+      try {
+        this.db.exec('ALTER TABLE monitor_pings ADD COLUMN ttft_ms INTEGER NOT NULL DEFAULT 0');
+      } catch {
+        /* exists */
+      }
+      try {
+        this.db.exec('ALTER TABLE monitor_pings ADD COLUMN output_tokens INTEGER NOT NULL DEFAULT 0');
+      } catch {
+        /* exists */
+      }
+      try {
+        this.db.exec('ALTER TABLE monitor_pings ADD COLUMN response_text TEXT');
+      } catch {
+        /* exists */
+      }
+      try {
+        this.db.exec("ALTER TABLE monitor_pings ADD COLUMN health_status TEXT NOT NULL DEFAULT 'down'");
+      } catch {
+        /* exists */
+      }
 
       this.db.exec(`
         CREATE INDEX IF NOT EXISTS idx_monitor_checked_at
@@ -95,28 +111,34 @@ class MonitorStore {
 
   insertPing(ping: Omit<PingResult, 'id'>): void {
     if (!this.db) return;
-    this.db.prepare(`
+    this.db
+      .prepare(
+        `
       INSERT INTO monitor_pings (provider_id, provider_name, model_name, status, health_status, latency_ms, ttft_ms, output_tokens, response_text, error_message, checked_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      ping.providerId,
-      ping.providerName,
-      ping.modelName,
-      ping.status,
-      ping.healthStatus,
-      ping.latencyMs,
-      ping.ttftMs || 0,
-      ping.outputTokens || 0,
-      ping.responseText?.slice(0, 200) || null,
-      ping.errorMessage || null,
-      ping.checkedAt,
-    );
+    `,
+      )
+      .run(
+        ping.providerId,
+        ping.providerName,
+        ping.modelName,
+        ping.status,
+        ping.healthStatus,
+        ping.latencyMs,
+        ping.ttftMs || 0,
+        ping.outputTokens || 0,
+        ping.responseText?.slice(0, 200) || null,
+        ping.errorMessage || null,
+        ping.checkedAt,
+      );
   }
 
   /** Get the latest ping for each provider+model combination */
   getLatest(): PingResult[] {
     if (!this.db) return [];
-    const rows = this.db.prepare(`
+    const rows = this.db
+      .prepare(
+        `
       SELECT m.* FROM monitor_pings m
       INNER JOIN (
         SELECT provider_id, model_name, MAX(checked_at) as max_at
@@ -126,7 +148,9 @@ class MonitorStore {
               AND m.model_name = latest.model_name
               AND m.checked_at = latest.max_at
       ORDER BY m.provider_name, m.model_name
-    `).all() as any[];
+    `,
+      )
+      .all() as any[];
     return rows.map(mapRow);
   }
 
@@ -134,20 +158,26 @@ class MonitorStore {
   getRecent(hours: number = 24): PingResult[] {
     if (!this.db) return [];
     const since = new Date(Date.now() - hours * 3600 * 1000).toISOString();
-    const rows = this.db.prepare(`
+    const rows = this.db
+      .prepare(
+        `
       SELECT * FROM monitor_pings
       WHERE checked_at > ?
       ORDER BY checked_at ASC
-    `).all(since) as any[];
+    `,
+      )
+      .all(since) as any[];
     return rows.map(mapRow);
   }
 
   /** Recalculate health_status for all rows based on current thresholds */
-  backfillHealthStatus(classify: (status: string, latencyMs: number, ttftMs: number, outputTokens: number) => HealthStatus): void {
+  backfillHealthStatus(
+    classify: (status: string, latencyMs: number, ttftMs: number, outputTokens: number) => HealthStatus,
+  ): void {
     if (!this.db) return;
-    const rows = this.db.prepare(
-      'SELECT id, status, health_status, latency_ms, ttft_ms, output_tokens FROM monitor_pings'
-    ).all() as any[];
+    const rows = this.db
+      .prepare('SELECT id, status, health_status, latency_ms, ttft_ms, output_tokens FROM monitor_pings')
+      .all() as any[];
     if (rows.length === 0) return;
     let updated = 0;
     const stmt = this.db.prepare('UPDATE monitor_pings SET health_status = ? WHERE id = ?');

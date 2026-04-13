@@ -7,11 +7,7 @@ interface UseBenchmarkReturn {
   currentRun: BenchmarkRun | null;
   isRunning: boolean;
   error: string | null;
-  startBenchmark: (
-    providers: string[],
-    config: BenchmarkConfig,
-    apiKeys: Record<string, string>
-  ) => Promise<void>;
+  startBenchmark: (providers: string[], config: BenchmarkConfig, apiKeys: Record<string, string>) => Promise<void>;
   fetchBenchmarks: () => Promise<BenchmarkRun[]>;
   fetchBenchmark: (id: string) => Promise<void>;
   exportBenchmark: (id: string, format: 'json' | 'csv') => void;
@@ -49,11 +45,7 @@ export function useBenchmark(): UseBenchmarkReturn {
   }, []);
 
   const startBenchmark = useCallback(
-    async (
-      providers: string[],
-      config: BenchmarkConfig,
-      apiKeys: Record<string, string>
-    ) => {
+    async (providers: string[], config: BenchmarkConfig, apiKeys: Record<string, string>) => {
       setIsRunning(true);
       setError(null);
 
@@ -110,33 +102,36 @@ export function useBenchmark(): UseBenchmarkReturn {
         setIsRunning(false);
       }
     },
-    [fetchBenchmark, fetchBenchmarks]
+    [fetchBenchmark, fetchBenchmarks],
   );
 
   const exportBenchmark = useCallback((id: string, format: 'json' | 'csv') => {
     window.open(downloadUrl(`/api/benchmarks/${id}/export?format=${format}`), '_blank');
   }, []);
 
-  const cancelBenchmark = useCallback(async (id: string): Promise<boolean> => {
-    try {
-      const res = await apiFetch(`/api/benchmarks/${id}/cancel`, { method: 'POST' });
-      const data = await res.json();
-      
-      if (data.success) {
-        if (eventSourceRef.current) {
-          eventSourceRef.current.close();
-          eventSourceRef.current = null;
+  const cancelBenchmark = useCallback(
+    async (id: string): Promise<boolean> => {
+      try {
+        const res = await apiFetch(`/api/benchmarks/${id}/cancel`, { method: 'POST' });
+        const data = await res.json();
+
+        if (data.success) {
+          if (eventSourceRef.current) {
+            eventSourceRef.current.close();
+            eventSourceRef.current = null;
+          }
+          setIsRunning(false);
+          fetchBenchmark(id);
+          return true;
         }
-        setIsRunning(false);
-        fetchBenchmark(id);
-        return true;
+        return false;
+      } catch (err) {
+        setError('Failed to cancel benchmark');
+        return false;
       }
-      return false;
-    } catch (err) {
-      setError('Failed to cancel benchmark');
-      return false;
-    }
-  }, [fetchBenchmark]);
+    },
+    [fetchBenchmark],
+  );
 
   return {
     benchmarks,

@@ -1,5 +1,12 @@
 import { Layout, Menu, Tooltip } from '../antdImports';
-import { BarChartOutlined, HistoryOutlined, SettingOutlined, ExperimentOutlined, DashboardOutlined, LogoutOutlined } from '@ant-design/icons';
+import {
+  BarChartOutlined,
+  HistoryOutlined,
+  SettingOutlined,
+  ExperimentOutlined,
+  DashboardOutlined,
+  LogoutOutlined,
+} from '@ant-design/icons';
 import { motion } from 'framer-motion';
 import { APP_VERSION } from '../constants';
 
@@ -91,8 +98,12 @@ export function Sidebar({ activePage, onNavigate, isRunning, runningLabel, onLog
       <div className="absolute bottom-0 left-0 right-0 px-4 py-3 border-t border-white/5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className={`w-[6px] h-[6px] rounded-full ${isRunning ? 'bg-accent-amber neon-pulse' : 'bg-text-tertiary'}`} />
-            <span className={`text-[11px] font-medium font-mono ${isRunning ? 'text-accent-amber' : 'text-text-tertiary'}`}>
+            <div
+              className={`w-[6px] h-[6px] rounded-full ${isRunning ? 'bg-accent-amber neon-pulse' : 'bg-text-tertiary'}`}
+            />
+            <span
+              className={`text-[11px] font-medium font-mono ${isRunning ? 'text-accent-amber' : 'text-text-tertiary'}`}
+            >
               {isRunning ? runningLabel || 'Running...' : 'Ready'}
             </span>
           </div>

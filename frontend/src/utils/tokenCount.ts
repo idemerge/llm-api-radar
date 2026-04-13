@@ -15,7 +15,7 @@ export function countTokens(text: string): number {
 
 export function useTokenCount(text: string, debounceMs = 300): number {
   const [tokenCount, setTokenCount] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
