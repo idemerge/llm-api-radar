@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.0] - 2026-04-16
+
+### Added
+- `maxQps` parameter for workflow tasks: global token bucket rate limiting across all concurrent slots. Set to a positive integer to cap requests per second; `0` means unlimited. Available in the WorkflowConfigPanel Advanced section with quick-select buttons (Off / 1 / 5 / 10).
+- Token bucket implementation in the benchmark engine with cancellation support — rate limiting integrates cleanly with existing cancel flow and does not affect `requestInterval` or `concurrency` behavior.
+
 ## [2.0.0] - 2026-04-13
 
 ### Security
