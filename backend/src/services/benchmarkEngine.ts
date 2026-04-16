@@ -74,10 +74,13 @@ class TokenBucket {
 
   private refill(): void {
     const now = Date.now();
-    const newTokens = (now - this.lastRefill) / this.intervalMs;
+    const elapsed = now - this.lastRefill;
+    const newTokens = elapsed / this.intervalMs;
     if (newTokens >= 1) {
-      this.tokens = Math.min(1, this.tokens + newTokens);
-      this.lastRefill = now;
+      // Advance lastRefill by whole intervals only, preserving fractional progress
+      const wholeIntervals = Math.floor(newTokens);
+      this.lastRefill += wholeIntervals * this.intervalMs;
+      this.tokens = Math.min(1, this.tokens + wholeIntervals);
     }
   }
 
@@ -85,8 +88,9 @@ class TokenBucket {
     this.refill();
     if (this.tokens >= 1) {
       this.tokens -= 1;
-      return 0;
+      return 0; // got a token immediately
     }
+    // Time until next token is available
     return this.intervalMs - (Date.now() - this.lastRefill);
   }
 }
