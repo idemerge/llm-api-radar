@@ -15,6 +15,7 @@ import {
   QUICK_ITERATIONS,
   QUICK_WARMUP,
   QUICK_INTERVAL,
+  QUICK_QPS,
 } from '../constants';
 import { countTokens } from '../utils/tokenCount';
 import { loadHeavyPreset } from '../constants';
@@ -61,6 +62,7 @@ const DEFAULT_TASK: () => TaskConfig = () => ({
     warmupRuns: 0,
     requestInterval: 0,
     randomizeInterval: false,
+    maxQps: 0,
   },
   tags: {},
 });
@@ -141,6 +143,7 @@ export function WorkflowConfigPanel({
             warmupRuns: t.config.warmupRuns ?? 0,
             requestInterval: t.config.requestInterval ?? 0,
             randomizeInterval: t.config.randomizeInterval ?? false,
+            maxQps: t.config.maxQps ?? 0,
           },
           providers: t.providers,
           tags: t.tags || {},
@@ -252,6 +255,7 @@ export function WorkflowConfigPanel({
           warmupRuns: t.config.warmupRuns ?? 0,
           requestInterval: t.config.requestInterval ?? 0,
           randomizeInterval: t.config.randomizeInterval ?? false,
+          maxQps: t.config.maxQps ?? 0,
           images: t.config.images,
         },
         tags: t.tags || {},
@@ -562,6 +566,11 @@ export function WorkflowConfigPanel({
               <span>
                 Interval: <span className="text-accent-coral">{task.config.requestInterval ?? 0}ms</span>
               </span>
+              {(task.config.maxQps ?? 0) > 0 && (
+                <span>
+                  QPS: <span className="text-accent-violet">{task.config.maxQps}</span>
+                </span>
+              )}
             </div>
           )}
 
@@ -576,7 +585,7 @@ export function WorkflowConfigPanel({
                 className="overflow-hidden"
               >
                 <div className="space-y-4 pt-3 border-t border-border">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <div className="flex items-center gap-1">
                         <label className="text-[11px] text-text-secondary font-medium">Warmup Runs</label>
@@ -621,6 +630,30 @@ export function WorkflowConfigPanel({
                         size="small"
                         className="font-mono"
                         style={{ width: '100%' }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1">
+                        <label className="text-[11px] text-text-secondary font-medium">Max QPS</label>
+                        <Tooltip title="Global token bucket: max requests per second across all concurrent slots. 0 = unlimited.">
+                          <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
+                        </Tooltip>
+                      </div>
+                      <QuickButtons
+                        options={QUICK_QPS}
+                        value={task.config.maxQps ?? 0}
+                        onChange={(v) => updateTaskConfig(index, { maxQps: v })}
+                        color="#a78bfa"
+                      />
+                      <InputNumber
+                        value={task.config.maxQps ?? 0}
+                        onChange={(v) => updateTaskConfig(index, { maxQps: v ?? 0 })}
+                        min={0}
+                        max={1000}
+                        size="small"
+                        className="font-mono"
+                        style={{ width: '100%' }}
+                        placeholder="0 = unlimited"
                       />
                     </div>
                   </div>

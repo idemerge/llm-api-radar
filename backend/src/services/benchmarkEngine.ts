@@ -60,6 +60,54 @@ type EventCallback = (event: SSEEvent) => void;
 const activeListeners: Map<string, Set<EventCallback>> = new Map();
 const cancelledRuns: Set<string> = new Set();
 
+// ── Token Bucket (per-benchmark, lazy-refill) ────────────────────────────────
+class TokenBucket {
+  private tokens: number;
+  private lastRefill: number;
+  private readonly intervalMs: number;
+
+  constructor(maxQps: number) {
+    this.intervalMs = 1000 / maxQps;
+    this.tokens = 1; // pre-charge one token so the first request is immediate
+    this.lastRefill = Date.now();
+  }
+
+  private refill(): void {
+    const now = Date.now();
+    const newTokens = (now - this.lastRefill) / this.intervalMs;
+    if (newTokens >= 1) {
+      this.tokens = Math.min(1, this.tokens + newTokens);
+      this.lastRefill = now;
+    }
+  }
+
+  tryAcquire(): number {
+    this.refill();
+    if (this.tokens >= 1) {
+      this.tokens -= 1;
+      return 0;
+    }
+    return this.intervalMs - (Date.now() - this.lastRefill);
+  }
+}
+
+const tokenBuckets: Map<string, TokenBucket> = new Map();
+
+async function acquireToken(benchmarkId: string, maxQps: number): Promise<void> {
+  if (!maxQps || maxQps <= 0) return;
+  if (!tokenBuckets.has(benchmarkId)) {
+    tokenBuckets.set(benchmarkId, new TokenBucket(maxQps));
+  }
+  const bucket = tokenBuckets.get(benchmarkId)!;
+  while (true) {
+    const waitMs = bucket.tryAcquire();
+    if (waitMs <= 0) return;
+    if (isCancelled(benchmarkId)) return;
+    await sleep(Math.ceil(waitMs), benchmarkId);
+    if (isCancelled(benchmarkId)) return;
+  }
+}
+
 export function isCancelled(benchmarkId: string): boolean {
   return cancelledRuns.has(benchmarkId);
 }
@@ -268,6 +316,7 @@ async function runProviderBenchmark(
   const warmupRuns = config.warmupRuns ?? 0;
   const requestInterval = config.requestInterval ?? 0;
   const randomizeInterval = config.randomizeInterval ?? false;
+  const maxQps = config.maxQps ?? 0;
 
   // === Warmup Phase ===
   if (warmupRuns > 0) {
@@ -332,6 +381,23 @@ async function runProviderBenchmark(
 
     const batchResults = await Promise.all(
       batch.map(async (iterIndex) => {
+        await acquireToken(benchmarkId, maxQps);
+        if (isCancelled(benchmarkId)) {
+          return {
+            iteration: iterIndex + 1,
+            responseTime: 0,
+            firstTokenLatency: 0,
+            tokensPerSecond: 0,
+            inputTokens: 0,
+            outputTokens: 0,
+            reasoningTokens: 0,
+            totalTokens: 0,
+            estimatedCost: 0,
+            success: false,
+            error: 'Benchmark cancelled by user',
+            errorCategory: 'unknown' as ErrorCategory,
+          } as IterationResult;
+        }
         try {
           const { response } = await executeWithRetry(
             provider,
@@ -466,6 +532,7 @@ export async function startBenchmark(
         store.update(id, run);
         emit(id, { type: 'done', data: { id, cancelled: true } });
         cancelledRuns.delete(id);
+        tokenBuckets.delete(id);
         return;
       }
 
@@ -482,11 +549,13 @@ export async function startBenchmark(
       run.completedAt = new Date().toISOString();
       store.update(id, run);
       cancelledRuns.delete(id);
+      tokenBuckets.delete(id);
       emit(id, { type: 'done', data: { id } });
     })
     .catch((err) => {
       console.error('Benchmark completion error:', err);
       cancelledRuns.delete(id);
+      tokenBuckets.delete(id);
       run.status = 'failed';
       run.completedAt = new Date().toISOString();
       try {

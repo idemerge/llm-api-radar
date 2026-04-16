@@ -99,3 +99,10 @@ export const QUICK_INTERVAL = [
   { label: '500', value: 500 },
   { label: '1000', value: 1000 },
 ];
+
+export const QUICK_QPS = [
+  { label: 'Off', value: 0 },
+  { label: '1', value: 1 },
+  { label: '5', value: 5 },
+  { label: '10', value: 10 },
+];

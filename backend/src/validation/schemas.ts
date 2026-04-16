@@ -24,6 +24,7 @@ export const StartBenchmarkSchema = z.object({
     warmupRuns: z.number().int().min(0).max(5).optional(),
     requestInterval: z.number().int().min(0).optional(),
     randomizeInterval: z.boolean().optional(),
+    maxQps: z.number().min(0).max(1000).optional(),
     images: z
       .array(
         z.object({
@@ -88,6 +89,7 @@ const WorkflowTaskSchema = z.object({
     warmupRuns: z.number().int().min(0).optional(),
     requestInterval: z.number().int().min(0).optional(),
     randomizeInterval: z.boolean().optional(),
+    maxQps: z.number().min(0).max(1000).optional(),
   }),
   providers: z.array(z.string()).optional(),
   tags: z.record(z.string(), z.string()).optional(),

@@ -34,6 +34,7 @@ router.post('/', validate(StartBenchmarkSchema), async (req: Request, res: Respo
       warmupRuns: Math.min(config.warmupRuns || 0, 5),
       requestInterval: Math.min(config.requestInterval || 0, 10000),
       randomizeInterval: config.randomizeInterval ?? false,
+      maxQps: config.maxQps != null ? Math.min(Math.max(config.maxQps, 0), 1000) : undefined,
     };
 
     const run = await startBenchmark(providers, benchmarkConfig, apiKeys || {});

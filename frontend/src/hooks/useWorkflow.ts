@@ -38,6 +38,7 @@ export interface CreateWorkflowData {
       streaming?: boolean;
       warmupRuns?: number;
       requestInterval?: number;
+      maxQps?: number;
     };
     providers?: string[];
     tags?: Record<string, string>;

@@ -70,6 +70,8 @@ router.post('/', validate(CreateWorkflowSchema), async (req: Request, res: Respo
           warmupRuns: Math.min((t.config.warmupRuns as number) || 0, 5),
           requestInterval: Math.min((t.config.requestInterval as number) || 0, 10000),
           randomizeInterval: (t.config.randomizeInterval as boolean) ?? false,
+          maxQps:
+            (t.config.maxQps as number) != null ? Math.min(Math.max(t.config.maxQps as number, 0), 1000) : undefined,
         },
         providers: t.providers,
         tags: t.tags,

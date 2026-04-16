@@ -15,6 +15,7 @@ export interface BenchmarkConfig {
   warmupRuns?: number;
   requestInterval?: number;
   randomizeInterval?: boolean;
+  maxQps?: number;
   images?: ImageInput[];
 }
 
