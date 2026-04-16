@@ -23,15 +23,27 @@ function longContextPreset(bucket: keyof typeof shareGPTData.buckets, label: str
   return { label, prompt: item.text, tokens: item.tokens, category: 'long-context' };
 }
 
-function heavyPreset(bucket: '64k' | '256k'): PresetPrompt {
-  const label = bucket === '64k' ? 'Long Context 64K' : 'Long Context 256K';
-  const tokens = bucket === '64k' ? 64_000 : 256_000;
-  return { label, prompt: '', tokens, category: 'long-context', heavy: true };
+function heavyPreset(bucket: '64k' | '150k' | '256k'): PresetPrompt {
+  const labels: Record<string, string> = {
+    '64k': 'Long Context 64K',
+    '150k': 'Long Context 150K',
+    '256k': 'Long Context 256K',
+  };
+  const tokensMap: Record<string, number> = { '64k': 64_000, '150k': 150_000, '256k': 256_000 };
+  return { label: labels[bucket], prompt: '', tokens: tokensMap[bucket], category: 'long-context', heavy: true };
 }
 
-export async function loadHeavyPreset(bucket: '64k' | '256k', index = 0): Promise<string> {
-  const mod = bucket === '64k' ? await import('./data/sharegpt-64k.json') : await import('./data/sharegpt-256k.json');
-  return (mod as any).default.buckets[bucket][index].text;
+export async function loadHeavyPreset(bucket: '64k' | '150k' | '256k', index = 0): Promise<string> {
+  if (bucket === '64k') {
+    const mod = await import('./data/sharegpt-64k.json');
+    return (mod as any).default.buckets['64k'][index].text;
+  } else if (bucket === '150k') {
+    const mod = await import('./data/sharegpt-150k.json');
+    return (mod as any).default.buckets['150k'][index].text;
+  } else {
+    const mod = await import('./data/sharegpt-256k.json');
+    return (mod as any).default.buckets['256k'][index].text;
+  }
 }
 
 export const PRESET_PROMPTS: PresetPrompt[] = [
@@ -65,6 +77,7 @@ export const PRESET_PROMPTS: PresetPrompt[] = [
   longContextPreset('4k', 'Long Context 4K'),
   longContextPreset('16k', 'Long Context 16K'),
   heavyPreset('64k'),
+  heavyPreset('150k'),
   heavyPreset('256k'),
 ];
 

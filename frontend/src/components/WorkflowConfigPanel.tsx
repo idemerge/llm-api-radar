@@ -400,7 +400,7 @@ export function WorkflowConfigPanel({
                   key={preset.label}
                   onClick={async () => {
                     if (preset.heavy) {
-                      const bucket = preset.tokens >= 200_000 ? '256k' : '64k';
+                      const bucket = preset.tokens >= 200_000 ? '256k' : preset.tokens >= 100_000 ? '150k' : '64k';
                       setTaskPromptSmart(index, await loadHeavyPreset(bucket));
                     } else {
                       setTaskPromptSmart(index, preset.prompt);
