@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.2.0] - 2026-04-17
+
+### Added
+- Long Context 150K preset: a new built-in prompt preset (~150,000 tokens) bridging the gap between the existing 64K and 256K presets. Available in ConfigPanel, WorkflowConfigPanel, and PlaygroundPage. Loaded on demand via dynamic import to avoid bundle size impact.
+
 ## [2.1.0] - 2026-04-16
 
 ### Added
