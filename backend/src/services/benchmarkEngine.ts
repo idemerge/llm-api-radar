@@ -340,29 +340,33 @@ async function runProviderBenchmark(
   const randomizeInterval = config.randomizeInterval ?? false;
   const maxQps = config.maxQps ?? 0;
 
-  // Build random-prefix variant pool for cache hit rate control.
-  // K unique prefixes → target hit rate ≈ (N - K) / N.
+  // Build random-prefix schedule for cache hit rate control.
+  // Each request independently rolls: P(new prefix) = 1 − rate,
+  // P(reuse existing) = rate. New prefixes are always placed BEFORE
+  // any of their reuses in the schedule, so with sequential execution
+  // the first occurrence primes the cache and later reuses hit it.
+  // This produces a uniform miss/hit distribution throughout the run
+  // (e.g., 80% rate ≈ 8 hits per 10 requests at any point).
+  //
   // Prefix size adapts to prompt length (~5%, clamped 128–4096 chars)
   // so short prompts aren't bloated while long prompts still bust
   // block-level KV cache reliably.
-  //
-  // We pre-build a shuffled schedule of length N so that cache misses
-  // (first appearance of each variant) are spread evenly across the run,
-  // rather than clustered at the start. This produces realistic interleaved
-  // cold/warm latency distributions.
   let variantSchedule: string[] | null = null;
   if (config.targetCacheHitRate !== undefined && config.targetCacheHitRate < 1) {
-    const K = Math.max(1, Math.round(totalIterations * (1 - config.targetCacheHitRate)));
-    const prefixes = Array.from({ length: K }, () => generateRandomPrefix(config.prompt.length));
-    // Build schedule: assign each iteration a variant, then shuffle
     const schedule: string[] = [];
+    const pool: string[] = [];
+    const promptLen = config.prompt.length;
+
     for (let i = 0; i < totalIterations; i++) {
-      schedule.push(prefixes[i % K]);
-    }
-    // Fisher–Yates shuffle
-    for (let i = schedule.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [schedule[i], schedule[j]] = [schedule[j], schedule[i]];
+      if (pool.length === 0 || Math.random() >= config.targetCacheHitRate) {
+        // New unique prefix → cache miss when first executed
+        const p = generateRandomPrefix(promptLen);
+        pool.push(p);
+        schedule.push(p);
+      } else {
+        // Reuse an earlier prefix → cache hit (if already executed)
+        schedule.push(pool[Math.floor(Math.random() * pool.length)]);
+      }
     }
     variantSchedule = schedule;
   }
