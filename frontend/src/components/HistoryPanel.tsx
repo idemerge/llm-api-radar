@@ -193,6 +193,32 @@ export function HistoryPanel({
             ),
           },
           {
+            title: 'Conc.',
+            key: 'concurrency',
+            width: 90,
+            align: 'right' as const,
+            render: (_: unknown, record: BenchmarkWorkflow) => {
+              const values = (record.tasks || []).map((t) => t.config.concurrency);
+              if (values.length === 0) return <span className="text-[12px] text-text-tertiary font-mono">-</span>;
+              const unique = [...new Set(values)];
+              const label = unique.length === 1 ? `${unique[0]}` : `${Math.min(...values)}-${Math.max(...values)}`;
+              return <span className="text-[12px] text-text-secondary font-mono">{label}</span>;
+            },
+          },
+          {
+            title: 'Iter.',
+            key: 'iterations',
+            width: 80,
+            align: 'right' as const,
+            render: (_: unknown, record: BenchmarkWorkflow) => {
+              const values = (record.tasks || []).map((t) => t.config.iterations);
+              if (values.length === 0) return <span className="text-[12px] text-text-tertiary font-mono">-</span>;
+              const unique = [...new Set(values)];
+              const label = unique.length === 1 ? `${unique[0]}` : `${Math.min(...values)}-${Math.max(...values)}`;
+              return <span className="text-[12px] text-text-secondary font-mono">{label}</span>;
+            },
+          },
+          {
             title: 'Actions',
             key: 'actions',
             width: 90,

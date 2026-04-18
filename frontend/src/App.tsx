@@ -86,6 +86,7 @@ function App() {
     clearError: clearWorkflowError,
     reconnectActiveWorkflow,
     workflowsLoaded,
+    taskProgress,
   } = useWorkflow();
 
   const navigate = useNavigate();
@@ -495,7 +496,7 @@ function App() {
                   />
 
                   {/* Live Progress & Results */}
-                  {currentWorkflow && <WorkflowProgress workflow={currentWorkflow} />}
+                  {currentWorkflow && <WorkflowProgress workflow={currentWorkflow} taskProgress={taskProgress} />}
                   {currentWorkflow?.summary && <WorkflowResults workflow={currentWorkflow} onExport={exportWorkflow} />}
 
                   {/* Recent Workflows */}

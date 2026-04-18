@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { BenchmarkWorkflow, WorkflowTask, LEGACY_PROVIDER_IDS } from '../types';
 import { workflowStore } from '../services/workflowStore';
-import { executeWorkflow, subscribeWorkflow, cancelWorkflow } from '../services/workflowEngine';
+import { executeWorkflow, subscribeWorkflow, cancelWorkflow, backfillTokenStats } from '../services/workflowEngine';
 import { workflowTemplates } from '../services/workflowTemplates';
 import { store } from '../services/store';
 import { providerStore } from '../services/providerStore';
@@ -157,6 +157,7 @@ router.get('/:id', (req: Request, res: Response) => {
     res.status(404).json({ error: 'Workflow not found' });
     return;
   }
+  backfillTokenStats(workflow);
   const { apiKeys: _apiKeys, ...safe } = workflow;
   res.json(safe);
 });

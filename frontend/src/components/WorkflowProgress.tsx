@@ -8,9 +8,11 @@ import {
 } from '@ant-design/icons';
 import { BenchmarkWorkflow } from '../types';
 import { Progress, Tag, Timeline } from '../antdImports';
+import type { TaskIterationProgress } from '../hooks/useWorkflow';
 
 interface WorkflowProgressProps {
   workflow: BenchmarkWorkflow | null;
+  taskProgress?: Record<string, TaskIterationProgress>;
 }
 
 function getStatusTagColor(status: string): string {
@@ -72,7 +74,7 @@ function formatDate(dateStr: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
-export function WorkflowProgress({ workflow }: WorkflowProgressProps) {
+export function WorkflowProgress({ workflow, taskProgress }: WorkflowProgressProps) {
   if (!workflow) return null;
 
   const isRunning = workflow.status === 'running';
@@ -135,6 +137,28 @@ export function WorkflowProgress({ workflow }: WorkflowProgressProps) {
                         {task.config.concurrency}c × {task.config.iterations}i
                       </span>
                     </div>
+                    {isActive &&
+                      taskProgress?.[task.id] &&
+                      taskProgress[task.id].total > 0 &&
+                      (() => {
+                        const p = taskProgress[task.id];
+                        const pct = Math.round((p.completed / p.total) * 100);
+                        return (
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <Progress
+                              percent={pct}
+                              showInfo={false}
+                              strokeColor="#f5a623"
+                              railColor="rgba(255,255,255,0.06)"
+                              size="small"
+                              style={{ flex: 1, margin: 0 }}
+                            />
+                            <span className="text-[10px] text-accent-amber font-mono whitespace-nowrap">
+                              {p.completed}/{p.total}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     {result?.error && <p className="text-[10px] text-accent-rose mt-0.5 truncate">{result.error}</p>}
                   </div>
                   <div className="text-right flex-shrink-0">

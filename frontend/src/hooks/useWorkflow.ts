@@ -2,12 +2,23 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { BenchmarkWorkflow, WorkflowTemplate } from '../types';
 import { apiFetch, sseUrl, downloadUrl } from '../services/api';
 
+/** Per-task iteration progress aggregated across all providers */
+export interface TaskIterationProgress {
+  taskId: string;
+  /** Sum of completed iterations across providers */
+  completed: number;
+  /** Sum of total iterations across providers */
+  total: number;
+}
+
 interface UseWorkflowReturn {
   workflows: BenchmarkWorkflow[];
   currentWorkflow: BenchmarkWorkflow | null;
   templates: WorkflowTemplate[];
   isRunning: boolean;
   error: string | null;
+  /** Real-time iteration progress per task (keyed by taskId) */
+  taskProgress: Record<string, TaskIterationProgress>;
   startWorkflow: (data: CreateWorkflowData) => Promise<void>;
   fetchWorkflows: () => Promise<void>;
   fetchWorkflow: (id: string) => Promise<void>;
@@ -56,8 +67,11 @@ export function useWorkflow(): UseWorkflowReturn {
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [workflowsLoaded, setWorkflowsLoaded] = useState(false);
+  const [taskProgress, setTaskProgress] = useState<Record<string, TaskIterationProgress>>({});
   const eventSourceRef = useRef<EventSource | null>(null);
   const activeRunIdRef = useRef<string | null>(null);
+  // Track per-provider progress within each task to compute aggregated counts
+  const providerProgressRef = useRef<Record<string, Record<string, { completed: number; total: number }>>>({});
 
   const fetchWorkflows = useCallback(async () => {
     try {
@@ -102,6 +116,8 @@ export function useWorkflow(): UseWorkflowReturn {
 
       activeRunIdRef.current = id;
       setIsRunning(true);
+      setTaskProgress({});
+      providerProgressRef.current = {};
 
       const url = await sseUrl(`/api/workflows/${id}/stream`);
       const eventSource = new EventSource(url);
@@ -109,6 +125,29 @@ export function useWorkflow(): UseWorkflowReturn {
 
       eventSource.onmessage = (event) => {
         const parsed = JSON.parse(event.data);
+
+        if (parsed.type === 'task:progress') {
+          // Extract iteration progress from SSE event
+          const taskId = parsed.data?.taskId as string | undefined;
+          const provider = parsed.data?.data?.provider as string | undefined;
+          const completed = parsed.data?.data?.completed as number | undefined;
+          const total = parsed.data?.data?.total as number | undefined;
+          if (taskId && provider && completed != null && total != null) {
+            const ref = providerProgressRef.current;
+            if (!ref[taskId]) ref[taskId] = {};
+            ref[taskId][provider] = { completed, total };
+            // Aggregate across providers
+            const providers = Object.values(ref[taskId]);
+            setTaskProgress((prev) => ({
+              ...prev,
+              [taskId]: {
+                taskId,
+                completed: providers.reduce((a, p) => a + p.completed, 0),
+                total: providers.reduce((a, p) => a + p.total, 0),
+              },
+            }));
+          }
+        }
 
         if (
           parsed.type === 'workflow:init' ||
@@ -125,6 +164,8 @@ export function useWorkflow(): UseWorkflowReturn {
           eventSource.close();
           eventSourceRef.current = null;
           setIsRunning(false);
+          setTaskProgress({});
+          providerProgressRef.current = {};
           fetchWorkflow(id);
           fetchWorkflows();
           activeRunIdRef.current = null;
@@ -281,5 +322,6 @@ export function useWorkflow(): UseWorkflowReturn {
     clearError,
     reconnectActiveWorkflow,
     workflowsLoaded,
+    taskProgress,
   };
 }

@@ -48,6 +48,8 @@ export interface ProviderSummary {
   p95FirstTokenLatency: number;
   p99FirstTokenLatency: number;
   totalTokens: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
   estimatedCost: number;
   successRate: number;
   errorCount: number;
@@ -208,6 +210,8 @@ export interface WorkflowSummary {
   totalDuration: number;
   totalCost: number;
   totalTokens: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
   taskCount: number;
   completedTaskCount: number;
   failedTaskCount: number;
@@ -221,6 +225,8 @@ export interface WorkflowProviderSummary {
   avgFirstTokenLatency: number;
   avgTokensPerSecond: number;
   totalTokens: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
   totalCost: number;
   overallSuccessRate: number;
   perTaskMetrics: TaskMetricPoint[];
@@ -232,6 +238,8 @@ export interface TaskMetricPoint {
   taskOrder: number;
   concurrency: number;
   promptTokens: number;
+  inputTokens: number;
+  outputTokens: number;
   avgResponseTime: number;
   p95ResponseTime: number;
   avgFirstTokenLatency: number;

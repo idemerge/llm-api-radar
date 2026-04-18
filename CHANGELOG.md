@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.5.0] - 2026-04-18
+
+### Added
+- History list: show concurrency and iteration count columns
+- History detail: show input/output token counts and ratio (In:Out)
+- History detail: real-time iteration progress bar for running workflows via SSE
+- Backfill input/output token stats for older workflows on first access
+
+### Changed
+- Long context preset prompts: balanced for ~40:1 input-to-output token ratio with "Don't overthink this" guidance
+
 ## [2.4.6] - 2026-04-18
 
 ### Fixed

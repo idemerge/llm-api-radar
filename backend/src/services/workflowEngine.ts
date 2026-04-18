@@ -273,6 +273,8 @@ async function generateSummary(workflow: BenchmarkWorkflow): Promise<WorkflowSum
 
   let totalCost = 0;
   let totalTokens = 0;
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
 
   for (const taskResult of completedResults) {
     const run = store.get(taskResult.benchmarkRunId);
@@ -291,6 +293,8 @@ async function generateSummary(workflow: BenchmarkWorkflow): Promise<WorkflowSum
           avgFirstTokenLatency: 0,
           avgTokensPerSecond: 0,
           totalTokens: 0,
+          totalInputTokens: 0,
+          totalOutputTokens: 0,
           totalCost: 0,
           overallSuccessRate: 0,
           perTaskMetrics: [],
@@ -303,6 +307,8 @@ async function generateSummary(workflow: BenchmarkWorkflow): Promise<WorkflowSum
         taskOrder: task.order,
         concurrency: task.config.concurrency,
         promptTokens: result.summary.totalTokens,
+        inputTokens: result.summary.totalInputTokens || 0,
+        outputTokens: result.summary.totalOutputTokens || 0,
         avgResponseTime: result.summary.avgResponseTime,
         p95ResponseTime: result.summary.p95ResponseTime,
         avgFirstTokenLatency: result.summary.avgFirstTokenLatency,
@@ -315,6 +321,8 @@ async function generateSummary(workflow: BenchmarkWorkflow): Promise<WorkflowSum
       providerSummaries[providerName].perTaskMetrics.push(metric);
       totalCost += result.summary.estimatedCost;
       totalTokens += result.summary.totalTokens;
+      totalInputTokens += result.summary.totalInputTokens || 0;
+      totalOutputTokens += result.summary.totalOutputTokens || 0;
     }
   }
 
@@ -327,6 +335,8 @@ async function generateSummary(workflow: BenchmarkWorkflow): Promise<WorkflowSum
     summary.avgFirstTokenLatency = Math.round(metrics.reduce((a, m) => a + m.avgFirstTokenLatency, 0) / metrics.length);
     summary.avgTokensPerSecond = Math.round(metrics.reduce((a, m) => a + m.avgTokensPerSecond, 0) / metrics.length);
     summary.totalTokens = metrics.reduce((a, m) => a + m.promptTokens, 0);
+    summary.totalInputTokens = metrics.reduce((a, m) => a + m.inputTokens, 0);
+    summary.totalOutputTokens = metrics.reduce((a, m) => a + m.outputTokens, 0);
     summary.totalCost = Number(metrics.reduce((a, m) => a + m.estimatedCost, 0).toFixed(6));
     summary.overallSuccessRate = Number((metrics.reduce((a, m) => a + m.successRate, 0) / metrics.length).toFixed(4));
   }
@@ -338,9 +348,61 @@ async function generateSummary(workflow: BenchmarkWorkflow): Promise<WorkflowSum
     totalDuration: endTime - startTime,
     totalCost: Number(totalCost.toFixed(6)),
     totalTokens,
+    totalInputTokens,
+    totalOutputTokens,
     taskCount: workflow.tasks.length,
     completedTaskCount: completedResults.length,
     failedTaskCount: workflow.taskResults.filter((r) => r.status === 'failed').length,
     providerSummaries,
   };
+}
+
+/**
+ * Backfill totalInputTokens/totalOutputTokens for workflows whose summary
+ * was generated before these fields were added. Computes from iteration data.
+ */
+export function backfillTokenStats(workflow: BenchmarkWorkflow): BenchmarkWorkflow {
+  if (!workflow.summary) return workflow;
+  if (workflow.summary.totalInputTokens != null && workflow.summary.totalInputTokens > 0) return workflow;
+
+  const completedResults = workflow.taskResults.filter((r) => r.status === 'completed');
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+
+  for (const taskResult of completedResults) {
+    const run = store.get(taskResult.benchmarkRunId);
+    if (!run) continue;
+
+    for (const [providerName, result] of Object.entries(run.results)) {
+      const provInput = result.iterations.reduce((a, it) => a + (it.inputTokens || 0), 0);
+      const provOutput = result.iterations.reduce((a, it) => a + (it.outputTokens || 0), 0);
+
+      // Backfill provider summary
+      const ps = workflow.summary!.providerSummaries[providerName];
+      if (ps) {
+        if (!ps.totalInputTokens) ps.totalInputTokens = 0;
+        if (!ps.totalOutputTokens) ps.totalOutputTokens = 0;
+        ps.totalInputTokens += provInput;
+        ps.totalOutputTokens += provOutput;
+
+        // Backfill per-task metrics
+        const taskMetric = ps.perTaskMetrics.find((m) => m.taskId === taskResult.taskId);
+        if (taskMetric) {
+          if (!taskMetric.inputTokens) taskMetric.inputTokens = provInput;
+          if (!taskMetric.outputTokens) taskMetric.outputTokens = provOutput;
+        }
+      }
+
+      totalInputTokens += provInput;
+      totalOutputTokens += provOutput;
+    }
+  }
+
+  workflow.summary!.totalInputTokens = totalInputTokens;
+  workflow.summary!.totalOutputTokens = totalOutputTokens;
+
+  // Persist the backfilled data
+  workflowStore.update(workflow.id, { summary: workflow.summary });
+
+  return workflow;
 }
