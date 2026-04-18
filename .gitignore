@@ -66,3 +66,4 @@ demo-*.js
 # Misc
 *.pem
 *.key
+scripts/test-cached-tokens.mjs
