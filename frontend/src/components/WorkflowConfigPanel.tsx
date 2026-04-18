@@ -144,6 +144,7 @@ export function WorkflowConfigPanel({
             requestInterval: t.config.requestInterval ?? 0,
             randomizeInterval: t.config.randomizeInterval ?? false,
             maxQps: t.config.maxQps ?? 0,
+            targetCacheHitRate: t.config.targetCacheHitRate,
           },
           providers: t.providers,
           tags: t.tags || {},
@@ -257,6 +258,7 @@ export function WorkflowConfigPanel({
           randomizeInterval: t.config.randomizeInterval ?? false,
           maxQps: t.config.maxQps ?? 0,
           images: t.config.images,
+          targetCacheHitRate: t.config.targetCacheHitRate,
         },
         tags: t.tags || {},
       })),
@@ -571,6 +573,11 @@ export function WorkflowConfigPanel({
                   QPS: <span className="text-accent-violet">{task.config.maxQps}</span>
                 </span>
               )}
+              {task.config.targetCacheHitRate !== undefined && (
+                <span>
+                  Cache: <span className="text-accent-violet">{Math.round(task.config.targetCacheHitRate * 100)}%</span>
+                </span>
+              )}
             </div>
           )}
 
@@ -687,6 +694,33 @@ export function WorkflowConfigPanel({
                       </div>
                     )}
                   </div>
+                  {/* Cache Hit Rate */}
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={task.config.targetCacheHitRate !== undefined}
+                      onChange={(v) => updateTaskConfig(index, { targetCacheHitRate: v ? 0.8 : undefined })}
+                      size="small"
+                    />
+                    <div className="flex items-center gap-1">
+                      <span className="text-[11px] text-text-secondary font-medium">Cache Hit Rate</span>
+                      <Tooltip title="Prepends a unique UUID to each request to control prefix-cache hit rate. K = iterations × (1 − rate) unique variants are generated and cycled round-robin.">
+                        <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
+                      </Tooltip>
+                    </div>
+                    {task.config.targetCacheHitRate !== undefined && (
+                      <InputNumber
+                        value={Math.round(task.config.targetCacheHitRate * 100)}
+                        onChange={(v) => updateTaskConfig(index, { targetCacheHitRate: (v ?? 80) / 100 })}
+                        min={0}
+                        max={99}
+                        size="small"
+                        className="font-mono"
+                        style={{ width: 90 }}
+                        addonAfter="%"
+                      />
+                    )}
+                  </div>
+
                   {/* Task-level provider override */}
                   <div className="pt-2 border-t border-border">
                     <div className="flex items-center justify-between mb-2">

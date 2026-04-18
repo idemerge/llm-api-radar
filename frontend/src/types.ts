@@ -17,6 +17,7 @@ export interface BenchmarkConfig {
   randomizeInterval?: boolean;
   maxQps?: number;
   images?: ImageInput[];
+  targetCacheHitRate?: number; // 0.0–1.0
 }
 
 export type ErrorCategory = 'timeout' | 'rate_limit' | 'api_error' | 'network' | 'unknown';

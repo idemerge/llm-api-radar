@@ -25,6 +25,7 @@ export const StartBenchmarkSchema = z.object({
     requestInterval: z.number().int().min(0).optional(),
     randomizeInterval: z.boolean().optional(),
     maxQps: z.number().min(0).max(1000).optional(),
+    targetCacheHitRate: z.number().min(0).max(1).optional(),
     images: z
       .array(
         z.object({
@@ -90,6 +91,7 @@ const WorkflowTaskSchema = z.object({
     requestInterval: z.number().int().min(0).optional(),
     randomizeInterval: z.boolean().optional(),
     maxQps: z.number().min(0).max(1000).optional(),
+    targetCacheHitRate: z.number().min(0).max(1).optional(),
   }),
   providers: z.array(z.string()).optional(),
   tags: z.record(z.string(), z.string()).optional(),

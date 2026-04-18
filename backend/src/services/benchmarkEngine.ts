@@ -323,6 +323,14 @@ async function runProviderBenchmark(
   const randomizeInterval = config.randomizeInterval ?? false;
   const maxQps = config.maxQps ?? 0;
 
+  // Build UUID variant pool for cache hit rate control.
+  // K unique prefixes → steady-state hit rate ≈ (N - K) / N.
+  let promptVariants: string[] | null = null;
+  if (config.targetCacheHitRate !== undefined && config.targetCacheHitRate < 1) {
+    const K = Math.max(1, Math.round(totalIterations * (1 - config.targetCacheHitRate)));
+    promptVariants = Array.from({ length: K }, () => uuidv4());
+  }
+
   // === Warmup Phase ===
   if (warmupRuns > 0) {
     emit(benchmarkId, {
@@ -340,8 +348,11 @@ async function runProviderBenchmark(
         throw new Error('Benchmark cancelled by user');
       }
       try {
+        const warmupPrompt = promptVariants
+          ? `${promptVariants[w % promptVariants.length]}\n${config.prompt}`
+          : config.prompt;
         await provider.execute(
-          config.prompt,
+          warmupPrompt,
           config.systemPrompt,
           config.maxTokens,
           apiKey,
@@ -385,9 +396,13 @@ async function runProviderBenchmark(
 
       let result: IterationResult;
       try {
+        const effectivePrompt = promptVariants
+          ? `${promptVariants[iterIndex % promptVariants.length]}\n${config.prompt}`
+          : config.prompt;
+
         const { response } = await executeWithRetry(
           provider,
-          config.prompt,
+          effectivePrompt,
           config.systemPrompt,
           config.maxTokens,
           apiKey,

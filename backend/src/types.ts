@@ -19,6 +19,7 @@ export interface BenchmarkConfig {
   randomizeInterval?: boolean;
   maxQps?: number;
   images?: ImageInput[];
+  targetCacheHitRate?: number; // 0.0–1.0; injects UUID prefix per request to control prefix-cache hit rate
 }
 
 export interface CapabilityTest {
