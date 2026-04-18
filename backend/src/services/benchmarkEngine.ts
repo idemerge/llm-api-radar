@@ -355,9 +355,10 @@ async function runProviderBenchmark(
     const schedule: string[] = [];
     const pool: string[] = [];
     const promptLen = config.prompt.length;
-    // Window size: at least concurrency so concurrent requests can
-    // all reference warm prefixes, capped to avoid picking stale entries.
-    const windowSize = Math.max(5, concurrency);
+    // Keep the reuse window small (5) so the inference engine can hold
+    // all warm entries in KV cache — especially important for large
+    // prompts where each entry consumes significant GPU memory.
+    const windowSize = 5;
 
     for (let i = 0; i < totalIterations; i++) {
       if (pool.length === 0 || Math.random() >= config.targetCacheHitRate) {
