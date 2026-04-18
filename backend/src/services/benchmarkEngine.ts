@@ -310,10 +310,11 @@ async function runProviderBenchmark(
   config: BenchmarkConfig,
   apiKey: string,
 ): Promise<ProviderResult> {
-  const provider = resolveProvider(providerName, apiKey);
-  if (!provider) {
+  const maybeProvider = resolveProvider(providerName, apiKey);
+  if (!maybeProvider) {
     throw new Error(`Unknown provider: ${providerName}`);
   }
+  const provider: LLMProvider = maybeProvider;
 
   const iterations: IterationResult[] = [];
   const { concurrency, iterations: totalIterations } = config;
@@ -366,99 +367,94 @@ async function runProviderBenchmark(
   // === Main Test Phase ===
   const testStartTime = Date.now();
 
-  for (let i = 0; i < totalIterations; i += concurrency) {
-    if (isCancelled(benchmarkId)) {
-      throw new Error('Benchmark cancelled by user');
-    }
+  let nextIndex = 0;
+  let completedCount = 0;
 
-    // Request interval between batches (skip before first batch)
-    if (i > 0 && requestInterval > 0) {
-      const interval = randomizeInterval ? Math.round(requestInterval * (0.5 + Math.random())) : requestInterval;
-      await sleep(interval, benchmarkId);
-      if (isCancelled(benchmarkId)) {
-        throw new Error('Benchmark cancelled by user');
+  async function worker(): Promise<void> {
+    while (true) {
+      // Claim the next iteration index (atomic in JS single-threaded event loop)
+      const iterIndex = nextIndex;
+      if (iterIndex >= totalIterations) break;
+      nextIndex++;
+
+      if (isCancelled(benchmarkId)) return;
+
+      // Token bucket rate limiting
+      await acquireToken(benchmarkId, maxQps);
+      if (isCancelled(benchmarkId)) return;
+
+      let result: IterationResult;
+      try {
+        const { response } = await executeWithRetry(
+          provider,
+          config.prompt,
+          config.systemPrompt,
+          config.maxTokens,
+          apiKey,
+          config.streaming,
+          config.images,
+        );
+
+        result = {
+          iteration: iterIndex + 1,
+          responseTime: response.responseTime,
+          firstTokenLatency: response.firstTokenLatency,
+          tokensPerSecond: Math.round((response.outputTokens / response.responseTime) * 1000),
+          inputTokens: response.inputTokens,
+          outputTokens: response.outputTokens,
+          reasoningTokens: response.reasoningTokens,
+          totalTokens: response.totalTokens,
+          estimatedCost: response.estimatedCost,
+          success: true,
+        };
+      } catch (error) {
+        const errorCategory = classifyError(error);
+        result = {
+          iteration: iterIndex + 1,
+          responseTime: 0,
+          firstTokenLatency: 0,
+          tokensPerSecond: 0,
+          inputTokens: 0,
+          outputTokens: 0,
+          reasoningTokens: 0,
+          totalTokens: 0,
+          estimatedCost: 0,
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          errorCategory,
+        };
+      }
+
+      iterations.push(result);
+      completedCount++;
+
+      // Per-request progress event
+      emit(benchmarkId, {
+        type: 'progress',
+        data: {
+          provider: providerName,
+          phase: 'testing',
+          completed: completedCount,
+          total: totalIterations,
+          latestResults: [result],
+        },
+      });
+
+      // Per-request interval (applied after completing a request, before starting the next)
+      if (requestInterval > 0) {
+        const interval = randomizeInterval ? Math.round(requestInterval * (0.5 + Math.random())) : requestInterval;
+        await sleep(interval, benchmarkId);
+        if (isCancelled(benchmarkId)) return;
       }
     }
+  }
 
-    const batchSize = Math.min(concurrency, totalIterations - i);
-    const batch = Array.from({ length: batchSize }, (_, j) => i + j);
+  // Spawn `concurrency` workers to maintain steady in-flight request count
+  const workerCount = Math.min(concurrency, totalIterations);
+  await Promise.all(Array.from({ length: workerCount }, () => worker()));
 
-    const batchResults = await Promise.all(
-      batch.map(async (iterIndex) => {
-        await acquireToken(benchmarkId, maxQps);
-        if (isCancelled(benchmarkId)) {
-          return {
-            iteration: iterIndex + 1,
-            responseTime: 0,
-            firstTokenLatency: 0,
-            tokensPerSecond: 0,
-            inputTokens: 0,
-            outputTokens: 0,
-            reasoningTokens: 0,
-            totalTokens: 0,
-            estimatedCost: 0,
-            success: false,
-            error: 'Benchmark cancelled by user',
-            errorCategory: 'unknown' as ErrorCategory,
-          } as IterationResult;
-        }
-        try {
-          const { response } = await executeWithRetry(
-            provider,
-            config.prompt,
-            config.systemPrompt,
-            config.maxTokens,
-            apiKey,
-            config.streaming,
-            config.images,
-          );
-
-          const result: IterationResult = {
-            iteration: iterIndex + 1,
-            responseTime: response.responseTime,
-            firstTokenLatency: response.firstTokenLatency,
-            tokensPerSecond: Math.round((response.outputTokens / response.responseTime) * 1000),
-            inputTokens: response.inputTokens,
-            outputTokens: response.outputTokens,
-            reasoningTokens: response.reasoningTokens,
-            totalTokens: response.totalTokens,
-            estimatedCost: response.estimatedCost,
-            success: true,
-          };
-
-          return result;
-        } catch (error) {
-          const errorCategory = classifyError(error);
-          return {
-            iteration: iterIndex + 1,
-            responseTime: 0,
-            firstTokenLatency: 0,
-            tokensPerSecond: 0,
-            inputTokens: 0,
-            outputTokens: 0,
-            reasoningTokens: 0,
-            totalTokens: 0,
-            estimatedCost: 0,
-            success: false,
-            error: error instanceof Error ? error.message : 'Unknown error',
-            errorCategory,
-          } as IterationResult;
-        }
-      }),
-    );
-
-    iterations.push(...batchResults);
-
-    emit(benchmarkId, {
-      type: 'progress',
-      data: {
-        provider: providerName,
-        phase: 'testing',
-        completed: iterations.length,
-        total: totalIterations,
-        latestResults: batchResults,
-      },
-    });
+  if (isCancelled(benchmarkId)) {
+    throw new Error('Benchmark cancelled by user');
   }
 
   const totalTestDuration = Date.now() - testStartTime;

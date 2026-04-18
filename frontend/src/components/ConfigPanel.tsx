@@ -291,7 +291,7 @@ export function ConfigPanel({ onStart, isRunning, currentProviders: _currentProv
               value={concurrency}
               onChange={(v) => setConcurrency(v ?? 3)}
               min={1}
-              max={50}
+              max={200}
               size="small"
               className="font-mono"
               style={{ width: '100%' }}
@@ -304,7 +304,7 @@ export function ConfigPanel({ onStart, isRunning, currentProviders: _currentProv
               value={iterations}
               onChange={(v) => setIterations(v ?? 5)}
               min={1}
-              max={1000}
+              max={2000}
               size="small"
               className="font-mono"
               style={{ width: '100%' }}

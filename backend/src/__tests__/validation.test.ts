@@ -70,10 +70,10 @@ describe('Validation Schemas', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should reject concurrency above 50', () => {
+    it('should reject concurrency above 200', () => {
       const result = StartBenchmarkSchema.safeParse({
         providers: ['openai'],
-        config: { prompt: 'test', maxTokens: 100, concurrency: 51, iterations: 5 },
+        config: { prompt: 'test', maxTokens: 100, concurrency: 201, iterations: 5 },
         apiKeys: {},
       });
       expect(result.success).toBe(false);
