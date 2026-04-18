@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- Cache hit rate: reuse now picks from a sliding window of recent prefixes (sized to concurrency) instead of the entire pool, avoiding stale entries that inference engines (SGLang, vLLM) may have evicted under memory pressure
+
 ## [2.4.4] - 2026-04-18
 
 ### Changed

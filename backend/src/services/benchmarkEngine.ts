@@ -342,11 +342,10 @@ async function runProviderBenchmark(
 
   // Build random-prefix schedule for cache hit rate control.
   // Each request independently rolls: P(new prefix) = 1 − rate,
-  // P(reuse existing) = rate. New prefixes are always placed BEFORE
-  // any of their reuses in the schedule, so with sequential execution
-  // the first occurrence primes the cache and later reuses hit it.
-  // This produces a uniform miss/hit distribution throughout the run
-  // (e.g., 80% rate ≈ 8 hits per 10 requests at any point).
+  // P(reuse existing) = rate. Reuse picks from a sliding window of
+  // the most recent prefixes (sized to concurrency) so the chosen
+  // prefix is still likely warm in the inference engine's KV cache
+  // (SGLang/vLLM evict old entries under memory pressure).
   //
   // Prefix size adapts to prompt length (~5%, clamped 128–4096 chars)
   // so short prompts aren't bloated while long prompts still bust
@@ -356,6 +355,9 @@ async function runProviderBenchmark(
     const schedule: string[] = [];
     const pool: string[] = [];
     const promptLen = config.prompt.length;
+    // Window size: at least concurrency so concurrent requests can
+    // all reference warm prefixes, capped to avoid picking stale entries.
+    const windowSize = Math.max(5, concurrency);
 
     for (let i = 0; i < totalIterations; i++) {
       if (pool.length === 0 || Math.random() >= config.targetCacheHitRate) {
@@ -364,8 +366,10 @@ async function runProviderBenchmark(
         pool.push(p);
         schedule.push(p);
       } else {
-        // Reuse an earlier prefix → cache hit (if already executed)
-        schedule.push(pool[Math.floor(Math.random() * pool.length)]);
+        // Reuse a recent prefix → likely still in KV cache
+        const windowStart = Math.max(0, pool.length - windowSize);
+        const idx = windowStart + Math.floor(Math.random() * (pool.length - windowStart));
+        schedule.push(pool[idx]);
       }
     }
     variantSchedule = schedule;
