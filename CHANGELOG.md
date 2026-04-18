@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.4.0] - 2026-04-18
 
 ### Added
 - Cache hit rate control (`targetCacheHitRate`): prepends unique UUID prefixes to each request to simulate realistic multi-user traffic with configurable prefix-cache hit rate (0–99%). Available as a toggle + percentage input in the WorkflowConfigPanel Advanced section. Formula: K = iterations × (1 − rate) unique variants, cycled round-robin.
