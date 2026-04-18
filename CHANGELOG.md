@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- Cache hit rate: prefix size now adapts to prompt length (~5%, clamped 128–4096 chars) to avoid inflating short prompts — previously a fixed ~4 KB prefix would double a 1K-token input
+
 ## [2.4.1] - 2026-04-18
 
 ### Fixed

@@ -198,16 +198,17 @@ function sleep(ms: number, benchmarkId: string): Promise<void> {
   });
 }
 
-// Generate a random prefix of ~1024 tokens (~4 KB) to bust KV-cache blocks.
-// Uses base62 characters separated by spaces every 4-6 chars to form
-// realistic token boundaries. Each call produces a unique, non-repeating string.
+// Generate a random prefix sized to the prompt to bust KV-cache blocks.
+// The prefix scales with input size: ~5% of prompt length, clamped to
+// [128 chars, 4096 chars] (~32–1024 tokens). Uses base62 characters with
+// spaces every 4-6 chars to form realistic token boundaries.
 const BASE62 = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-function generateRandomPrefix(): string {
-  const bytes = randomBytes(4096);
+function generateRandomPrefix(promptLength: number): string {
+  const targetChars = Math.min(4096, Math.max(128, Math.round(promptLength * 0.05)));
+  const bytes = randomBytes(targetChars);
   let result = '';
   for (let i = 0; i < bytes.length; i++) {
     result += BASE62[bytes[i] % 62];
-    // Insert a space every 4–6 characters to create word-like token boundaries
     if (i > 0 && i % (4 + (bytes[i] % 3)) === 0) result += ' ';
   }
   return result;
@@ -341,8 +342,9 @@ async function runProviderBenchmark(
 
   // Build random-prefix variant pool for cache hit rate control.
   // K unique prefixes → target hit rate ≈ (N - K) / N.
-  // Each prefix is ~1024 tokens (~4 KB of random base62 text) so it spans
-  // multiple KV-cache blocks and reliably prevents prefix-cache reuse.
+  // Prefix size adapts to prompt length (~5%, clamped 128–4096 chars)
+  // so short prompts aren't bloated while long prompts still bust
+  // block-level KV cache reliably.
   //
   // We pre-build a shuffled schedule of length N so that cache misses
   // (first appearance of each variant) are spread evenly across the run,
@@ -351,7 +353,7 @@ async function runProviderBenchmark(
   let variantSchedule: string[] | null = null;
   if (config.targetCacheHitRate !== undefined && config.targetCacheHitRate < 1) {
     const K = Math.max(1, Math.round(totalIterations * (1 - config.targetCacheHitRate)));
-    const prefixes = Array.from({ length: K }, () => generateRandomPrefix());
+    const prefixes = Array.from({ length: K }, () => generateRandomPrefix(config.prompt.length));
     // Build schedule: assign each iteration a variant, then shuffle
     const schedule: string[] = [];
     for (let i = 0; i < totalIterations; i++) {
