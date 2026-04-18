@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import { randomBytes } from 'crypto';
 import {
   BenchmarkConfig,
   BenchmarkRun,
@@ -197,6 +198,21 @@ function sleep(ms: number, benchmarkId: string): Promise<void> {
   });
 }
 
+// Generate a random prefix of ~1024 tokens (~4 KB) to bust KV-cache blocks.
+// Uses base62 characters separated by spaces every 4-6 chars to form
+// realistic token boundaries. Each call produces a unique, non-repeating string.
+const BASE62 = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+function generateRandomPrefix(): string {
+  const bytes = randomBytes(4096);
+  let result = '';
+  for (let i = 0; i < bytes.length; i++) {
+    result += BASE62[bytes[i] % 62];
+    // Insert a space every 4–6 characters to create word-like token boundaries
+    if (i > 0 && i % (4 + (bytes[i] % 3)) === 0) result += ' ';
+  }
+  return result;
+}
+
 // Exponential backoff retry
 async function executeWithRetry(
   provider: LLMProvider,
@@ -323,12 +339,30 @@ async function runProviderBenchmark(
   const randomizeInterval = config.randomizeInterval ?? false;
   const maxQps = config.maxQps ?? 0;
 
-  // Build UUID variant pool for cache hit rate control.
-  // K unique prefixes → steady-state hit rate ≈ (N - K) / N.
-  let promptVariants: string[] | null = null;
+  // Build random-prefix variant pool for cache hit rate control.
+  // K unique prefixes → target hit rate ≈ (N - K) / N.
+  // Each prefix is ~1024 tokens (~4 KB of random base62 text) so it spans
+  // multiple KV-cache blocks and reliably prevents prefix-cache reuse.
+  //
+  // We pre-build a shuffled schedule of length N so that cache misses
+  // (first appearance of each variant) are spread evenly across the run,
+  // rather than clustered at the start. This produces realistic interleaved
+  // cold/warm latency distributions.
+  let variantSchedule: string[] | null = null;
   if (config.targetCacheHitRate !== undefined && config.targetCacheHitRate < 1) {
     const K = Math.max(1, Math.round(totalIterations * (1 - config.targetCacheHitRate)));
-    promptVariants = Array.from({ length: K }, () => uuidv4());
+    const prefixes = Array.from({ length: K }, () => generateRandomPrefix());
+    // Build schedule: assign each iteration a variant, then shuffle
+    const schedule: string[] = [];
+    for (let i = 0; i < totalIterations; i++) {
+      schedule.push(prefixes[i % K]);
+    }
+    // Fisher–Yates shuffle
+    for (let i = schedule.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [schedule[i], schedule[j]] = [schedule[j], schedule[i]];
+    }
+    variantSchedule = schedule;
   }
 
   // === Warmup Phase ===
@@ -348,8 +382,8 @@ async function runProviderBenchmark(
         throw new Error('Benchmark cancelled by user');
       }
       try {
-        const warmupPrompt = promptVariants
-          ? `${promptVariants[w % promptVariants.length]}\n${config.prompt}`
+        const warmupPrompt = variantSchedule
+          ? `${variantSchedule[w % variantSchedule.length]}\n${config.prompt}`
           : config.prompt;
         await provider.execute(
           warmupPrompt,
@@ -396,9 +430,7 @@ async function runProviderBenchmark(
 
       let result: IterationResult;
       try {
-        const effectivePrompt = promptVariants
-          ? `${promptVariants[iterIndex % promptVariants.length]}\n${config.prompt}`
-          : config.prompt;
+        const effectivePrompt = variantSchedule ? `${variantSchedule[iterIndex]}\n${config.prompt}` : config.prompt;
 
         const { response } = await executeWithRetry(
           provider,

@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- Cache hit rate: replaced short UUID prefix (~5 tokens) with ~1024-token random prefix to reliably bust block-level KV cache on inference engines (vLLM, SGLang, etc.)
+- Cache hit rate: replaced round-robin variant assignment with Fisher–Yates shuffled schedule so cache misses are spread evenly across the run instead of clustered at the start
+
 ## [2.4.0] - 2026-04-18
 
 ### Added
