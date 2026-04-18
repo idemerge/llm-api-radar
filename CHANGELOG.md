@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.4.3] - 2026-04-18
 
 ### Fixed
 - Cache hit rate: `targetCacheHitRate` was silently dropped by both the benchmark and workflow route handlers — the field was validated but never passed to the engine, so the feature had no effect
