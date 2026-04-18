@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.4.1] - 2026-04-18
 
 ### Fixed
 - Cache hit rate: replaced short UUID prefix (~5 tokens) with ~1024-token random prefix to reliably bust block-level KV cache on inference engines (vLLM, SGLang, etc.)
