@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- Raised concurrency limit from 50 to 200 and iterations limit from 1000 to 2000
+- Replaced batch-based concurrency with sliding-window worker pool to maintain steady in-flight request count — previously, requests that completed early left slots idle causing actual concurrency to drop over time; now a new request starts immediately whenever one finishes
+
 ## [2.2.0] - 2026-04-17
 
 ### Added
