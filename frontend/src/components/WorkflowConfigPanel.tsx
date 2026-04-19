@@ -27,6 +27,7 @@ import {
   UpOutlined,
   DownOutlined,
   CloseOutlined,
+  CopyOutlined,
   LoadingOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons';
@@ -193,6 +194,62 @@ export function WorkflowConfigPanel({
     if (expandedTask >= newTasks.length) {
       setExpandedTask(newTasks.length - 1);
     }
+
+    // Re-index heavy prompt entries after removal
+    const newHeavy = new Map<number, string>();
+    for (const [k, v] of heavyPromptsRef.current) {
+      if (k === index) continue;
+      newHeavy.set(k > index ? k - 1 : k, v);
+    }
+    heavyPromptsRef.current = newHeavy;
+
+    setHeavyTaskIndexes((prev) => {
+      const shifted = new Set<number>();
+      for (const k of prev) {
+        if (k === index) continue;
+        shifted.add(k > index ? k - 1 : k);
+      }
+      return shifted;
+    });
+  };
+
+  const duplicateTask = (index: number) => {
+    const source = tasks[index];
+    const cloned: TaskConfig = {
+      ...source,
+      name: `${source.name} (copy)`,
+      config: { ...source.config },
+      tags: { ...source.tags },
+      providers: source.providers ? [...source.providers] : undefined,
+    };
+    const newTasks = [...tasks];
+    newTasks.splice(index + 1, 0, cloned);
+    setTasks(newTasks);
+
+    // Shift heavy prompt entries for indexes after the insertion point
+    const newHeavy = new Map<number, string>();
+    for (const [k, v] of heavyPromptsRef.current) {
+      newHeavy.set(k > index ? k + 1 : k, v);
+    }
+    // Copy heavy prompt for the duplicated task
+    const sourceHeavy = heavyPromptsRef.current.get(index);
+    if (sourceHeavy) {
+      newHeavy.set(index + 1, sourceHeavy);
+    }
+    heavyPromptsRef.current = newHeavy;
+
+    setHeavyTaskIndexes((prev) => {
+      const shifted = new Set<number>();
+      for (const k of prev) {
+        shifted.add(k > index ? k + 1 : k);
+      }
+      if (prev.has(index)) {
+        shifted.add(index + 1);
+      }
+      return shifted;
+    });
+
+    setExpandedTask(index + 1);
   };
 
   const moveTask = (index: number, direction: -1 | 1) => {
@@ -201,6 +258,27 @@ export function WorkflowConfigPanel({
     const newTasks = [...tasks];
     [newTasks[index], newTasks[newIndex]] = [newTasks[newIndex], newTasks[index]];
     setTasks(newTasks);
+
+    // Swap heavy prompt entries for the two indexes
+    const aHeavy = heavyPromptsRef.current.get(index);
+    const bHeavy = heavyPromptsRef.current.get(newIndex);
+    heavyPromptsRef.current.delete(index);
+    heavyPromptsRef.current.delete(newIndex);
+    if (aHeavy) heavyPromptsRef.current.set(newIndex, aHeavy);
+    if (bHeavy) heavyPromptsRef.current.set(index, bHeavy);
+
+    setHeavyTaskIndexes((prev) => {
+      const hasA = prev.has(index);
+      const hasB = prev.has(newIndex);
+      if (hasA === hasB) return prev;
+      const next = new Set(prev);
+      next.delete(index);
+      next.delete(newIndex);
+      if (hasA) next.add(newIndex);
+      if (hasB) next.add(index);
+      return next;
+    });
+
     setExpandedTask(newIndex);
   };
 
@@ -356,6 +434,17 @@ export function WorkflowConfigPanel({
                 moveTask(index, 1);
               }}
             />
+            <Tooltip title="Duplicate task">
+              <Button
+                type="text"
+                size="small"
+                icon={<CopyOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  duplicateTask(index);
+                }}
+              />
+            </Tooltip>
             <Button
               type="text"
               size="small"

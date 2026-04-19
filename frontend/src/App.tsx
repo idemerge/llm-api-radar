@@ -563,6 +563,7 @@ function App() {
                   <HistoryDetailPage
                     workflowId={historyDetailId}
                     onExport={exportWorkflow}
+                    onCancel={cancelWorkflow}
                     onBack={() => navigate('/history')}
                   />
                 </motion.div>

@@ -11,6 +11,7 @@ import type { TaskIterationProgress } from '../hooks/useWorkflow';
 interface HistoryDetailPageProps {
   workflowId: string;
   onExport?: (id: string, format: 'json' | 'csv') => void;
+  onCancel?: (id: string) => Promise<boolean>;
   onBack: () => void;
 }
 
@@ -33,7 +34,7 @@ function formatDate(dateStr: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
-export function HistoryDetailPage({ workflowId, onExport, onBack }: HistoryDetailPageProps) {
+export function HistoryDetailPage({ workflowId, onExport, onCancel, onBack }: HistoryDetailPageProps) {
   const [workflow, setWorkflow] = useState<BenchmarkWorkflow | null>(null);
   const [loading, setLoading] = useState(true);
   const [taskProgress, setTaskProgress] = useState<Record<string, TaskIterationProgress>>({});
@@ -263,15 +264,22 @@ export function HistoryDetailPage({ workflowId, onExport, onBack }: HistoryDetai
               )}
             </div>
           </div>
-          {onExport && (
-            <Dropdown menu={{ items: exportMenuItems, onClick: handleExportClick }}>
-              <Tooltip title="Export results">
-                <Button size="small" icon={<DownloadOutlined />}>
-                  Export
-                </Button>
-              </Tooltip>
-            </Dropdown>
-          )}
+          <div className="flex items-center gap-2">
+            {workflow.status === 'running' && onCancel && (
+              <Button size="small" danger onClick={() => onCancel(workflowId)}>
+                Cancel
+              </Button>
+            )}
+            {onExport && (
+              <Dropdown menu={{ items: exportMenuItems, onClick: handleExportClick }}>
+                <Tooltip title="Export results">
+                  <Button size="small" icon={<DownloadOutlined />}>
+                    Export
+                  </Button>
+                </Tooltip>
+              </Dropdown>
+            )}
+          </div>
         </div>
       </div>
 
