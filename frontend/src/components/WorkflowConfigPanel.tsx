@@ -707,7 +707,7 @@ export function WorkflowConfigPanel({
                 value={task.config.concurrency}
                 onChange={(v) => updateTaskConfig(index, { concurrency: v ?? 1 })}
                 min={1}
-                max={200}
+                max={1000}
                 size="small"
                 className="font-mono"
                 style={{ width: '100%' }}
@@ -731,7 +731,7 @@ export function WorkflowConfigPanel({
                 value={task.config.iterations}
                 onChange={(v) => updateTaskConfig(index, { iterations: v ?? 10 })}
                 min={1}
-                max={2000}
+                max={1000000}
                 size="small"
                 className="font-mono"
                 style={{ width: '100%' }}

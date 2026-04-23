@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.10.1] - 2026-04-23
+
+### Changed
+- Raised concurrency limit from 200 to 1000 and iterations limit from 2000 to 1M (frontend InputNumber + backend Math.min caps)
+- Updated quick-select buttons: concurrency adds 500 and 1K options, iterations adds 10K, 100K, and 1M options
+
 ## [2.10.0] - 2026-04-23
 
 ### Added
