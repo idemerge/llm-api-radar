@@ -8,9 +8,13 @@ import {
   QUICK_ITERATIONS,
   QUICK_WARMUP,
   QUICK_INTERVAL,
+  OUTPUT_SCOPE_OPTIONS,
+  applyOutputScope,
+  getStoredOutputScope,
+  storeOutputScope,
 } from '../constants';
 import { useProviders } from '../hooks/useProviders';
-import { Button, Input, InputNumber, Switch, Segmented } from '../antdImports';
+import { Button, Input, InputNumber, Switch, Segmented, Select, Tooltip } from '../antdImports';
 import { LoadingOutlined } from '@ant-design/icons';
 import { useTokenCount } from '../utils/tokenCount';
 import { loadHeavyPreset } from '../constants';
@@ -63,6 +67,8 @@ export function ConfigPanel({ onStart, isRunning, currentProviders: _currentProv
   const [warmupRuns, setWarmupRuns] = useState(0);
   const [requestInterval, setRequestInterval] = useState(0);
   const [randomizeInterval, setRandomizeInterval] = useState(false);
+  const [isLongContext, setIsLongContext] = useState(false);
+  const [outputScope, setOutputScope] = useState(getStoredOutputScope);
 
   const toggleModel = (provider: ProviderConfigResponse, modelName: string) => {
     const key = `${provider.id}:${modelName}`;
@@ -235,11 +241,14 @@ export function ConfigPanel({ onStart, isRunning, currentProviders: _currentProv
             <button
               key={preset.label}
               onClick={async () => {
+                const isLC = !!preset.multiDoc;
+                setIsLongContext(isLC);
                 if (preset.heavy) {
                   const bucket = preset.tokens >= 200_000 ? '256k' : preset.tokens >= 100_000 ? '150k' : '64k';
-                  setPrompt(await loadHeavyPreset(bucket));
+                  const raw = await loadHeavyPreset(bucket);
+                  setPrompt(isLC ? applyOutputScope(raw, outputScope) : raw);
                 } else {
-                  setPrompt(preset.prompt);
+                  setPrompt(isLC ? applyOutputScope(preset.prompt, outputScope) : preset.prompt);
                 }
               }}
               className={`text-[11px] px-2.5 py-1.5 rounded-md border transition-all font-medium ${
@@ -252,6 +261,26 @@ export function ConfigPanel({ onStart, isRunning, currentProviders: _currentProv
             </button>
           ))}
         </div>
+        {isLongContext && (
+          <div className="flex items-center gap-2">
+            <Tooltip title="Controls how many documents the model should read and summarize. Fewer docs = shorter output (~500 tokens for 3 docs). Use this to limit output length while keeping the full prompt as input.">
+              <label className="text-[11px] text-text-secondary font-medium whitespace-nowrap cursor-help">
+                Output Scope
+              </label>
+            </Tooltip>
+            <Select
+              size="small"
+              value={outputScope}
+              onChange={(v) => {
+                setOutputScope(v);
+                storeOutputScope(v);
+                setPrompt((prev) => applyOutputScope(prev, v));
+              }}
+              options={OUTPUT_SCOPE_OPTIONS}
+              style={{ width: 160, fontSize: 11 }}
+            />
+          </div>
+        )}
         <Input.TextArea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
@@ -267,7 +296,9 @@ export function ConfigPanel({ onStart, isRunning, currentProviders: _currentProv
         <label className="section-title">Parameters</label>
         <div className="grid grid-cols-3 gap-3">
           <div className="space-y-2">
-            <label className="text-[11px] text-text-secondary font-medium">Max Tokens</label>
+            <Tooltip title="Maximum number of tokens the model can generate in its response">
+              <label className="text-[11px] text-text-secondary font-medium cursor-help">Max Tokens</label>
+            </Tooltip>
             <QuickButtons options={QUICK_MAX_TOKENS} value={maxTokens} onChange={setMaxTokens} color="accent-teal" />
             <InputNumber
               value={maxTokens}
@@ -280,7 +311,9 @@ export function ConfigPanel({ onStart, isRunning, currentProviders: _currentProv
             />
           </div>
           <div className="space-y-2">
-            <label className="text-[11px] text-text-secondary font-medium">Concurrency</label>
+            <Tooltip title="Number of parallel requests sent simultaneously to the API">
+              <label className="text-[11px] text-text-secondary font-medium cursor-help">Concurrency</label>
+            </Tooltip>
             <QuickButtons
               options={QUICK_CONCURRENCY}
               value={concurrency}
@@ -298,7 +331,9 @@ export function ConfigPanel({ onStart, isRunning, currentProviders: _currentProv
             />
           </div>
           <div className="space-y-2">
-            <label className="text-[11px] text-text-secondary font-medium">Iterations</label>
+            <Tooltip title="Total number of requests to send during the benchmark">
+              <label className="text-[11px] text-text-secondary font-medium cursor-help">Iterations</label>
+            </Tooltip>
             <QuickButtons options={QUICK_ITERATIONS} value={iterations} onChange={setIterations} color="accent-teal" />
             <InputNumber
               value={iterations}
@@ -338,7 +373,9 @@ export function ConfigPanel({ onStart, isRunning, currentProviders: _currentProv
                 <label className="section-title">Advanced</label>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <label className="text-[11px] text-text-secondary font-medium">Warmup Runs</label>
+                    <Tooltip title="Requests to send before benchmarking starts, to warm up the API connection and caches">
+                      <label className="text-[11px] text-text-secondary font-medium cursor-help">Warmup Runs</label>
+                    </Tooltip>
                     <QuickButtons
                       options={QUICK_WARMUP}
                       value={warmupRuns}
@@ -356,7 +393,9 @@ export function ConfigPanel({ onStart, isRunning, currentProviders: _currentProv
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[11px] text-text-secondary font-medium">Interval (ms)</label>
+                    <Tooltip title="Delay between consecutive requests in milliseconds">
+                      <label className="text-[11px] text-text-secondary font-medium cursor-help">Interval (ms)</label>
+                    </Tooltip>
                     <QuickButtons
                       options={QUICK_INTERVAL}
                       value={requestInterval}

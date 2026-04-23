@@ -16,12 +16,16 @@ import {
   QUICK_WARMUP,
   QUICK_INTERVAL,
   QUICK_QPS,
+  OUTPUT_SCOPE_OPTIONS,
+  applyOutputScope,
+  getStoredOutputScope,
+  storeOutputScope,
 } from '../constants';
 import { countTokens } from '../utils/tokenCount';
 import { loadHeavyPreset } from '../constants';
 import { CreateWorkflowData } from '../hooks/useWorkflow';
 import { useProviders } from '../hooks/useProviders';
-import { Button, Input, InputNumber, Switch, Collapse, Segmented, Tooltip } from '../antdImports';
+import { Button, Input, InputNumber, Switch, Collapse, Segmented, Tooltip, Select } from '../antdImports';
 import {
   PlusOutlined,
   UpOutlined,
@@ -39,6 +43,8 @@ interface TaskConfig {
   providers?: string[];
   tags: Record<string, string>;
   _adv?: boolean; // UI-only: per-task advanced mode toggle
+  _outputScope?: number; // UI-only: long-context output scope (0=all, N=first N docs)
+  _isLongContext?: boolean; // UI-only: whether a long-context preset is active
 }
 
 interface WorkflowConfigPanelProps {
@@ -490,12 +496,38 @@ export function WorkflowConfigPanel({
                 <button
                   key={preset.label}
                   onClick={async () => {
+                    const isLC = !!preset.multiDoc;
+                    const scope = task._outputScope ?? getStoredOutputScope();
+                    let raw: string;
                     if (preset.heavy) {
                       const bucket = preset.tokens >= 200_000 ? '256k' : preset.tokens >= 100_000 ? '150k' : '64k';
-                      setTaskPromptSmart(index, await loadHeavyPreset(bucket));
+                      raw = await loadHeavyPreset(bucket);
                     } else {
-                      setTaskPromptSmart(index, preset.prompt);
+                      raw = preset.prompt;
                     }
+                    const finalText = isLC ? applyOutputScope(raw, scope) : raw;
+                    const newTasks = [...tasks];
+                    const updated = { ...newTasks[index], _isLongContext: isLC, _outputScope: scope };
+                    if (finalText.length > HEAVY_THRESHOLD) {
+                      heavyPromptsRef.current.set(index, finalText);
+                      setHeavyTaskIndexes((prev) => new Set(prev).add(index));
+                      updated.config = {
+                        ...updated.config,
+                        prompt:
+                          finalText.slice(0, 200) +
+                          `\n\n… [${finalText.length.toLocaleString()} chars total — full text loaded]`,
+                      };
+                    } else {
+                      heavyPromptsRef.current.delete(index);
+                      setHeavyTaskIndexes((prev) => {
+                        const s = new Set(prev);
+                        s.delete(index);
+                        return s;
+                      });
+                      updated.config = { ...updated.config, prompt: finalText };
+                    }
+                    newTasks[index] = updated;
+                    setTasks(newTasks);
                   }}
                   className={`text-[10px] px-2 py-1 rounded border transition-all font-medium ${
                     task.config.prompt === preset.prompt
@@ -508,6 +540,31 @@ export function WorkflowConfigPanel({
               ))}
             </div>
           </div>
+
+          {/* Output Scope (long-context only) */}
+          {task._isLongContext && (
+            <div className="flex items-center gap-2">
+              <Tooltip title="Controls how many documents the model should read and summarize. Fewer docs = shorter output (~500 tokens for 3 docs). Use this to limit output length while keeping the full prompt as input.">
+                <label className="text-[11px] text-text-secondary font-medium whitespace-nowrap cursor-help">
+                  Output Scope
+                </label>
+              </Tooltip>
+              <Select
+                size="small"
+                value={task._outputScope ?? getStoredOutputScope()}
+                onChange={(v) => {
+                  storeOutputScope(v);
+                  const newTasks = [...tasks];
+                  newTasks[index] = { ...newTasks[index], _outputScope: v };
+                  setTasks(newTasks);
+                  const fullPrompt = heavyPromptsRef.current.get(index) || task.config.prompt;
+                  setTaskPromptSmart(index, applyOutputScope(fullPrompt, v));
+                }}
+                options={OUTPUT_SCOPE_OPTIONS}
+                style={{ width: 160, fontSize: 11 }}
+              />
+            </div>
+          )}
 
           {/* Row 3: Prompt TextArea + System Prompt */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

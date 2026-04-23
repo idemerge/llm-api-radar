@@ -201,6 +201,9 @@ export interface WorkflowProviderSummary {
   totalOutputTokens: number;
   totalCost: number;
   overallSuccessRate: number;
+  inputThroughput: number;
+  outputThroughput: number;
+  totalThroughput: number;
   perTaskMetrics: TaskMetricPoint[];
 }
 
@@ -217,6 +220,9 @@ export interface TaskMetricPoint {
   avgFirstTokenLatency: number;
   avgTokensPerSecond: number;
   systemThroughput: number;
+  inputThroughput: number;
+  outputThroughput: number;
+  totalThroughput: number;
   successRate: number;
   estimatedCost: number;
 }

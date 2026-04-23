@@ -20,7 +20,15 @@ import { usePlayground, PlaygroundMetrics } from '../hooks/usePlayground';
 import { usePlaygroundHistory } from '../hooks/usePlaygroundHistory';
 import { PlaygroundHistorySidebar } from './PlaygroundHistorySidebar';
 import { ImageInput } from '../types';
-import { PRESET_PROMPTS, QUICK_MAX_TOKENS, loadHeavyPreset } from '../constants';
+import {
+  PRESET_PROMPTS,
+  QUICK_MAX_TOKENS,
+  loadHeavyPreset,
+  OUTPUT_SCOPE_OPTIONS,
+  applyOutputScope,
+  getStoredOutputScope,
+  storeOutputScope,
+} from '../constants';
 import { useTokenCount } from '../utils/tokenCount';
 
 const { TextArea } = Input;
@@ -62,6 +70,8 @@ export function PlaygroundPage() {
   const [images, setImages] = useState<ImageInput[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [showLongContext, setShowLongContext] = useState(true);
+  const [isMultiDoc, setIsMultiDoc] = useState(false);
+  const [outputScope, setOutputScope] = useState(getStoredOutputScope);
   const [copied, setCopied] = useState(false);
   const [enableThinking, setEnableThinking] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(true);
@@ -479,7 +489,10 @@ export function PlaygroundPage() {
                   {STANDARD_PRESETS.map((preset) => (
                     <button
                       key={preset.label}
-                      onClick={() => setPromptSmart(preset.prompt)}
+                      onClick={() => {
+                        setIsMultiDoc(false);
+                        setPromptSmart(preset.prompt);
+                      }}
                       className="text-[10px] px-2 py-0.5 rounded border border-border text-text-tertiary hover:text-text-secondary hover:border-accent-blue/40 transition-colors whitespace-nowrap"
                     >
                       {preset.label}
@@ -497,14 +510,17 @@ export function PlaygroundPage() {
                       <button
                         key={preset.label}
                         onClick={async () => {
+                          const md = !!preset.multiDoc;
+                          setIsMultiDoc(md);
+                          let raw: string;
                           if (preset.heavy) {
                             const bucket =
                               preset.tokens >= 200_000 ? '256k' : preset.tokens >= 100_000 ? '150k' : '64k';
-                            const text = await loadHeavyPreset(bucket);
-                            setPromptSmart(text);
+                            raw = await loadHeavyPreset(bucket);
                           } else {
-                            setPromptSmart(preset.prompt);
+                            raw = preset.prompt;
                           }
+                          setPromptSmart(md ? applyOutputScope(raw, outputScope) : raw);
                         }}
                         className="text-[10px] px-2 py-0.5 rounded border border-border text-text-tertiary hover:text-text-secondary hover:border-accent-blue/40 transition-colors whitespace-nowrap"
                       >
@@ -513,6 +529,24 @@ export function PlaygroundPage() {
                     ))
                   )}
                 </div>
+
+                {/* Output Scope (multi-doc presets only) */}
+                {isMultiDoc && (
+                  <Tooltip title="Controls how many documents the model should read and summarize. Fewer docs = shorter output (~500 tokens for 3 docs). Use this to limit output length while keeping the full prompt as input.">
+                    <Select
+                      size="small"
+                      value={outputScope}
+                      onChange={(v) => {
+                        setOutputScope(v);
+                        storeOutputScope(v);
+                        const fullText = fullPromptRef.current || prompt;
+                        setPromptSmart(applyOutputScope(fullText, v));
+                      }}
+                      options={OUTPUT_SCOPE_OPTIONS}
+                      style={{ width: 140, fontSize: 10 }}
+                    />
+                  </Tooltip>
+                )}
 
                 {/* Run / Stop — right side */}
                 {loading ? (
@@ -667,12 +701,14 @@ function MetricsRow({ metrics, loading }: { metrics: PlaygroundMetrics | null; l
   const cards = [
     {
       label: 'Response Time',
+      tooltip: 'Total time from request sent to response fully received',
       value: metrics?.responseTime != null ? `${metrics.responseTime.toLocaleString()} ms` : '--',
       icon: <ClockCircleOutlined />,
       color: 'text-accent-blue',
     },
     {
       label: 'First Token',
+      tooltip: 'Time To First Token (TTFT) — how long until the first token arrives',
       value:
         metrics?.firstTokenLatency != null && metrics.firstTokenLatency > 0
           ? `${metrics.firstTokenLatency.toLocaleString()} ms`
@@ -684,6 +720,7 @@ function MetricsRow({ metrics, loading }: { metrics: PlaygroundMetrics | null; l
     },
     {
       label: 'TPS',
+      tooltip: 'Tokens Per Second — output speed of this request',
       value: metrics?.tokensPerSecond != null ? `${metrics.tokensPerSecond}` : '--',
       icon: <DashboardOutlined />,
       color: metrics?.tokensPerSecond === 0 && metrics?.outputTokens === 0 ? 'text-accent-rose' : 'text-accent-teal',
@@ -691,6 +728,7 @@ function MetricsRow({ metrics, loading }: { metrics: PlaygroundMetrics | null; l
     },
     {
       label: 'Tokens',
+      tooltip: 'Input and output token counts for this request',
       value: metrics?.inputTokens != null ? `${metrics.inputTokens} in / ${metrics.outputTokens ?? 0} out` : '--',
       icon: metrics?.outputTokens === 0 ? <WarningOutlined /> : null,
       color: metrics?.outputTokens === 0 ? 'text-accent-rose' : 'text-text-primary',
@@ -708,10 +746,12 @@ function MetricsRow({ metrics, loading }: { metrics: PlaygroundMetrics | null; l
             card.warn ? 'border-accent-rose/30 bg-accent-rose/5' : 'border-border bg-[#0a0a0a]'
           }`}
         >
-          <div className="flex items-center gap-1.5 mb-1">
-            {card.icon && <span className={`text-[12px] ${card.color}`}>{card.icon}</span>}
-            <span className="text-[11px] text-text-tertiary uppercase tracking-wider">{card.label}</span>
-          </div>
+          <Tooltip title={card.tooltip}>
+            <div className="flex items-center gap-1.5 mb-1 cursor-help">
+              {card.icon && <span className={`text-[12px] ${card.color}`}>{card.icon}</span>}
+              <span className="text-[11px] text-text-tertiary uppercase tracking-wider">{card.label}</span>
+            </div>
+          </Tooltip>
           <div
             className={`text-[16px] font-mono font-medium ${card.color} ${loading && !metrics ? 'animate-pulse' : ''}`}
           >

@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.6.0] - 2026-04-23
+
+### Added
+- Output Scope selector for long-context presets (16K/64K/150K/256K): controls how many documents the model reads, limiting output length (~500 tokens for 3 docs, unlimited for All docs)
+- Output Scope available in Benchmark, Workflow, and Playground pages with persistent selection via localStorage
+- Input/Output/Total throughput metrics in Workflow Detail: calculated as concurrency × avg tokens per request / avg response time
+- Throughput columns (In T/s, Out T/s, Total T/s) in provider comparison tables
+- Throughput summary in workflow header and results summary bar
+- Tooltips on all metric labels, table column headers, and parameter controls across all pages (WorkflowResults, ResultsPanel, ConfigPanel, PlaygroundPage, HistoryDetailPage)
+
+### Changed
+- Long-context 64K preset prompt suffix updated to support configurable output scope
+
 ## [2.5.1] - 2026-04-19
 
 ### Added

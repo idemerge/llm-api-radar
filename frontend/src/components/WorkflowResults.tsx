@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { DownOutlined, UpOutlined } from '@ant-design/icons';
-import { Table, Tabs, Tag } from '../antdImports';
+import { Table, Tabs, Tag, Tooltip } from '../antdImports';
 import { BenchmarkWorkflow, getProviderColor, TaskMetricPoint } from '../types';
 
 interface WorkflowResultsProps {
@@ -106,10 +106,19 @@ function PromptPreview({ text }: { text: string }) {
   );
 }
 
+/** Column header with tooltip */
+function tipTitle(label: string, tip: string) {
+  return (
+    <Tooltip title={tip}>
+      <span className="cursor-help border-b border-dotted border-text-tertiary">{label}</span>
+    </Tooltip>
+  );
+}
+
 /** Shared provider column definitions */
 function providerColumns(hasP95: boolean) {
   const cols: Array<{
-    title: string;
+    title: React.ReactNode;
     dataIndex: string;
     key: string;
     align?: 'left' | 'right' | 'center';
@@ -134,7 +143,7 @@ function providerColumns(hasP95: boolean) {
       ),
     },
     {
-      title: 'Avg RT',
+      title: tipTitle('Avg RT', 'Average response time per request (milliseconds)'),
       dataIndex: 'avgResponseTime',
       key: 'avgResponseTime',
       align: 'right' as const,
@@ -144,7 +153,7 @@ function providerColumns(hasP95: boolean) {
 
   if (hasP95) {
     cols.push({
-      title: 'P95 RT',
+      title: tipTitle('P95 RT', '95th percentile response time — 95% of requests complete within this time'),
       dataIndex: 'p95ResponseTime',
       key: 'p95ResponseTime',
       align: 'right' as const,
@@ -154,28 +163,58 @@ function providerColumns(hasP95: boolean) {
 
   cols.push(
     {
-      title: 'TTFT',
+      title: tipTitle('TTFT', 'Time To First Token — how long until the first token arrives (streaming latency)'),
       dataIndex: 'avgFirstTokenLatency',
       key: 'avgFirstTokenLatency',
       align: 'right' as const,
       render: (val: number) => (val > 0 ? `${formatNumber(val)}ms` : 'N/A'),
     },
     {
-      title: 'TPS',
+      title: tipTitle('TPS', 'Tokens Per Second — average output speed of a single request'),
       dataIndex: 'avgTokensPerSecond',
       key: 'avgTokensPerSecond',
       align: 'right' as const,
       render: (val: number) => formatNumber(val),
     },
     {
-      title: 'Tokens',
+      title: tipTitle(
+        'In T/s',
+        'Input Throughput — concurrency × avg input tokens per request / avg response time. Measures how fast the system processes input tokens',
+      ),
+      dataIndex: 'inputThroughput',
+      key: 'inputThroughput',
+      align: 'right' as const,
+      render: (val: number) => (val > 0 ? formatNumber(val) : 'N/A'),
+    },
+    {
+      title: tipTitle(
+        'Out T/s',
+        'Output Throughput — concurrency × avg output tokens per request / avg response time. Measures how fast the system generates output tokens',
+      ),
+      dataIndex: 'outputThroughput',
+      key: 'outputThroughput',
+      align: 'right' as const,
+      render: (val: number) => (val > 0 ? formatNumber(val) : 'N/A'),
+    },
+    {
+      title: tipTitle(
+        'Total T/s',
+        'Total Throughput — concurrency × avg total tokens per request / avg response time. Combined input + output token processing speed',
+      ),
+      dataIndex: 'totalThroughput',
+      key: 'totalThroughput',
+      align: 'right' as const,
+      render: (val: number) => (val > 0 ? formatNumber(val) : 'N/A'),
+    },
+    {
+      title: tipTitle('Tokens', 'Total tokens consumed across all iterations (input + output)'),
       dataIndex: 'totalTokens',
       key: 'totalTokens',
       align: 'right' as const,
       render: (val: number) => formatNumber(val),
     },
     {
-      title: 'Success',
+      title: tipTitle('Success', 'Percentage of requests that completed successfully without errors'),
       dataIndex: hasP95 ? 'successRate' : 'overallSuccessRate',
       key: hasP95 ? 'successRate' : 'overallSuccessRate',
       align: 'right' as const,
@@ -322,6 +361,34 @@ export function WorkflowResults({ workflow, onExport }: WorkflowResultsProps) {
           )}
         </div>
 
+        {/* Throughput summary */}
+        {(() => {
+          const ps = Object.values(summary.providerSummaries);
+          const avgIn = ps.length ? Math.round(ps.reduce((a, s) => a + (s.inputThroughput || 0), 0) / ps.length) : 0;
+          const avgOut = ps.length ? Math.round(ps.reduce((a, s) => a + (s.outputThroughput || 0), 0) / ps.length) : 0;
+          const avgTotal = ps.length ? Math.round(ps.reduce((a, s) => a + (s.totalThroughput || 0), 0) / ps.length) : 0;
+          if (avgIn === 0 && avgOut === 0) return null;
+          return (
+            <div className="flex flex-wrap gap-4 text-xs text-text-secondary">
+              <Tooltip title="Input throughput: concurrency × avg input tokens / avg response time">
+                <span className="cursor-help">
+                  Input T/s: <span className="text-accent-blue">{formatNumber(avgIn)}</span>
+                </span>
+              </Tooltip>
+              <Tooltip title="Output throughput: concurrency × avg output tokens / avg response time">
+                <span className="cursor-help">
+                  Output T/s: <span className="text-accent-teal">{formatNumber(avgOut)}</span>
+                </span>
+              </Tooltip>
+              <Tooltip title="Total throughput: concurrency × avg total tokens / avg response time">
+                <span className="cursor-help">
+                  Total T/s: <span className="text-accent-violet">{formatNumber(avgTotal)}</span>
+                </span>
+              </Tooltip>
+            </div>
+          );
+        })()}
+
         {/* Provider comparison table */}
         <Table
           columns={providerColumns(true)}
@@ -434,6 +501,34 @@ export function WorkflowResults({ workflow, onExport }: WorkflowResultsProps) {
           </span>
         )}
       </div>
+
+      {/* Throughput summary */}
+      {(() => {
+        const ps = Object.values(summary.providerSummaries);
+        const avgIn = ps.length ? Math.round(ps.reduce((a, s) => a + (s.inputThroughput || 0), 0) / ps.length) : 0;
+        const avgOut = ps.length ? Math.round(ps.reduce((a, s) => a + (s.outputThroughput || 0), 0) / ps.length) : 0;
+        const avgTotal = ps.length ? Math.round(ps.reduce((a, s) => a + (s.totalThroughput || 0), 0) / ps.length) : 0;
+        if (avgIn === 0 && avgOut === 0) return null;
+        return (
+          <div className="flex flex-wrap gap-4 text-xs text-text-secondary">
+            <Tooltip title="Input throughput: concurrency × avg input tokens / avg response time">
+              <span className="cursor-help">
+                Input T/s: <span className="text-accent-blue">{formatNumber(avgIn)}</span>
+              </span>
+            </Tooltip>
+            <Tooltip title="Output throughput: concurrency × avg output tokens / avg response time">
+              <span className="cursor-help">
+                Output T/s: <span className="text-accent-teal">{formatNumber(avgOut)}</span>
+              </span>
+            </Tooltip>
+            <Tooltip title="Total throughput: concurrency × avg total tokens / avg response time">
+              <span className="cursor-help">
+                Total T/s: <span className="text-accent-violet">{formatNumber(avgTotal)}</span>
+              </span>
+            </Tooltip>
+          </div>
+        );
+      })()}
 
       {/* Tabs */}
       <Tabs activeKey={activeTab} onChange={(key) => setActiveTab(key as TabType)} items={tabItems} size="small" />

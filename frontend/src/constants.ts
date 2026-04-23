@@ -16,11 +16,18 @@ export interface PresetPrompt {
   category: PresetCategory;
   /** Heavy presets are loaded on demand via loadHeavyPreset() */
   heavy?: boolean;
+  /** Whether the prompt contains multiple documents and supports output scope control */
+  multiDoc?: boolean;
 }
 
-function longContextPreset(bucket: keyof typeof shareGPTData.buckets, label: string, index = 0): PresetPrompt {
+function longContextPreset(
+  bucket: keyof typeof shareGPTData.buckets,
+  label: string,
+  index = 0,
+  multiDoc = false,
+): PresetPrompt {
   const item = shareGPTData.buckets[bucket][index];
-  return { label, prompt: item.text, tokens: item.tokens, category: 'long-context' };
+  return { label, prompt: item.text, tokens: item.tokens, category: 'long-context', multiDoc };
 }
 
 function heavyPreset(bucket: '64k' | '150k' | '256k'): PresetPrompt {
@@ -30,7 +37,14 @@ function heavyPreset(bucket: '64k' | '150k' | '256k'): PresetPrompt {
     '256k': 'Long Context 256K',
   };
   const tokensMap: Record<string, number> = { '64k': 64_000, '150k': 150_000, '256k': 256_000 };
-  return { label: labels[bucket], prompt: '', tokens: tokensMap[bucket], category: 'long-context', heavy: true };
+  return {
+    label: labels[bucket],
+    prompt: '',
+    tokens: tokensMap[bucket],
+    category: 'long-context',
+    heavy: true,
+    multiDoc: true,
+  };
 }
 
 export async function loadHeavyPreset(bucket: '64k' | '150k' | '256k', index = 0): Promise<string> {
@@ -75,7 +89,7 @@ export const PRESET_PROMPTS: PresetPrompt[] = [
   },
   longContextPreset('1k', 'Long Context 1K'),
   longContextPreset('4k', 'Long Context 4K'),
-  longContextPreset('16k', 'Long Context 16K'),
+  longContextPreset('16k', 'Long Context 16K', 0, true),
   heavyPreset('64k'),
   heavyPreset('150k'),
   heavyPreset('256k'),
@@ -116,6 +130,50 @@ export const QUICK_INTERVAL = [
   { label: '500', value: 500 },
   { label: '1000', value: 1000 },
 ];
+
+const OUTPUT_SCOPE_STORAGE_KEY = 'llm-radar:output-scope';
+
+export function getStoredOutputScope(): number {
+  try {
+    const v = localStorage.getItem(OUTPUT_SCOPE_STORAGE_KEY);
+    return v !== null ? Number(v) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+export function storeOutputScope(value: number): void {
+  try {
+    localStorage.setItem(OUTPUT_SCOPE_STORAGE_KEY, String(value));
+  } catch {
+    /* ignore */
+  }
+}
+
+export const OUTPUT_SCOPE_OPTIONS = [
+  { label: 'First 3 docs', value: 3 },
+  { label: 'First 5 docs', value: 5 },
+  { label: 'First 10 docs', value: 10 },
+  { label: 'All docs', value: 0 },
+];
+
+/**
+ * Strip the trailing instruction from a long-context prompt and replace it
+ * with one that limits the scope of reading (and therefore output length).
+ *
+ * scope > 0  → "Only read the first N documents …"
+ * scope === 0 → "For each document above …" (all docs)
+ */
+export function applyOutputScope(prompt: string, scope: number): string {
+  const idx = prompt.lastIndexOf('\n\n');
+  if (idx === -1) return prompt;
+  const base = prompt.slice(0, idx);
+  const suffix =
+    scope > 0
+      ? `Only read the first ${scope} documents above. For each of those ${scope} documents, identify its topic in one short phrase. Output as a numbered list.`
+      : "Don't overthink this. For each document above, identify its topic in one short phrase. Output as a numbered list, keep it brief.";
+  return `${base}\n\n${suffix}`;
+}
 
 export const QUICK_QPS = [
   { label: 'Off', value: 0 },

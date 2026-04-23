@@ -297,9 +297,20 @@ async function generateSummary(workflow: BenchmarkWorkflow): Promise<WorkflowSum
           totalOutputTokens: 0,
           totalCost: 0,
           overallSuccessRate: 0,
+          inputThroughput: 0,
+          outputThroughput: 0,
+          totalThroughput: 0,
           perTaskMetrics: [],
         };
       }
+
+      // Calculate throughput: concurrency × avgTokensPerRequest / avgResponseTime × 1000
+      const successCount = Math.round(result.summary.successRate * task.config.iterations) || 1;
+      const avgRT = result.summary.avgResponseTime;
+      const c = task.config.concurrency;
+      const avgIn = (result.summary.totalInputTokens || 0) / successCount;
+      const avgOut = (result.summary.totalOutputTokens || 0) / successCount;
+      const avgTotal = result.summary.totalTokens / successCount;
 
       const metric: TaskMetricPoint = {
         taskId: task.id,
@@ -314,6 +325,9 @@ async function generateSummary(workflow: BenchmarkWorkflow): Promise<WorkflowSum
         avgFirstTokenLatency: result.summary.avgFirstTokenLatency,
         avgTokensPerSecond: result.summary.avgTokensPerSecond,
         systemThroughput: result.summary.systemThroughput || 0,
+        inputThroughput: avgRT > 0 ? Math.round((c * avgIn * 1000) / avgRT) : 0,
+        outputThroughput: avgRT > 0 ? Math.round((c * avgOut * 1000) / avgRT) : 0,
+        totalThroughput: avgRT > 0 ? Math.round((c * avgTotal * 1000) / avgRT) : 0,
         successRate: result.summary.successRate,
         estimatedCost: result.summary.estimatedCost,
       };
@@ -339,6 +353,9 @@ async function generateSummary(workflow: BenchmarkWorkflow): Promise<WorkflowSum
     summary.totalOutputTokens = metrics.reduce((a, m) => a + m.outputTokens, 0);
     summary.totalCost = Number(metrics.reduce((a, m) => a + m.estimatedCost, 0).toFixed(6));
     summary.overallSuccessRate = Number((metrics.reduce((a, m) => a + m.successRate, 0) / metrics.length).toFixed(4));
+    summary.inputThroughput = Math.round(metrics.reduce((a, m) => a + m.inputThroughput, 0) / metrics.length);
+    summary.outputThroughput = Math.round(metrics.reduce((a, m) => a + m.outputThroughput, 0) / metrics.length);
+    summary.totalThroughput = Math.round(metrics.reduce((a, m) => a + m.totalThroughput, 0) / metrics.length);
   }
 
   const startTime = workflow.startedAt ? new Date(workflow.startedAt).getTime() : Date.now();

@@ -11,7 +11,7 @@ import {
   Cell,
 } from 'recharts';
 import { BenchmarkRun, getProviderColor, getProviderDisplayName, ErrorCategory } from '../types';
-import { Button, Table, Tag, Segmented, Card, Space } from '../antdImports';
+import { Button, Table, Tag, Segmented, Card, Space, Tooltip } from '../antdImports';
 import { AppstoreOutlined, TableOutlined, DownloadOutlined, BarChartOutlined } from '@ant-design/icons';
 
 interface ResultsPanelProps {
@@ -65,6 +65,12 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
     fontSize: '11px',
   };
 
+  const tip = (label: string, desc: string) => (
+    <Tooltip title={desc}>
+      <span className="cursor-help border-b border-dotted border-text-tertiary">{label}</span>
+    </Tooltip>
+  );
+
   const tableColumns = [
     {
       title: 'Provider',
@@ -78,7 +84,7 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
       ),
     },
     {
-      title: 'Avg Response',
+      title: tip('Avg Response', 'Average response time per request (milliseconds)'),
       dataIndex: 'summary',
       key: 'avgResponse',
       align: 'right' as const,
@@ -87,7 +93,7 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
       ),
     },
     {
-      title: 'P95',
+      title: tip('P95', '95th percentile response time — 95% of requests complete within this time'),
       dataIndex: 'summary',
       key: 'p95',
       align: 'right' as const,
@@ -96,7 +102,7 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
       ),
     },
     {
-      title: 'Tokens/s',
+      title: tip('Tokens/s', 'Tokens Per Second — average output speed of a single request'),
       dataIndex: 'provider',
       key: 'tokensPerSec',
       align: 'right' as const,
@@ -107,7 +113,7 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
       ),
     },
     {
-      title: 'Sys TP',
+      title: tip('Sys TP', 'System Throughput — total output tokens / wall-clock time, accounting for concurrency'),
       dataIndex: 'provider',
       key: 'sysTp',
       align: 'right' as const,
@@ -118,7 +124,10 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
       ),
     },
     {
-      title: 'TTFT P50',
+      title: tip(
+        'TTFT P50',
+        'Time To First Token (median) — 50% of requests receive their first token within this time',
+      ),
       dataIndex: 'summary',
       key: 'ttftP50',
       align: 'right' as const,
@@ -131,7 +140,10 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
       ),
     },
     {
-      title: 'TTFT P95',
+      title: tip(
+        'TTFT P95',
+        'Time To First Token (95th percentile) — 95% of requests receive their first token within this time',
+      ),
       dataIndex: 'summary',
       key: 'ttftP95',
       align: 'right' as const,
@@ -142,7 +154,10 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
       ),
     },
     {
-      title: 'TTFT P99',
+      title: tip(
+        'TTFT P99',
+        'Time To First Token (99th percentile) — 99% of requests receive their first token within this time',
+      ),
       dataIndex: 'summary',
       key: 'ttftP99',
       align: 'right' as const,
@@ -153,7 +168,7 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
       ),
     },
     {
-      title: 'Reasoning',
+      title: tip('Reasoning', 'Total reasoning tokens used by the model (for models with chain-of-thought)'),
       dataIndex: 'totalReasoning',
       key: 'reasoning',
       align: 'right' as const,
@@ -162,7 +177,7 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
       ),
     },
     {
-      title: 'Cost',
+      title: tip('Cost', 'Estimated API cost based on token usage and provider pricing'),
       dataIndex: 'summary',
       key: 'cost',
       align: 'right' as const,
@@ -171,7 +186,7 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
       ),
     },
     {
-      title: 'Success',
+      title: tip('Success', 'Percentage of requests that completed successfully without errors'),
       dataIndex: 'summary',
       key: 'success',
       align: 'right' as const,
@@ -283,14 +298,18 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
                   <div className="p-5">
                     <div className="grid grid-cols-2 gap-4 mb-5">
                       <div>
-                        <div className="data-label mb-1.5">Throughput</div>
+                        <Tooltip title="Tokens Per Second — average output speed of a single request">
+                          <div className="data-label mb-1.5 cursor-help">Throughput</div>
+                        </Tooltip>
                         <div className="data-value text-2xl" style={{ color: getProviderColor(p) }}>
                           {s.avgTokensPerSecond}
                           <span className="text-xs font-normal text-text-secondary ml-1">tok/s</span>
                         </div>
                       </div>
                       <div>
-                        <div className="data-label mb-1.5">Avg Response</div>
+                        <Tooltip title="Average response time per request (milliseconds)">
+                          <div className="data-label mb-1.5 cursor-help">Avg Response</div>
+                        </Tooltip>
                         <div className="data-value text-2xl text-text-primary">
                           {s.avgResponseTime}
                           <span className="text-xs font-normal text-text-secondary ml-1">ms</span>
@@ -299,40 +318,52 @@ export function ResultsPanel({ run, onExport }: ResultsPanelProps) {
                     </div>
 
                     <div className="grid grid-cols-3 gap-2 text-xs">
-                      <div className="p-2.5 rounded-md bg-bg-surface border border-border text-center">
-                        <div className="text-text-secondary mb-1 text-[10px]">P95</div>
-                        <div className="data-value text-text-primary text-xs">{s.p95ResponseTime}ms</div>
-                      </div>
-                      <div className="p-2.5 rounded-md bg-bg-surface border border-border text-center">
-                        <div className="text-text-secondary mb-1 text-[10px]">TTFT P50</div>
-                        <div className="data-value text-text-primary text-xs">
-                          {s.p50FirstTokenLatency || s.avgFirstTokenLatency
-                            ? `${s.p50FirstTokenLatency || s.avgFirstTokenLatency}ms`
-                            : 'N/A'}
+                      <Tooltip title="95th percentile response time — 95% of requests complete within this time">
+                        <div className="p-2.5 rounded-md bg-bg-surface border border-border text-center cursor-help">
+                          <div className="text-text-secondary mb-1 text-[10px]">P95</div>
+                          <div className="data-value text-text-primary text-xs">{s.p95ResponseTime}ms</div>
                         </div>
-                      </div>
-                      <div className="p-2.5 rounded-md bg-bg-surface border border-border text-center">
-                        <div className="text-text-secondary mb-1 text-[10px]">Sys TP</div>
-                        <div className="data-value text-xs" style={{ color: getProviderColor(p) }}>
-                          {s.systemThroughput || '-'}
+                      </Tooltip>
+                      <Tooltip title="Time To First Token (median) — 50% of requests receive their first token within this time">
+                        <div className="p-2.5 rounded-md bg-bg-surface border border-border text-center cursor-help">
+                          <div className="text-text-secondary mb-1 text-[10px]">TTFT P50</div>
+                          <div className="data-value text-text-primary text-xs">
+                            {s.p50FirstTokenLatency || s.avgFirstTokenLatency
+                              ? `${s.p50FirstTokenLatency || s.avgFirstTokenLatency}ms`
+                              : 'N/A'}
+                          </div>
                         </div>
-                      </div>
-                      <div className="p-2.5 rounded-md bg-bg-surface border border-border text-center">
-                        <div className="text-text-secondary mb-1 text-[10px]">TTFT P95</div>
-                        <div className="data-value text-text-primary text-xs">
-                          {s.p95FirstTokenLatency ? `${s.p95FirstTokenLatency}ms` : 'N/A'}
+                      </Tooltip>
+                      <Tooltip title="System Throughput — total output tokens / wall-clock time, accounting for concurrency">
+                        <div className="p-2.5 rounded-md bg-bg-surface border border-border text-center cursor-help">
+                          <div className="text-text-secondary mb-1 text-[10px]">Sys TP</div>
+                          <div className="data-value text-xs" style={{ color: getProviderColor(p) }}>
+                            {s.systemThroughput || '-'}
+                          </div>
                         </div>
-                      </div>
-                      <div className="p-2.5 rounded-md bg-bg-surface border border-border text-center">
-                        <div className="text-text-secondary mb-1 text-[10px]">Cost</div>
-                        <div className="data-value text-accent-amber text-xs">${s.estimatedCost.toFixed(4)}</div>
-                      </div>
-                      <div className="p-2.5 rounded-md bg-bg-surface border border-border text-center">
-                        <div className="text-text-secondary mb-1 text-[10px]">Reasoning</div>
-                        <div className="data-value text-accent-violet text-xs">
-                          {totalReasoning > 0 ? totalReasoning.toLocaleString() : '-'}
+                      </Tooltip>
+                      <Tooltip title="Time To First Token (95th percentile)">
+                        <div className="p-2.5 rounded-md bg-bg-surface border border-border text-center cursor-help">
+                          <div className="text-text-secondary mb-1 text-[10px]">TTFT P95</div>
+                          <div className="data-value text-text-primary text-xs">
+                            {s.p95FirstTokenLatency ? `${s.p95FirstTokenLatency}ms` : 'N/A'}
+                          </div>
                         </div>
-                      </div>
+                      </Tooltip>
+                      <Tooltip title="Estimated API cost based on token usage and provider pricing">
+                        <div className="p-2.5 rounded-md bg-bg-surface border border-border text-center cursor-help">
+                          <div className="text-text-secondary mb-1 text-[10px]">Cost</div>
+                          <div className="data-value text-accent-amber text-xs">${s.estimatedCost.toFixed(4)}</div>
+                        </div>
+                      </Tooltip>
+                      <Tooltip title="Total reasoning tokens used by the model (for models with chain-of-thought)">
+                        <div className="p-2.5 rounded-md bg-bg-surface border border-border text-center cursor-help">
+                          <div className="text-text-secondary mb-1 text-[10px]">Reasoning</div>
+                          <div className="data-value text-accent-violet text-xs">
+                            {totalReasoning > 0 ? totalReasoning.toLocaleString() : '-'}
+                          </div>
+                        </div>
+                      </Tooltip>
                     </div>
                   </div>
                 </Card>
