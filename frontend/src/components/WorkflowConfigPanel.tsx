@@ -544,11 +544,30 @@ export function WorkflowConfigPanel({
                 value={task._outputScope ?? getStoredOutputScope()}
                 onChange={(v) => {
                   storeOutputScope(v);
-                  const newTasks = [...tasks];
-                  newTasks[index] = { ...newTasks[index], _outputScope: v };
-                  setTasks(newTasks);
                   const fullPrompt = heavyPromptsRef.current.get(index) || task.config.prompt;
-                  setTaskPromptSmart(index, applyOutputScope(fullPrompt, v));
+                  const newPrompt = applyOutputScope(fullPrompt, v);
+                  const newTasks = [...tasks];
+                  const updated = { ...newTasks[index], _outputScope: v };
+                  if (newPrompt.length > HEAVY_THRESHOLD) {
+                    heavyPromptsRef.current.set(index, newPrompt);
+                    setHeavyTaskIndexes((prev) => new Set(prev).add(index));
+                    updated.config = {
+                      ...updated.config,
+                      prompt:
+                        newPrompt.slice(0, 200) +
+                        `\n\n… [${newPrompt.length.toLocaleString()} chars total — full text loaded]`,
+                    };
+                  } else {
+                    heavyPromptsRef.current.delete(index);
+                    setHeavyTaskIndexes((prev) => {
+                      const s = new Set(prev);
+                      s.delete(index);
+                      return s;
+                    });
+                    updated.config = { ...updated.config, prompt: newPrompt };
+                  }
+                  newTasks[index] = updated;
+                  setTasks(newTasks);
                 }}
                 options={OUTPUT_SCOPE_OPTIONS}
                 style={{ width: 160, fontSize: 11 }}
@@ -868,7 +887,7 @@ export function WorkflowConfigPanel({
                 maxTagPlaceholder={(omitted) => `+${omitted.length}`}
                 tagRender={(props) => {
                   const { label, closable, onClose } = props;
-                  const val = props.value as string;
+                  const val = String(props.value ?? '');
                   const provider = configuredProviders.find((p) => val.startsWith(p.id + ':'));
                   const color = provider ? FORMAT_COLORS[provider.format] || '#999' : '#999';
                   return (

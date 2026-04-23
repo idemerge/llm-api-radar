@@ -27,6 +27,11 @@ Key routing rules:
 
 - Do NOT use the `gh` CLI to search GitHub content. Use web search tools instead.
 
+## Testing Rules
+
+- Login credentials are in `.env` (AUTH_USERNAME / AUTH_PASSWORD)
+- For browser testing, set `export CI=true` before using browse/gstack tools (root environment needs --no-sandbox)
+
 ## Language Rules
 
 - All code, scripts, comments, commit messages, and documentation must be written in **English**, unless explicitly requested otherwise by the user.
