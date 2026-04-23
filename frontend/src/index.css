@@ -254,6 +254,132 @@ h6 {
 }
 
 /* ==========================================
+   Running State — Mission Control
+   ========================================== */
+
+.running-card-glow {
+  border-color: rgba(255, 152, 48, 0.3);
+  box-shadow: 0 0 12px rgba(255, 152, 48, 0.08), inset 0 0 12px rgba(255, 152, 48, 0.03);
+  animation: border-glow 3s ease-in-out infinite;
+}
+
+@keyframes border-glow {
+  0%, 100% {
+    border-color: rgba(255, 152, 48, 0.2);
+    box-shadow: 0 0 8px rgba(255, 152, 48, 0.05);
+  }
+  50% {
+    border-color: rgba(255, 152, 48, 0.4);
+    box-shadow: 0 0 16px rgba(255, 152, 48, 0.12);
+  }
+}
+
+.running-row-active {
+  background: linear-gradient(90deg, rgba(255, 152, 48, 0.06) 0%, rgba(255, 152, 48, 0.02) 100%);
+  border-color: rgba(255, 152, 48, 0.25) !important;
+}
+
+/* ==========================================
+   Completed State — Summary Dashboard
+   ========================================== */
+
+.stat-card {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: border-color 0.15s ease;
+}
+
+.stat-card:hover {
+  border-color: var(--color-border-hover);
+}
+
+.stat-card .stat-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.stat-card .stat-label {
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+}
+
+/* ==========================================
+   Ant Design Overrides — Tooltips & Popconfirm
+   ========================================== */
+
+.ant-tooltip-inner {
+  background: var(--color-bg-elevated) !important;
+  border: 1px solid var(--color-border) !important;
+  color: var(--color-text-secondary) !important;
+  font-size: 11px !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  border-radius: 4px !important;
+  padding: 4px 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+.ant-tooltip-arrow {
+  --antd-arrow-background-color: var(--color-bg-elevated) !important;
+}
+
+.ant-popconfirm .ant-popover-inner {
+  background: var(--color-bg-card) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+}
+
+.ant-popconfirm .ant-popconfirm-title {
+  color: var(--color-text-primary) !important;
+  font-weight: 500 !important;
+}
+
+.ant-popconfirm .ant-popconfirm-description {
+  color: var(--color-text-secondary) !important;
+  font-size: 12px !important;
+}
+
+/* Ant Table header polish */
+.ant-table-thead > tr > th {
+  font-size: 10px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  color: var(--color-text-tertiary) !important;
+  font-weight: 600 !important;
+  border-bottom: 1px solid var(--color-border) !important;
+}
+
+.ant-table-tbody > tr > td {
+  border-bottom: 1px solid rgba(48, 48, 48, 0.5) !important;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: rgba(255, 255, 255, 0.02) !important;
+}
+
+/* Ant Tag polish */
+.ant-tag {
+  border-radius: 3px !important;
+}
+
+/* Ant Progress polish */
+.ant-progress-bg {
+  transition: width 0.3s ease !important;
+}
+
+/* ==========================================
    Focus & Interaction
    ========================================== */
 

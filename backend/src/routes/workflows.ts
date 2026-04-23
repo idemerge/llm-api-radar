@@ -201,6 +201,26 @@ router.get('/:id/stream', (req: Request, res: Response) => {
   });
 });
 
+// Update workflow metadata (name, description)
+router.patch('/:id', (req: Request, res: Response) => {
+  const workflow = workflowStore.get(req.params.id);
+  if (!workflow) {
+    res.status(404).json({ error: 'Workflow not found' });
+    return;
+  }
+  const { name, description } = req.body;
+  const updates: Partial<BenchmarkWorkflow> = {};
+  if (typeof name === 'string') updates.name = name;
+  if (typeof description === 'string') updates.description = description;
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: 'No valid fields to update' });
+    return;
+  }
+  const updated = workflowStore.update(workflow.id, updates);
+  const { apiKeys: _apiKeys, ...safe } = updated!;
+  res.json(safe);
+});
+
 // Cancel a workflow
 router.post('/:id/cancel', (req: Request, res: Response) => {
   const workflow = workflowStore.get(req.params.id);

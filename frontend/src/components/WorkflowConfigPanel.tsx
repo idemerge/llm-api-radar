@@ -859,7 +859,7 @@ export function WorkflowConfigPanel({
                   max={99}
                   size="small"
                   className="font-mono"
-                  style={{ width: 90 }}
+                  style={{ width: 72 }}
                   addonAfter="%"
                 />
               )}

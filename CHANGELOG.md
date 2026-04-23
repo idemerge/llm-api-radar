@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.10.0] - 2026-04-23
+
+### Added
+- Workflow name inline editing with PATCH endpoint and edit UI in History Detail header
+- Running workflow "Mission Control" experience: live metrics strip (avg RT, TPS, last RT), cooldown countdown timer between tasks, real-time elapsed timer
+- Completed workflow stat-card dashboard: Duration, Tokens, Best Avg RT, Success Rate, Total T/s in a 6-column grid
+- History list redesign: colored status icons, config chips (concurrency × iterations × tokens + cache rate + stream), dedicated Models column with provider-colored tags, Duration and Tokens columns
+- Monitor Settings as Modal dialog (replaces inline collapsible panel) with scrollable Targets area
+- CSS design system additions: `stat-card` / `stat-value` / `stat-label`, `section-header` with color variants, `running-card-glow` animation, `running-row-active` styling, Ant Design overrides for tables, tooltips, and popconfirm
+
+### Changed
+- History Detail running state: animated amber border glow, live metrics from SSE `latestResults`, per-task completed summaries showing fastest RT and highest TPS providers
+- History Detail completed state: stat-card grid replaces flat text metrics for visual impact
+- History Panel: complete rewrite with richer row content and consistent visual hierarchy
+- Monitor: summary bar uses `stat-card` CSS class, threshold inputs use Ant Design `InputNumber`, chart tooltip uses CSS variables, removed redundant tok/s display, unified TTFT/TPS status coloring
+- Playground: MetricsRow uses `stat-card` with provider-colored accents, provider label uses `getProviderColor`
+- WorkflowResults: removed bar charts (MetricBarChart, TaskCharts) — cleaner table-only layout
+- WorkflowProgress: added live metrics strip, cooldown timer, elapsed timer, completed task summary pills
+- WorkflowConfigPanel: cache hit rate input width narrowed for compact layout
+
 ## [2.6.0] - 2026-04-23
 
 ### Added

@@ -20,7 +20,7 @@ import { useProviders } from '../hooks/useProviders';
 import { usePlayground, PlaygroundMetrics } from '../hooks/usePlayground';
 import { usePlaygroundHistory } from '../hooks/usePlaygroundHistory';
 import { PlaygroundHistorySidebar } from './PlaygroundHistorySidebar';
-import { ImageInput } from '../types';
+import { ImageInput, getProviderColor } from '../types';
 import {
   PRESET_PROMPTS,
   QUICK_MAX_TOKENS,
@@ -713,8 +713,15 @@ export function PlaygroundPage() {
                 <CodeOutlined className="text-accent-teal text-[13px]" />
                 <span className="text-[12px] text-text-tertiary uppercase tracking-wider">Response</span>
                 {selectedProvider && (
-                  <span className="text-[11px] px-1.5 py-0.5 rounded bg-white/8 text-text-tertiary font-mono ml-auto">
-                    {selectedProvider.name} / {modelName} ({selectedProvider.format})
+                  <span
+                    className="text-[11px] px-1.5 py-0.5 rounded font-mono ml-auto"
+                    style={{
+                      backgroundColor: `${getProviderColor(providerId || '')}0a`,
+                      color: getProviderColor(providerId || ''),
+                      border: `1px solid ${getProviderColor(providerId || '')}20`,
+                    }}
+                  >
+                    {selectedProvider.name} / {modelName}
                   </span>
                 )}
                 {responseText && !loading && (
@@ -803,13 +810,22 @@ export function PlaygroundPage() {
 }
 
 function MetricsRow({ metrics, loading }: { metrics: PlaygroundMetrics | null; loading: boolean }) {
+  const colorMap: Record<string, string> = {
+    'text-accent-blue': '#4096ff',
+    'text-accent-amber': '#ff9830',
+    'text-accent-teal': '#73bf69',
+    'text-accent-rose': '#f2495c',
+    'text-accent-violet': '#8a6dff',
+    'text-text-primary': 'rgba(255,255,255,0.88)',
+  };
+
   const cards = [
     {
       label: 'Response Time',
       tooltip: 'Total time from request sent to response fully received',
       value: metrics?.responseTime != null ? `${metrics.responseTime.toLocaleString()} ms` : '--',
       icon: <ClockCircleOutlined />,
-      color: 'text-accent-blue',
+      cls: 'text-accent-blue',
     },
     {
       label: 'First Token',
@@ -821,14 +837,14 @@ function MetricsRow({ metrics, loading }: { metrics: PlaygroundMetrics | null; l
             ? 'N/A'
             : '--',
       icon: <ThunderboltOutlined />,
-      color: 'text-accent-amber',
+      cls: 'text-accent-amber',
     },
     {
       label: 'TPS',
       tooltip: 'Tokens Per Second — output speed of this request',
       value: metrics?.tokensPerSecond != null ? `${metrics.tokensPerSecond}` : '--',
       icon: <DashboardOutlined />,
-      color: metrics?.tokensPerSecond === 0 && metrics?.outputTokens === 0 ? 'text-accent-rose' : 'text-accent-teal',
+      cls: metrics?.tokensPerSecond === 0 && metrics?.outputTokens === 0 ? 'text-accent-rose' : 'text-accent-teal',
       warn: metrics?.tokensPerSecond === 0 && metrics?.outputTokens === 0,
     },
     {
@@ -836,7 +852,7 @@ function MetricsRow({ metrics, loading }: { metrics: PlaygroundMetrics | null; l
       tooltip: 'Input and output token counts for this request',
       value: metrics?.inputTokens != null ? `${metrics.inputTokens} in / ${metrics.outputTokens ?? 0} out` : '--',
       icon: metrics?.outputTokens === 0 ? <WarningOutlined /> : null,
-      color: metrics?.outputTokens === 0 ? 'text-accent-rose' : 'text-text-primary',
+      cls: metrics?.outputTokens === 0 ? 'text-accent-rose' : 'text-accent-violet',
       warn: metrics?.outputTokens === 0,
       sublabel: metrics?.reasoningTokens ? `(${metrics.reasoningTokens} reasoning)` : undefined,
     },
@@ -844,33 +860,37 @@ function MetricsRow({ metrics, loading }: { metrics: PlaygroundMetrics | null; l
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      {cards.map((card) => (
-        <div
-          key={card.label}
-          className={`rounded border p-3 ${
-            card.warn ? 'border-accent-rose/30 bg-accent-rose/5' : 'border-border bg-[#0a0a0a]'
-          }`}
-        >
-          <Tooltip title={card.tooltip}>
-            <div className="flex items-center gap-1.5 mb-1 cursor-help">
-              {card.icon && <span className={`text-[12px] ${card.color}`}>{card.icon}</span>}
-              <span className="text-[11px] text-text-tertiary uppercase tracking-wider">{card.label}</span>
-            </div>
-          </Tooltip>
+      {cards.map((card) => {
+        const c = colorMap[card.cls] || '#73bf69';
+        return (
           <div
-            className={`text-[16px] font-mono font-medium ${card.color} ${loading && !metrics ? 'animate-pulse' : ''}`}
+            key={card.label}
+            className="stat-card"
+            style={card.warn ? { borderColor: 'rgba(242,73,92,0.3)', background: 'rgba(242,73,92,0.05)' } : undefined}
           >
-            {card.value}
-          </div>
-          {card.sublabel && <div className="text-[11px] text-text-tertiary mt-0.5">{card.sublabel}</div>}
-          {card.warn && (
-            <div className="text-[11px] text-accent-rose mt-1 flex items-center gap-1">
-              <WarningOutlined className="text-[11px]" />
-              No token data from API
+            <Tooltip title={card.tooltip}>
+              <div className="flex items-center gap-1.5 cursor-help">
+                {card.icon && (
+                  <span className="text-[12px]" style={{ color: c }}>
+                    {card.icon}
+                  </span>
+                )}
+                <span className="stat-label">{card.label}</span>
+              </div>
+            </Tooltip>
+            <div className="stat-value" style={{ color: c, fontSize: 16, minHeight: 22 }}>
+              {loading && !metrics ? <span className="animate-pulse">{card.value}</span> : card.value}
             </div>
-          )}
-        </div>
-      ))}
+            {card.sublabel && <div className="text-[11px] text-text-tertiary mt-0.5">{card.sublabel}</div>}
+            {card.warn && (
+              <div className="text-[11px] text-accent-rose mt-1 flex items-center gap-1">
+                <WarningOutlined className="text-[11px]" />
+                No token data from API
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

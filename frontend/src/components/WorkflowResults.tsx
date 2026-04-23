@@ -24,64 +24,6 @@ function formatDuration(ms: number): string {
   return `${m}m ${s % 60}s`;
 }
 
-/** Horizontal bar chart comparing providers on a single metric */
-function MetricBarChart({
-  label,
-  items,
-  unit,
-}: {
-  label: string;
-  items: { providerKey: string; label: string; value: number }[];
-  unit?: string;
-}) {
-  if (items.length === 0) return null;
-  const maxVal = Math.max(...items.map((i) => i.value), 1) * 1.15;
-  const barHeight = 16;
-  const gap = 6;
-  const labelWidth = 130;
-  const valueWidth = 60;
-  const chartWidth = 360;
-  const barAreaWidth = chartWidth - labelWidth - valueWidth;
-  const svgHeight = items.length * (barHeight + gap) + 4;
-
-  return (
-    <div className="space-y-1">
-      <span className="text-[10px] text-text-secondary font-medium">{label}</span>
-      <svg viewBox={`0 0 ${chartWidth} ${svgHeight}`} className="w-full" style={{ minWidth: 300 }}>
-        {items.map((item, i) => {
-          const y = i * (barHeight + gap);
-          const barW = (item.value / maxVal) * barAreaWidth;
-          const color = getProviderColor(item.providerKey);
-          return (
-            <g key={item.providerKey}>
-              <text
-                x={labelWidth - 6}
-                y={y + barHeight * 0.75}
-                textAnchor="end"
-                fill="rgba(255,255,255,0.5)"
-                fontSize="8"
-              >
-                {item.label}
-              </text>
-              <rect x={labelWidth} y={y} width={barAreaWidth} height={barHeight} rx="2" fill="rgba(255,255,255,0.03)" />
-              <rect x={labelWidth} y={y} width={barW} height={barHeight} rx="2" fill={color} opacity="0.75" />
-              <text
-                x={labelWidth + barAreaWidth + 4}
-                y={y + barHeight * 0.75}
-                fill="rgba(255,255,255,0.6)"
-                fontSize="8"
-              >
-                {formatNumber(item.value)}
-                {unit || ''}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
-    </div>
-  );
-}
-
 /** Collapsible prompt preview */
 function PromptPreview({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
@@ -229,34 +171,6 @@ function providerColumns(hasP95: boolean) {
   return cols;
 }
 
-/** Bar charts for a set of providers on a single task */
-function TaskCharts({ chartData }: { chartData: { providerKey: string; label: string; metric: TaskMetricPoint }[] }) {
-  if (chartData.length <= 1) return null;
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-      <div className="p-3 rounded border border-border/50 bg-bg-primary/50">
-        <MetricBarChart
-          label="Avg Response Time"
-          items={chartData.map((d) => ({
-            providerKey: d.providerKey,
-            label: d.label,
-            value: d.metric.avgResponseTime,
-          }))}
-          unit="ms"
-        />
-      </div>
-      <div className="p-3 rounded border border-border/50 bg-bg-primary/50">
-        <MetricBarChart
-          label="Tokens/s"
-          items={[...chartData]
-            .sort((a, b) => b.metric.avgTokensPerSecond - a.metric.avgTokensPerSecond)
-            .map((d) => ({ providerKey: d.providerKey, label: d.label, value: d.metric.avgTokensPerSecond }))}
-        />
-      </div>
-    </div>
-  );
-}
-
 export function WorkflowResults({ workflow, onExport }: WorkflowResultsProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
 
@@ -290,22 +204,6 @@ export function WorkflowResults({ workflow, onExport }: WorkflowResultsProps) {
       return a.model.localeCompare(b.model);
     });
 
-  /** Build chart data for a specific task */
-  function buildChartData(taskId: string) {
-    return providers
-      .map((p) => {
-        const taskMetric = metricsByProvider[p]?.find((m) => m.taskId === taskId);
-        if (!taskMetric || taskMetric.successRate <= 0) return null;
-        const ps = summary.providerSummaries[p];
-        return {
-          providerKey: p,
-          label: `${ps?.provider || ''}/${ps?.model || ''}`,
-          metric: taskMetric,
-        };
-      })
-      .filter(Boolean) as { providerKey: string; label: string; metric: TaskMetricPoint }[];
-  }
-
   /** Build table data for a specific task */
   function buildTaskDataSource(taskId: string) {
     return providers
@@ -329,7 +227,6 @@ export function WorkflowResults({ workflow, onExport }: WorkflowResultsProps) {
   if (isSingleTask) {
     const task = completedTasks[0];
     const taskDataSource = task ? buildTaskDataSource(task.id) : [];
-    const chartData = task ? buildChartData(task.id) : [];
 
     // Sort
     taskDataSource.sort((a, b) => {
@@ -340,54 +237,7 @@ export function WorkflowResults({ workflow, onExport }: WorkflowResultsProps) {
 
     return (
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-7 space-y-6">
-        {/* Summary bar */}
-        <div className="flex flex-wrap gap-4 text-xs text-text-secondary">
-          <span>
-            Duration: <span className="text-accent-blue">{formatDuration(summary.totalDuration)}</span>
-          </span>
-          <span>
-            Tokens: <span className="text-accent-violet">{formatNumber(summary.totalTokens)}</span>
-          </span>
-          <span>
-            Tasks:{' '}
-            <span className="text-text-primary">
-              {summary.completedTaskCount}/{summary.taskCount}
-            </span>
-          </span>
-          {summary.failedTaskCount > 0 && (
-            <span>
-              Failed: <span className="text-accent-rose">{summary.failedTaskCount}</span>
-            </span>
-          )}
-        </div>
-
-        {/* Throughput summary */}
-        {(() => {
-          const ps = Object.values(summary.providerSummaries);
-          const avgIn = ps.length ? Math.round(ps.reduce((a, s) => a + (s.inputThroughput || 0), 0) / ps.length) : 0;
-          const avgOut = ps.length ? Math.round(ps.reduce((a, s) => a + (s.outputThroughput || 0), 0) / ps.length) : 0;
-          const avgTotal = ps.length ? Math.round(ps.reduce((a, s) => a + (s.totalThroughput || 0), 0) / ps.length) : 0;
-          if (avgIn === 0 && avgOut === 0) return null;
-          return (
-            <div className="flex flex-wrap gap-4 text-xs text-text-secondary">
-              <Tooltip title="Input throughput: concurrency × avg input tokens / avg response time">
-                <span className="cursor-help">
-                  Input T/s: <span className="text-accent-blue">{formatNumber(avgIn)}</span>
-                </span>
-              </Tooltip>
-              <Tooltip title="Output throughput: concurrency × avg output tokens / avg response time">
-                <span className="cursor-help">
-                  Output T/s: <span className="text-accent-teal">{formatNumber(avgOut)}</span>
-                </span>
-              </Tooltip>
-              <Tooltip title="Total throughput: concurrency × avg total tokens / avg response time">
-                <span className="cursor-help">
-                  Total T/s: <span className="text-accent-violet">{formatNumber(avgTotal)}</span>
-                </span>
-              </Tooltip>
-            </div>
-          );
-        })()}
+        {/* Provider comparison table */}
 
         {/* Provider comparison table */}
         <Table
@@ -396,9 +246,6 @@ export function WorkflowResults({ workflow, onExport }: WorkflowResultsProps) {
           pagination={false}
           size="small"
         />
-
-        {/* Bar charts */}
-        <TaskCharts chartData={chartData} />
 
         {/* Prompt preview */}
         {task?.config?.prompt && (
@@ -441,8 +288,6 @@ export function WorkflowResults({ workflow, onExport }: WorkflowResultsProps) {
               return String(a.model).localeCompare(String(b.model));
             });
 
-            const chartData = buildChartData(task.id);
-
             return (
               <div key={task.id} className="p-4 rounded-md border border-border bg-bg-surface space-y-4">
                 <div className="flex items-center justify-between">
@@ -456,8 +301,6 @@ export function WorkflowResults({ workflow, onExport }: WorkflowResultsProps) {
                 </div>
 
                 <Table columns={providerColumns(true)} dataSource={taskDataSource} pagination={false} size="small" />
-
-                <TaskCharts chartData={chartData} />
 
                 {/* Prompt preview */}
                 {task.config?.prompt && (
@@ -480,56 +323,7 @@ export function WorkflowResults({ workflow, onExport }: WorkflowResultsProps) {
   ];
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-7 space-y-8">
-      {/* Summary bar */}
-      <div className="flex flex-wrap gap-4 text-xs text-text-secondary">
-        <span>
-          Duration: <span className="text-accent-blue">{formatDuration(summary.totalDuration)}</span>
-        </span>
-        <span>
-          Tokens: <span className="text-accent-violet">{formatNumber(summary.totalTokens)}</span>
-        </span>
-        <span>
-          Tasks:{' '}
-          <span className="text-text-primary">
-            {summary.completedTaskCount}/{summary.taskCount}
-          </span>
-        </span>
-        {summary.failedTaskCount > 0 && (
-          <span>
-            Failed: <span className="text-accent-rose">{summary.failedTaskCount}</span>
-          </span>
-        )}
-      </div>
-
-      {/* Throughput summary */}
-      {(() => {
-        const ps = Object.values(summary.providerSummaries);
-        const avgIn = ps.length ? Math.round(ps.reduce((a, s) => a + (s.inputThroughput || 0), 0) / ps.length) : 0;
-        const avgOut = ps.length ? Math.round(ps.reduce((a, s) => a + (s.outputThroughput || 0), 0) / ps.length) : 0;
-        const avgTotal = ps.length ? Math.round(ps.reduce((a, s) => a + (s.totalThroughput || 0), 0) / ps.length) : 0;
-        if (avgIn === 0 && avgOut === 0) return null;
-        return (
-          <div className="flex flex-wrap gap-4 text-xs text-text-secondary">
-            <Tooltip title="Input throughput: concurrency × avg input tokens / avg response time">
-              <span className="cursor-help">
-                Input T/s: <span className="text-accent-blue">{formatNumber(avgIn)}</span>
-              </span>
-            </Tooltip>
-            <Tooltip title="Output throughput: concurrency × avg output tokens / avg response time">
-              <span className="cursor-help">
-                Output T/s: <span className="text-accent-teal">{formatNumber(avgOut)}</span>
-              </span>
-            </Tooltip>
-            <Tooltip title="Total throughput: concurrency × avg total tokens / avg response time">
-              <span className="cursor-help">
-                Total T/s: <span className="text-accent-violet">{formatNumber(avgTotal)}</span>
-              </span>
-            </Tooltip>
-          </div>
-        );
-      })()}
-
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-7 space-y-6">
       {/* Tabs */}
       <Tabs activeKey={activeTab} onChange={(key) => setActiveTab(key as TabType)} items={tabItems} size="small" />
     </motion.div>

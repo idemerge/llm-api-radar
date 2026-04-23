@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
-import { Button, Tooltip, Checkbox, Select } from '../antdImports';
+import { Button, Tooltip, Checkbox, Select, Tag, InputNumber, Modal } from '../antdImports';
 import {
   ReloadOutlined,
   ClockCircleOutlined,
@@ -83,8 +83,8 @@ const TIME_RANGES = [
 const CHART_COLORS = { ttft: '#f59e0b', tps: '#10b981', latency: '#3b82f6' };
 
 const CHART_TOOLTIP_STYLE = {
-  background: '#1f1f1f',
-  border: '1px solid #303030',
+  background: 'var(--color-bg-card)',
+  border: '1px solid var(--color-border)',
   borderRadius: '6px',
   padding: '6px 10px',
   fontSize: '11px',
@@ -162,7 +162,7 @@ function TrendCharts({ history, providerId, modelName, thresholds }: TrendCharts
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
         {charts.map((c) => (
-          <div key={c.key} className="rounded border border-border bg-[#060606] p-2">
+          <div key={c.key} className="rounded border border-border bg-bg-primary p-2">
             <div className="text-[10px] text-text-tertiary mb-1">
               {c.label} <span className="text-text-tertiary/50">({c.unit})</span>
             </div>
@@ -482,62 +482,61 @@ export function MonitorPage() {
       {/* Summary Bar */}
       {targets.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2">
-          <div className="glass-card px-3 py-2 flex items-center gap-2 col-span-2">
+          <div className="stat-card flex items-center gap-2 col-span-2">
             <div className="w-2 h-2 rounded-full bg-accent-blue" />
             <div>
-              <div className="text-[10px] text-text-tertiary">Monitoring</div>
-              <div className="text-[13px] font-semibold text-text-primary font-mono">
+              <div className="stat-label">Monitoring</div>
+              <div className="stat-value text-[13px] text-accent-blue">
                 {summary.totalModels} models · {summary.providerCount} providers
               </div>
             </div>
           </div>
-          <div className="glass-card px-3 py-2 flex items-center gap-2">
+          <div className="stat-card flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-emerald-500" />
             <div>
-              <div className="text-[10px] text-text-tertiary">Healthy</div>
-              <div className="text-[13px] font-semibold text-emerald-400 font-mono">{summary.healthyCount}</div>
+              <div className="stat-label">Healthy</div>
+              <div className="stat-value text-[13px] text-emerald-400">{summary.healthyCount}</div>
             </div>
           </div>
-          <div className="glass-card px-3 py-2 flex items-center gap-2">
+          <div className="stat-card flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-amber-500" />
             <div>
-              <div className="text-[10px] text-text-tertiary">Slow</div>
-              <div className="text-[13px] font-semibold text-amber-400 font-mono">{summary.slowCount}</div>
+              <div className="stat-label">Slow</div>
+              <div className="stat-value text-[13px] text-amber-400">{summary.slowCount}</div>
             </div>
           </div>
-          <div className="glass-card px-3 py-2 flex items-center gap-2">
+          <div className="stat-card flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-orange-500" />
             <div>
-              <div className="text-[10px] text-text-tertiary">Very Slow</div>
-              <div className="text-[13px] font-semibold text-orange-400 font-mono">{summary.verySlowCount}</div>
+              <div className="stat-label">Very Slow</div>
+              <div className="stat-value text-[13px] text-orange-400">{summary.verySlowCount}</div>
             </div>
           </div>
-          <div className="glass-card px-3 py-2 flex items-center gap-2">
+          <div className="stat-card flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-red-500" />
             <div>
-              <div className="text-[10px] text-text-tertiary">Down</div>
-              <div className="text-[13px] font-semibold text-red-400 font-mono">{summary.downCount}</div>
+              <div className="stat-label">Down</div>
+              <div className="stat-value text-[13px] text-red-400">{summary.downCount}</div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Settings Panel */}
-      {showConfig && (
-        <div className="glass-card p-4 space-y-4">
-          {/* Header row with Save button */}
-          <div className="flex items-center justify-between">
-            <div className="text-[13px] font-medium text-text-primary">Settings</div>
-            <div className="flex items-center gap-2">
-              {configDirty && <span className="text-[10px] text-amber-400">Unsaved changes</span>}
-              <Button type="primary" size="small" onClick={handleSaveAll} disabled={!configDirty}>
-                Save
-              </Button>
-            </div>
-          </div>
+      {/* Settings Modal */}
+      <Modal
+        open={showConfig}
+        title="Monitor Settings"
+        onCancel={() => setShowConfig(false)}
+        onOk={handleSaveAll}
+        okText="Save"
+        okButtonProps={{ disabled: !configDirty }}
+        width={780}
+        destroyOnHidden
+      >
+        <div className="space-y-4 py-2">
           {/* Global Config */}
           <div className="space-y-2">
-            <div className="text-[12px] font-medium text-text-primary">Global Settings</div>
+            <div className="section-header">Global Settings</div>
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
                 <span className="text-[11px] text-text-secondary">Default interval</span>
@@ -557,60 +556,66 @@ export function MonitorPage() {
 
           {/* Health Thresholds */}
           <div className="space-y-2">
-            <div className="text-[12px] font-medium text-text-primary">Health Thresholds</div>
+            <div className="section-header" data-color="amber">
+              Health Thresholds
+            </div>
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
                 <span className="text-[11px] text-text-secondary">Slow TPS</span>
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-mono">&lt;</span>
-                <input
-                  type="text"
-                  className="w-14 px-2 py-1 text-[11px] rounded border border-border bg-[#0a0a0a] text-text-primary font-mono text-center"
-                  value={thresholdTexts.tpsSlowThreshold}
-                  onChange={(e) => {
-                    setThresholdTexts({ ...thresholdTexts, tpsSlowThreshold: e.target.value });
+                <InputNumber
+                  size="small"
+                  style={{ width: 56 }}
+                  value={Number(thresholdTexts.tpsSlowThreshold) || undefined}
+                  onChange={(v) => {
+                    setThresholdTexts({ ...thresholdTexts, tpsSlowThreshold: String(v ?? '') });
                     setConfigDirty(true);
                   }}
+                  min={0}
                 />
                 <span className="text-[10px] text-text-tertiary">tok/s</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[11px] text-text-secondary">Very slow TPS</span>
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 font-mono">&lt;</span>
-                <input
-                  type="text"
-                  className="w-14 px-2 py-1 text-[11px] rounded border border-border bg-[#0a0a0a] text-text-primary font-mono text-center"
-                  value={thresholdTexts.tpsVerySlowThreshold}
-                  onChange={(e) => {
-                    setThresholdTexts({ ...thresholdTexts, tpsVerySlowThreshold: e.target.value });
+                <InputNumber
+                  size="small"
+                  style={{ width: 56 }}
+                  value={Number(thresholdTexts.tpsVerySlowThreshold) || undefined}
+                  onChange={(v) => {
+                    setThresholdTexts({ ...thresholdTexts, tpsVerySlowThreshold: String(v ?? '') });
                     setConfigDirty(true);
                   }}
+                  min={0}
                 />
                 <span className="text-[10px] text-text-tertiary">tok/s</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[11px] text-text-secondary">Slow TTFT</span>
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-mono">≥</span>
-                <input
-                  type="text"
-                  className="w-14 px-2 py-1 text-[11px] rounded border border-border bg-[#0a0a0a] text-text-primary font-mono text-center"
-                  value={thresholdTexts.ttftSlowMs}
-                  onChange={(e) => {
-                    setThresholdTexts({ ...thresholdTexts, ttftSlowMs: e.target.value });
+                <InputNumber
+                  size="small"
+                  style={{ width: 56 }}
+                  value={Number(thresholdTexts.ttftSlowMs) || undefined}
+                  onChange={(v) => {
+                    setThresholdTexts({ ...thresholdTexts, ttftSlowMs: String(v ?? '') });
                     setConfigDirty(true);
                   }}
+                  min={0}
                 />
                 <span className="text-[10px] text-text-tertiary">ms</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[11px] text-text-secondary">Min tokens</span>
-                <input
-                  type="text"
-                  className="w-12 px-2 py-1 text-[11px] rounded border border-border bg-[#0a0a0a] text-text-primary font-mono text-center"
-                  value={thresholdTexts.minOutputTokens}
-                  onChange={(e) => {
-                    setThresholdTexts({ ...thresholdTexts, minOutputTokens: e.target.value });
+                <InputNumber
+                  size="small"
+                  style={{ width: 48 }}
+                  value={Number(thresholdTexts.minOutputTokens) || undefined}
+                  onChange={(v) => {
+                    setThresholdTexts({ ...thresholdTexts, minOutputTokens: String(v ?? '') });
                     setConfigDirty(true);
                   }}
+                  min={0}
                 />
               </div>
             </div>
@@ -618,66 +623,72 @@ export function MonitorPage() {
 
           {/* Provider/Model Selection */}
           <div className="space-y-2">
-            <div className="text-[12px] font-medium text-text-primary">Targets</div>
-            {providers.map((provider) => {
-              const activeModels = provider.models.filter((m: any) => m.isActive !== false);
-              const providerDraftTargets = draftTargets.filter((t) => t.providerId === provider.id);
-              const allSelected = activeModels.length > 0 && providerDraftTargets.length === activeModels.length;
+            <div className="section-header" data-color="violet">
+              Targets
+            </div>
+            <div className="max-h-[400px] overflow-y-auto space-y-2">
+              {providers.map((provider) => {
+                const activeModels = provider.models.filter((m: any) => m.isActive !== false);
+                const providerDraftTargets = draftTargets.filter((t) => t.providerId === provider.id);
+                const allSelected = activeModels.length > 0 && providerDraftTargets.length === activeModels.length;
 
-              return (
-                <div key={provider.id} className="border border-border rounded p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <Checkbox
-                        checked={allSelected}
-                        indeterminate={providerDraftTargets.length > 0 && !allSelected}
-                        onChange={() => (allSelected ? removeAllForProvider(provider) : selectAllForProvider(provider))}
-                      />
-                      <span className="text-[12px] font-medium text-text-primary">{provider.name}</span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/8 text-text-tertiary font-mono">
-                        {provider.format}
-                      </span>
-                    </label>
-                  </div>
-                  <div className="flex flex-wrap gap-2 ml-6">
-                    {activeModels.map((m: any) => {
-                      const key = `${provider.id}::${m.name}`;
-                      const checked = draftTargetKeys.has(key);
-                      const targetData = draftTargets.find(
-                        (t) => t.providerId === provider.id && t.modelName === m.name,
-                      );
-                      return (
-                        <div key={m.name} className="flex items-center gap-1.5">
-                          <label className="flex items-center gap-1.5 cursor-pointer">
-                            <Checkbox
-                              checked={checked}
-                              onChange={() => toggleDraftTarget(provider.id, m.name, provider.name)}
-                            />
-                            <span className="text-[11px] text-text-secondary font-mono">{m.displayName || m.name}</span>
-                            {m.supportsVision && (
-                              <span className="text-[8px] px-1 rounded bg-accent-teal/15 text-accent-teal">V</span>
+                return (
+                  <div key={provider.id} className="border border-border rounded p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox
+                          checked={allSelected}
+                          indeterminate={providerDraftTargets.length > 0 && !allSelected}
+                          onChange={() =>
+                            allSelected ? removeAllForProvider(provider) : selectAllForProvider(provider)
+                          }
+                        />
+                        <span className="text-[12px] font-medium text-text-primary">{provider.name}</span>
+                        <Tag style={{ fontSize: 10, margin: 0 }}>{provider.format}</Tag>
+                      </label>
+                    </div>
+                    <div className="flex flex-wrap gap-2 ml-6">
+                      {activeModels.map((m: any) => {
+                        const key = `${provider.id}::${m.name}`;
+                        const checked = draftTargetKeys.has(key);
+                        const targetData = draftTargets.find(
+                          (t) => t.providerId === provider.id && t.modelName === m.name,
+                        );
+                        return (
+                          <div key={m.name} className="flex items-center gap-1.5">
+                            <label className="flex items-center gap-1.5 cursor-pointer">
+                              <Checkbox
+                                checked={checked}
+                                onChange={() => toggleDraftTarget(provider.id, m.name, provider.name)}
+                              />
+                              <span className="text-[11px] text-text-secondary font-mono">
+                                {m.displayName || m.name}
+                              </span>
+                              {m.supportsVision && (
+                                <span className="text-[8px] px-1 rounded bg-accent-teal/15 text-accent-teal">V</span>
+                              )}
+                            </label>
+                            {checked && (
+                              <Select
+                                size="small"
+                                value={targetData?.intervalMinutes || 0}
+                                onChange={(v) => updateDraftTargetInterval(provider.id, m.name, v)}
+                                options={INTERVAL_OPTIONS}
+                                style={{ width: 95 }}
+                                popupMatchSelectWidth={false}
+                              />
                             )}
-                          </label>
-                          {checked && (
-                            <Select
-                              size="small"
-                              value={targetData?.intervalMinutes || 0}
-                              onChange={(v) => updateDraftTargetInterval(provider.id, m.name, v)}
-                              options={INTERVAL_OPTIONS}
-                              style={{ width: 95 }}
-                              popupMatchSelectWidth={false}
-                            />
-                          )}
-                        </div>
-                      );
-                    })}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
-      )}
+      </Modal>
 
       {/* Status Cards Grid */}
       {!initialLoaded ? (
@@ -707,9 +718,7 @@ export function MonitorPage() {
                   <div>
                     <div className="text-[13px] font-medium text-text-primary">{provider.name}</div>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/8 text-text-tertiary font-mono">
-                        {provider.format}
-                      </span>
+                      <Tag style={{ fontSize: 10, margin: 0 }}>{provider.format}</Tag>
                       <span className="text-[10px] text-text-tertiary">{providerTargets.length} models</span>
                     </div>
                   </div>
@@ -723,7 +732,7 @@ export function MonitorPage() {
                     const modelInfo = provider.models.find((m: any) => m.name === target.modelName);
                     const modelLabel = modelInfo?.displayName || target.modelName;
                     return (
-                      <div key={target.modelName} className="rounded border border-border bg-[#0a0a0a] p-3 space-y-2">
+                      <div key={target.modelName} className="rounded border border-border bg-bg-primary p-3 space-y-2">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             {cls && <div className={`w-2 h-2 rounded-full ${getStatusDotColor(cls)}`} />}
@@ -743,22 +752,15 @@ export function MonitorPage() {
                                 {getStatusLabel(cls)}
                               </span>
                             )}
-                            {ping && ping.outputTokens > 0 && ping.latencyMs > 0 && (
-                              <span className="text-[9px] text-text-tertiary font-mono">
-                                {Math.round((ping.outputTokens / ping.latencyMs) * 1000)} tok/s
-                              </span>
-                            )}
                           </div>
                           {ping ? (
                             <div className="flex items-center gap-1.5 text-[11px] font-mono text-text-tertiary">
                               <Tooltip title="TTFT (first token)">
-                                <span className={cls !== 'healthy' ? getStatusTextColor(cls!) : ''}>
-                                  {formatLatency(ping.ttftMs)}
-                                </span>
+                                <span className={cls ? getStatusTextColor(cls) : ''}>{formatLatency(ping.ttftMs)}</span>
                               </Tooltip>
                               <span>·</span>
                               <Tooltip title="Tokens per second">
-                                <span className={`font-medium ${getStatusTextColor(cls!)}`}>
+                                <span className={`font-medium ${cls ? getStatusTextColor(cls) : ''}`}>
                                   {ping.status === 'error'
                                     ? 'FAIL'
                                     : `${ping.latencyMs > 0 ? Math.round((ping.outputTokens / ping.latencyMs) * 1000) : 0} tok/s`}

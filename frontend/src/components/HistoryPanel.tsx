@@ -1,7 +1,16 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Table, Tag, Empty, Popconfirm, Tooltip } from '../antdImports';
-import { CopyOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
+import {
+  CopyOutlined,
+  DeleteOutlined,
+  ReloadOutlined,
+  CheckCircleFilled,
+  CloseCircleFilled,
+  ClockCircleFilled,
+  MinusCircleFilled,
+  LoadingOutlined,
+} from '@ant-design/icons';
 import { BenchmarkWorkflow, getProviderColor } from '../types';
 
 interface HistoryPanelProps {
@@ -14,23 +23,98 @@ interface HistoryPanelProps {
   loading?: boolean;
 }
 
-function formatDate(dateStr: string): string {
+function formatRelativeDate(dateStr: string): string {
   const d = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return 'just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return `${diffH}h ago`;
+  const diffD = Math.floor(diffH / 24);
+  if (diffD < 7) return `${diffD}d ago`;
   const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  return `${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function statusToTagColor(status: string): string {
+function formatDuration(ms: number): string {
+  if (!ms || ms <= 0) return '-';
+  if (ms < 1000) return `${ms}ms`;
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ${s % 60}s`;
+  const h = Math.floor(m / 60);
+  return `${h}h ${m % 60}m`;
+}
+
+function StatusIcon({ status }: { status: string }) {
+  const wrap = (bg: string, icon: React.ReactNode) => (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 26,
+        height: 26,
+        borderRadius: '50%',
+        background: bg,
+      }}
+    >
+      {icon}
+    </span>
+  );
   switch (status) {
     case 'completed':
-      return 'green';
+      return wrap('rgba(115,191,105,0.15)', <CheckCircleFilled style={{ fontSize: 12, color: '#73bf69' }} />);
     case 'running':
-      return 'orange';
+      return wrap('rgba(255,152,48,0.15)', <LoadingOutlined style={{ fontSize: 12, color: '#ff9830' }} spin />);
     case 'failed':
-      return 'red';
+      return wrap('rgba(242,73,92,0.15)', <CloseCircleFilled style={{ fontSize: 12, color: '#f2495c' }} />);
+    case 'cancelled':
+      return wrap(
+        'rgba(255,255,255,0.05)',
+        <MinusCircleFilled style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }} />,
+      );
     default:
-      return 'default';
+      return wrap(
+        'rgba(255,255,255,0.05)',
+        <ClockCircleFilled style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }} />,
+      );
   }
+}
+
+/** Compact config chip: "5c × 10i" */
+function ConfigChips({ record }: { record: BenchmarkWorkflow }) {
+  const tasks = record.tasks || [];
+  if (tasks.length === 0) return null;
+
+  const concurrencies = tasks.map((t) => t.config.concurrency);
+  const iterations = tasks.map((t) => t.config.iterations);
+  const maxTokens = tasks.map((t) => t.config.maxTokens);
+  const streamings = [...new Set(tasks.map((t) => t.config.streaming))];
+  const cacheRates = tasks.map((t) => t.config.targetCacheHitRate).filter((r): r is number => r != null);
+
+  const uniqConc = [...new Set(concurrencies)];
+  const uniqIter = [...new Set(iterations)];
+  const uniqTok = [...new Set(maxTokens)];
+
+  const concLabel = uniqConc.length === 1 ? `${uniqConc[0]}c` : `${Math.min(...uniqConc)}-${Math.max(...uniqConc)}c`;
+  const iterLabel = uniqIter.length === 1 ? `${uniqIter[0]}i` : `${Math.min(...uniqIter)}-${Math.max(...uniqIter)}i`;
+  const tokLabel = uniqTok.length === 1 ? `${uniqTok[0] >= 1000 ? `${uniqTok[0] / 1000}k` : uniqTok[0]}t` : null;
+
+  return (
+    <span className="text-[10px] text-text-tertiary font-mono">
+      {tasks.length > 1 && <span className="text-accent-violet/70">{tasks.length} tasks · </span>}
+      {concLabel} × {iterLabel}
+      {tokLabel && <span> × {tokLabel}</span>}
+      {cacheRates.length > 0 && (
+        <span> · cache {((cacheRates.reduce((a, b) => a + b, 0) / cacheRates.length) * 100).toFixed(0)}%</span>
+      )}
+      {streamings.length === 1 && streamings[0] && <span> · stream</span>}
+    </span>
+  );
 }
 
 export function HistoryPanel({
@@ -46,9 +130,7 @@ export function HistoryPanel({
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
 
   const getProviderLabel = (record: BenchmarkWorkflow, providerKey: string): string => {
-    // Prefer snapshot labels stored at creation time
     if (record.providerLabels?.[providerKey]) return record.providerLabels[providerKey];
-    // Fallback: extract model name from composite key
     if (providerKey.includes(':')) return providerKey.split(':', 2)[1];
     return providerKey;
   };
@@ -86,11 +168,12 @@ export function HistoryPanel({
     );
   }
 
-  // Sort by date descending
-  const sorted = [...workflows].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const sorted = [...workflows].sort(
+    (a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime(),
+  );
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="text-base font-semibold text-text-primary">
@@ -112,37 +195,48 @@ export function HistoryPanel({
       <Table
         columns={[
           {
-            title: 'Date',
-            dataIndex: 'createdAt',
-            key: 'date',
-            width: 180,
-            render: (val: string) => (
-              <span className="text-[12px] text-text-secondary font-mono">{formatDate(val)}</span>
-            ),
+            title: '',
+            key: 'statusIcon',
+            width: 36,
+            render: (_: unknown, record: BenchmarkWorkflow) => <StatusIcon status={record.status} />,
           },
           {
-            title: 'Name',
-            key: 'name',
-            render: (_: unknown, record: BenchmarkWorkflow) => (
-              <span className="text-[12px] text-text-primary font-medium truncate max-w-[260px] block">
-                {record.name || record.id.slice(0, 8)}
-              </span>
-            ),
-          },
-          {
-            title: 'Status',
-            dataIndex: 'status',
-            key: 'status',
-            width: 90,
-            render: (val: string) => (
-              <Tag color={statusToTagColor(val)} style={{ fontSize: '11px', margin: 0 }} className="font-mono">
-                {val}
-              </Tag>
-            ),
+            title: 'Workflow',
+            key: 'main',
+            render: (_: unknown, record: BenchmarkWorkflow) => {
+              const successRate = record.summary
+                ? Object.values(record.summary.providerSummaries).reduce((a, ps) => a + ps.overallSuccessRate, 0) /
+                  Object.keys(record.summary.providerSummaries).length
+                : null;
+
+              return (
+                <div className="min-w-0 py-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[12px] text-text-primary font-medium">
+                      {record.name || record.id.slice(0, 8)}
+                    </span>
+                    <span className="text-[10px] text-text-tertiary font-mono flex-shrink-0">
+                      {formatRelativeDate(record.createdAt)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <ConfigChips record={record} />
+                    {successRate !== null && (
+                      <span
+                        className={`text-[10px] font-mono ${successRate >= 0.95 ? 'text-accent-teal' : successRate >= 0.8 ? 'text-accent-amber' : 'text-accent-rose'}`}
+                      >
+                        {(successRate * 100).toFixed(0)}% ok
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            },
           },
           {
             title: 'Models',
             key: 'models',
+            width: 240,
             render: (_: unknown, record: BenchmarkWorkflow) => {
               const models = record.summary
                 ? Object.entries(record.summary.providerSummaries)
@@ -173,61 +267,59 @@ export function HistoryPanel({
                         fontSize: '10px',
                         margin: 0,
                         fontFamily: 'monospace',
+                        lineHeight: '14px',
+                        padding: '0 3px',
                       }}
                     >
                       {m.label}
                     </Tag>
                   ))}
-                  {models.length > 3 && <span className="text-[10px] text-text-tertiary">+{models.length - 3}</span>}
+                  {models.length > 3 && (
+                    <span className="text-[10px] text-text-tertiary font-mono">+{models.length - 3}</span>
+                  )}
                 </div>
               );
             },
           },
           {
-            title: 'Tasks',
-            key: 'taskCount',
-            width: 60,
-            align: 'right' as const,
-            render: (_: unknown, record: BenchmarkWorkflow) => (
-              <span className="text-[12px] text-accent-violet font-mono">{record.tasks?.length ?? '-'}</span>
-            ),
-          },
-          {
-            title: 'Conc.',
-            key: 'concurrency',
-            width: 90,
-            align: 'right' as const,
-            render: (_: unknown, record: BenchmarkWorkflow) => {
-              const values = (record.tasks || []).map((t) => t.config.concurrency);
-              if (values.length === 0) return <span className="text-[12px] text-text-tertiary font-mono">-</span>;
-              const unique = [...new Set(values)];
-              const label = unique.length === 1 ? `${unique[0]}` : `${Math.min(...values)}-${Math.max(...values)}`;
-              return <span className="text-[12px] text-text-secondary font-mono">{label}</span>;
-            },
-          },
-          {
-            title: 'Iter.',
-            key: 'iterations',
+            title: 'Duration',
+            key: 'duration',
             width: 80,
             align: 'right' as const,
             render: (_: unknown, record: BenchmarkWorkflow) => {
-              const values = (record.tasks || []).map((t) => t.config.iterations);
-              if (values.length === 0) return <span className="text-[12px] text-text-tertiary font-mono">-</span>;
-              const unique = [...new Set(values)];
-              const label = unique.length === 1 ? `${unique[0]}` : `${Math.min(...values)}-${Math.max(...values)}`;
-              return <span className="text-[12px] text-text-secondary font-mono">{label}</span>;
+              const ms =
+                record.startedAt && record.completedAt
+                  ? new Date(record.completedAt).getTime() - new Date(record.startedAt).getTime()
+                  : 0;
+              return (
+                <span className="text-[12px] text-accent-blue font-mono">{ms > 0 ? formatDuration(ms) : '-'}</span>
+              );
             },
           },
           {
-            title: 'Actions',
+            title: 'Tokens',
+            key: 'tokens',
+            width: 72,
+            align: 'right' as const,
+            render: (_: unknown, record: BenchmarkWorkflow) => {
+              const tokens = record.summary?.totalTokens;
+              return (
+                <span className="text-[12px] text-accent-violet font-mono">
+                  {tokens ? (tokens >= 1000 ? `${(tokens / 1000).toFixed(1)}k` : tokens.toLocaleString()) : '-'}
+                </span>
+              );
+            },
+          },
+          {
+            title: '',
             key: 'actions',
-            width: 90,
+            width: 56,
             align: 'center' as const,
             render: (_: unknown, record: BenchmarkWorkflow) => (
-              <div className="flex items-center justify-center gap-3" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-center gap-2" onClick={(e) => e.stopPropagation()}>
                 <Tooltip title="Duplicate">
                   <CopyOutlined
-                    className={`text-[13px] ${duplicatingId === record.id ? 'text-text-tertiary' : 'text-accent-blue/60 hover:text-accent-blue'} cursor-pointer transition-colors`}
+                    className={`text-[12px] ${duplicatingId === record.id ? 'text-text-tertiary' : 'text-accent-blue/50 hover:text-accent-blue'} cursor-pointer transition-colors`}
                     onClick={() => handleDuplicate(record.id)}
                   />
                 </Tooltip>
@@ -243,7 +335,7 @@ export function HistoryPanel({
                   >
                     <Tooltip title="Delete">
                       <DeleteOutlined
-                        className={`text-[13px] ${deletingId === record.id ? 'text-text-tertiary' : 'text-accent-rose/50 hover:text-accent-rose'} cursor-pointer transition-colors`}
+                        className={`text-[12px] ${deletingId === record.id ? 'text-text-tertiary' : 'text-accent-rose/40 hover:text-accent-rose'} cursor-pointer transition-colors`}
                       />
                     </Tooltip>
                   </Popconfirm>
@@ -256,10 +348,11 @@ export function HistoryPanel({
         rowKey="id"
         size="small"
         pagination={sorted.length > 20 ? { pageSize: 20, size: 'small' } : false}
-        rowClassName={(record) => (record.id === selectedId ? 'history-row-selected' : '')}
+        rowClassName={(record) =>
+          `cursor-pointer transition-colors ${record.id === selectedId ? 'history-row-selected' : 'hover:bg-bg-elevated/50'}`
+        }
         onRow={(record) => ({
           onClick: () => onSelectWorkflow(record.id),
-          style: { cursor: 'pointer' },
         })}
       />
     </motion.div>
