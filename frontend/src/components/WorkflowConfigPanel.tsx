@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   WorkflowTemplate,
   BenchmarkConfig,
@@ -20,12 +20,14 @@ import {
   applyOutputScope,
   getStoredOutputScope,
   storeOutputScope,
+  getStoredMaxTokens,
+  storeMaxTokens,
 } from '../constants';
 import { countTokens } from '../utils/tokenCount';
 import { loadHeavyPreset } from '../constants';
 import { CreateWorkflowData } from '../hooks/useWorkflow';
 import { useProviders } from '../hooks/useProviders';
-import { Button, Input, InputNumber, Switch, Collapse, Segmented, Tooltip, Select } from '../antdImports';
+import { Button, Input, InputNumber, Switch, Collapse, Tooltip, Select } from '../antdImports';
 import {
   PlusOutlined,
   UpOutlined,
@@ -42,7 +44,6 @@ interface TaskConfig {
   config: BenchmarkConfig;
   providers?: string[];
   tags: Record<string, string>;
-  _adv?: boolean; // UI-only: per-task advanced mode toggle
   _outputScope?: number; // UI-only: long-context output scope (0=all, N=first N docs)
   _isLongContext?: boolean; // UI-only: whether a long-context preset is active
 }
@@ -62,7 +63,7 @@ const DEFAULT_TASK: () => TaskConfig = () => ({
   config: {
     prompt: 'Explain quantum computing in simple terms.',
     systemPrompt: '',
-    maxTokens: 500,
+    maxTokens: getStoredMaxTokens(),
     concurrency: 1,
     iterations: 10,
     streaming: true,
@@ -143,7 +144,7 @@ export function WorkflowConfigPanel({
           config: {
             prompt: t.config.prompt,
             systemPrompt: t.config.systemPrompt || '',
-            maxTokens: t.config.maxTokens || 500,
+            maxTokens: t.config.maxTokens || getStoredMaxTokens(),
             concurrency: t.config.concurrency || 1,
             iterations: t.config.iterations || 10,
             streaming: t.config.streaming ?? true,
@@ -407,9 +408,6 @@ export function WorkflowConfigPanel({
   );
 
   const collapseItems = tasks.map((task, index) => {
-    const isAdv = task._adv ?? false;
-    const setAdv = (v: boolean) => updateTask(index, { _adv: v } as any);
-
     return {
       key: String(index),
       label: (
@@ -467,21 +465,13 @@ export function WorkflowConfigPanel({
       ),
       children: (
         <div className="space-y-5">
-          {/* Row 1: Task name + QUICK/ADV toggle */}
+          {/* Row 1: Task name */}
           <div className="flex items-center gap-3">
             <Input
               value={task.name}
               onChange={(e) => updateTask(index, { name: e.target.value })}
               placeholder="Task name"
               style={{ flex: 1 }}
-            />
-            <Segmented
-              size="small"
-              value={isAdv ? 'ADV' : 'QUICK'}
-              options={['QUICK', 'ADV']}
-              onChange={(val) => setAdv(val === 'ADV')}
-              className="font-mono"
-              style={{ fontSize: 10 }}
             />
           </div>
 
@@ -641,12 +631,20 @@ export function WorkflowConfigPanel({
               <QuickButtons
                 options={QUICK_MAX_TOKENS}
                 value={task.config.maxTokens}
-                onChange={(v) => updateTaskConfig(index, { maxTokens: v })}
+                onChange={(v) => {
+                  updateTaskConfig(index, { maxTokens: v });
+                  storeMaxTokens(v);
+                }}
                 color="#73bf69"
               />
               <InputNumber
+                changeOnBlur
                 value={task.config.maxTokens}
-                onChange={(v) => updateTaskConfig(index, { maxTokens: v ?? 500 })}
+                onChange={(v) => {
+                  const val = v ?? getStoredMaxTokens();
+                  updateTaskConfig(index, { maxTokens: val });
+                  storeMaxTokens(val);
+                }}
                 min={50}
                 max={32000}
                 size="small"
@@ -668,6 +666,7 @@ export function WorkflowConfigPanel({
                 color="#4096ff"
               />
               <InputNumber
+                changeOnBlur
                 value={task.config.concurrency}
                 onChange={(v) => updateTaskConfig(index, { concurrency: v ?? 1 })}
                 min={1}
@@ -691,6 +690,7 @@ export function WorkflowConfigPanel({
                 color="#73bf69"
               />
               <InputNumber
+                changeOnBlur
                 value={task.config.iterations}
                 onChange={(v) => updateTaskConfig(index, { iterations: v ?? 10 })}
                 min={1}
@@ -702,233 +702,219 @@ export function WorkflowConfigPanel({
             </div>
           </div>
 
-          {/* Quick mode summary */}
-          {!isAdv && (
-            <div className="text-[10px] text-text-tertiary flex flex-wrap gap-3 px-1 font-mono">
-              <span>
-                Stream: <span className="text-accent-teal">{task.config.streaming ? 'ON' : 'OFF'}</span>
-              </span>
-              <span>
-                Warmup: <span className="text-accent-coral">{task.config.warmupRuns ?? 0}</span>
-              </span>
-              <span>
-                Interval: <span className="text-accent-coral">{task.config.requestInterval ?? 0}ms</span>
-              </span>
-              {(task.config.maxQps ?? 0) > 0 && (
-                <span>
-                  QPS: <span className="text-accent-violet">{task.config.maxQps}</span>
-                </span>
-              )}
+          {/* Advanced Parameters */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-1">
+                <label className="text-[11px] text-text-secondary font-medium">Warmup Runs</label>
+                <Tooltip title="Number of warmup requests before measuring (0–5). Discarded from results.">
+                  <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
+                </Tooltip>
+              </div>
+              <QuickButtons
+                options={QUICK_WARMUP}
+                value={task.config.warmupRuns ?? 0}
+                onChange={(v) => updateTaskConfig(index, { warmupRuns: v })}
+                color="#ff9830"
+              />
+              <InputNumber
+                changeOnBlur
+                value={task.config.warmupRuns ?? 0}
+                onChange={(v) => updateTaskConfig(index, { warmupRuns: v ?? 0 })}
+                min={0}
+                max={5}
+                size="small"
+                className="font-mono"
+                style={{ width: '100%' }}
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-1">
+                <label className="text-[11px] text-text-secondary font-medium">Request Interval (ms)</label>
+                <Tooltip title="Delay between consecutive requests in ms (0–10000). Helps avoid rate limiting.">
+                  <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
+                </Tooltip>
+              </div>
+              <QuickButtons
+                options={QUICK_INTERVAL}
+                value={task.config.requestInterval ?? 0}
+                onChange={(v) => updateTaskConfig(index, { requestInterval: v })}
+                color="#ff9830"
+              />
+              <InputNumber
+                changeOnBlur
+                value={task.config.requestInterval ?? 0}
+                onChange={(v) => updateTaskConfig(index, { requestInterval: v ?? 0 })}
+                min={0}
+                max={10000}
+                size="small"
+                className="font-mono"
+                style={{ width: '100%' }}
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-1">
+                <label className="text-[11px] text-text-secondary font-medium">Max QPS</label>
+                <Tooltip title="Global token bucket: max requests per second across all concurrent slots. 0 = unlimited.">
+                  <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
+                </Tooltip>
+              </div>
+              <QuickButtons
+                options={QUICK_QPS}
+                value={task.config.maxQps ?? 0}
+                onChange={(v) => updateTaskConfig(index, { maxQps: v })}
+                color="#a78bfa"
+              />
+              <InputNumber
+                changeOnBlur
+                value={task.config.maxQps ?? 0}
+                onChange={(v) => updateTaskConfig(index, { maxQps: v ?? 0 })}
+                min={0}
+                max={1000}
+                step={0.1}
+                size="small"
+                className="font-mono"
+                style={{ width: '100%' }}
+                placeholder="0 = unlimited"
+              />
+            </div>
+          </div>
+
+          {/* Streaming + Cache Hit Rate + Custom Providers dropdown — one row */}
+          <div className="flex items-center gap-6 flex-wrap">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                <span className="text-[11px] text-text-secondary font-medium">Streaming</span>
+                <Tooltip title="Use streaming API for real-time token delivery. Recommended for accuracy.">
+                  <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
+                </Tooltip>
+              </div>
+              <Switch
+                checked={task.config.streaming}
+                onChange={(v) => updateTaskConfig(index, { streaming: v })}
+                size="small"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={task.config.targetCacheHitRate !== undefined}
+                onChange={(v) => updateTaskConfig(index, { targetCacheHitRate: v ? 0.8 : undefined })}
+                size="small"
+              />
+              <div className="flex items-center gap-1">
+                <span className="text-[11px] text-text-secondary font-medium">Cache Hit Rate</span>
+                <Tooltip title="Prepends a unique UUID to each request to control prefix-cache hit rate. K = iterations × (1 − rate) unique variants are generated and cycled round-robin.">
+                  <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
+                </Tooltip>
+              </div>
               {task.config.targetCacheHitRate !== undefined && (
-                <span>
-                  Cache: <span className="text-accent-violet">{Math.round(task.config.targetCacheHitRate * 100)}%</span>
-                </span>
+                <InputNumber
+                  changeOnBlur
+                  value={Math.round(task.config.targetCacheHitRate * 100)}
+                  onChange={(v) => updateTaskConfig(index, { targetCacheHitRate: (v ?? 80) / 100 })}
+                  min={0}
+                  max={99}
+                  size="small"
+                  className="font-mono"
+                  style={{ width: 90 }}
+                  addonAfter="%"
+                />
               )}
             </div>
-          )}
-
-          {/* Advanced Options */}
-          <AnimatePresence>
-            {isAdv && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
-              >
-                <div className="space-y-4 pt-3 border-t border-border">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-1">
-                        <label className="text-[11px] text-text-secondary font-medium">Warmup Runs</label>
-                        <Tooltip title="Number of warmup requests before measuring (0–5). Discarded from results.">
-                          <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
-                        </Tooltip>
-                      </div>
-                      <QuickButtons
-                        options={QUICK_WARMUP}
-                        value={task.config.warmupRuns ?? 0}
-                        onChange={(v) => updateTaskConfig(index, { warmupRuns: v })}
-                        color="#ff9830"
-                      />
-                      <InputNumber
-                        value={task.config.warmupRuns ?? 0}
-                        onChange={(v) => updateTaskConfig(index, { warmupRuns: v ?? 0 })}
-                        min={0}
-                        max={5}
-                        size="small"
-                        className="font-mono"
-                        style={{ width: '100%' }}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-1">
-                        <label className="text-[11px] text-text-secondary font-medium">Request Interval (ms)</label>
-                        <Tooltip title="Delay between consecutive requests in ms (0–10000). Helps avoid rate limiting.">
-                          <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
-                        </Tooltip>
-                      </div>
-                      <QuickButtons
-                        options={QUICK_INTERVAL}
-                        value={task.config.requestInterval ?? 0}
-                        onChange={(v) => updateTaskConfig(index, { requestInterval: v })}
-                        color="#ff9830"
-                      />
-                      <InputNumber
-                        value={task.config.requestInterval ?? 0}
-                        onChange={(v) => updateTaskConfig(index, { requestInterval: v ?? 0 })}
-                        min={0}
-                        max={10000}
-                        size="small"
-                        className="font-mono"
-                        style={{ width: '100%' }}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-1">
-                        <label className="text-[11px] text-text-secondary font-medium">Max QPS</label>
-                        <Tooltip title="Global token bucket: max requests per second across all concurrent slots. 0 = unlimited.">
-                          <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
-                        </Tooltip>
-                      </div>
-                      <QuickButtons
-                        options={QUICK_QPS}
-                        value={task.config.maxQps ?? 0}
-                        onChange={(v) => updateTaskConfig(index, { maxQps: v })}
-                        color="#a78bfa"
-                      />
-                      <InputNumber
-                        value={task.config.maxQps ?? 0}
-                        onChange={(v) => updateTaskConfig(index, { maxQps: v ?? 0 })}
-                        min={0}
-                        max={1000}
-                        step={0.1}
-                        size="small"
-                        className="font-mono"
-                        style={{ width: '100%' }}
-                        placeholder="0 = unlimited"
-                      />
-                    </div>
-                  </div>
-                  {/* Streaming + Cache Hit Rate + Using Global Providers — one row */}
-                  <div className="flex items-center gap-6 flex-wrap">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1">
-                        <span className="text-[11px] text-text-secondary font-medium">Streaming</span>
-                        <Tooltip title="Use streaming API for real-time token delivery. Recommended for accuracy.">
-                          <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
-                        </Tooltip>
-                      </div>
-                      <Switch
-                        checked={task.config.streaming}
-                        onChange={(v) => updateTaskConfig(index, { streaming: v })}
-                        size="small"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={task.config.targetCacheHitRate !== undefined}
-                        onChange={(v) => updateTaskConfig(index, { targetCacheHitRate: v ? 0.8 : undefined })}
-                        size="small"
-                      />
-                      <div className="flex items-center gap-1">
-                        <span className="text-[11px] text-text-secondary font-medium">Cache Hit Rate</span>
-                        <Tooltip title="Prepends a unique UUID to each request to control prefix-cache hit rate. K = iterations × (1 − rate) unique variants are generated and cycled round-robin.">
-                          <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
-                        </Tooltip>
-                      </div>
-                      {task.config.targetCacheHitRate !== undefined && (
-                        <InputNumber
-                          value={Math.round(task.config.targetCacheHitRate * 100)}
-                          onChange={(v) => updateTaskConfig(index, { targetCacheHitRate: (v ?? 80) / 100 })}
-                          min={0}
-                          max={99}
-                          size="small"
-                          className="font-mono"
-                          style={{ width: 90 }}
-                          addonAfter="%"
-                        />
+            <div className="flex items-center gap-2">
+              <Tooltip title="Override global provider selection for this task. Leave empty to use global providers selected above.">
+                <span className="text-[11px] text-text-secondary font-medium whitespace-nowrap cursor-help">
+                  Custom Providers
+                </span>
+              </Tooltip>
+              <Select
+                mode="multiple"
+                size="small"
+                value={task.providers ?? []}
+                onChange={(keys: string[]) => {
+                  updateTask(index, { providers: keys.length > 0 ? keys : undefined });
+                }}
+                placeholder="Using Global Providers"
+                allowClear
+                showSearch
+                style={{ minWidth: 200, maxWidth: 360, fontSize: 11 }}
+                popupStyle={{ fontSize: 11 }}
+                options={configuredProviders.flatMap((p) => {
+                  const color = FORMAT_COLORS[p.format] || '#999';
+                  return p.models
+                    .filter((m) => m.isActive !== false)
+                    .map((m) => ({
+                      label: (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span
+                            style={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: '50%',
+                              backgroundColor: color,
+                              display: 'inline-block',
+                              flexShrink: 0,
+                            }}
+                          />
+                          <span style={{ fontWeight: 500 }}>{p.name}</span>
+                          <span style={{ color: '#888' }}>/ {m.displayName || m.name}</span>
+                        </span>
+                      ),
+                      value: `${p.id}:${m.name}`,
+                    }));
+                })}
+                optionFilterProp="label"
+                maxTagCount={2}
+                maxTagPlaceholder={(omitted) => `+${omitted.length}`}
+                tagRender={(props) => {
+                  const { label, closable, onClose } = props;
+                  const val = props.value as string;
+                  const provider = configuredProviders.find((p) => val.startsWith(p.id + ':'));
+                  const color = provider ? FORMAT_COLORS[provider.format] || '#999' : '#999';
+                  return (
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 2,
+                        padding: '0 4px',
+                        margin: '1px 2px',
+                        borderRadius: 3,
+                        fontSize: 10,
+                        backgroundColor: `${color}14`,
+                        border: `1px solid ${color}30`,
+                        color,
+                      }}
+                    >
+                      {typeof label === 'string' ? label : val.split(':').slice(1).join(':')}
+                      {closable && (
+                        <span onClick={onClose} style={{ cursor: 'pointer', marginLeft: 2, opacity: 0.6 }}>
+                          ✕
+                        </span>
                       )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-text-secondary font-medium">
-                        {task.providers ? 'Custom Providers' : 'Using Global Providers'}
-                      </span>
-                      <Switch
-                        checked={!!task.providers}
-                        onChange={(checked) => {
-                          if (checked) {
-                            updateTask(index, { providers: [] });
-                          } else {
-                            updateTask(index, { providers: undefined });
-                          }
-                        }}
-                        size="small"
-                      />
-                    </div>
-                  </div>
+                    </span>
+                  );
+                }}
+              />
+            </div>
+          </div>
 
-                  {/* Randomize Interval (only when interval > 0) */}
-                  {(task.config.requestInterval ?? 0) > 0 && (
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1">
-                        <span className="text-[11px] text-text-secondary font-medium">Randomize Interval</span>
-                        <Tooltip title="Add random jitter to the request interval (±50%) to simulate realistic traffic">
-                          <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
-                        </Tooltip>
-                      </div>
-                      <Switch
-                        checked={task.config.randomizeInterval ?? false}
-                        onChange={(v) => updateTaskConfig(index, { randomizeInterval: v })}
-                        size="small"
-                      />
-                    </div>
-                  )}
-
-                  {/* Task-level provider override list */}
-                  {task.providers && (
-                    <div className="pt-2 border-t border-border">
-                      <div className="mb-2">
-                        <span className="text-[11px] text-text-secondary font-medium">Custom Providers</span>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {configuredProviders.map((provider) => {
-                          const activeModels = provider.models.filter((m) => m.isActive !== false);
-                          const color = FORMAT_COLORS[provider.format] || '#999';
-                          return activeModels.map((model) => {
-                            const key = `${provider.id}:${model.name}`;
-                            const selected = task.providers!.includes(key);
-                            return (
-                              <button
-                                key={key}
-                                onClick={() => {
-                                  const current = task.providers || [];
-                                  const next = selected ? current.filter((p) => p !== key) : [...current, key];
-                                  updateTask(index, { providers: next });
-                                }}
-                                className="text-[10px] px-2 py-1 rounded border transition-all font-medium font-mono"
-                                style={{
-                                  borderColor: selected ? `${color}12` : undefined,
-                                  backgroundColor: selected ? `${color}06` : undefined,
-                                  color: selected ? color : undefined,
-                                }}
-                              >
-                                {model.displayName || model.name}
-                              </button>
-                            );
-                          });
-                        })}
-                        {task.providers.length === 0 && (
-                          <span className="text-[10px] text-accent-rose/60">Select at least one model</span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* Randomize Interval (only when interval > 0) */}
+          {(task.config.requestInterval ?? 0) > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                <span className="text-[11px] text-text-secondary font-medium">Randomize Interval</span>
+                <Tooltip title="Add random jitter to the request interval (±50%) to simulate realistic traffic">
+                  <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
+                </Tooltip>
+              </div>
+              <Switch
+                checked={task.config.randomizeInterval ?? false}
+                onChange={(v) => updateTaskConfig(index, { randomizeInterval: v })}
+                size="small"
+              />
+            </div>
+          )}
         </div>
       ),
     };
@@ -966,6 +952,7 @@ export function WorkflowConfigPanel({
                 </Tooltip>
               </div>
               <InputNumber
+                changeOnBlur
                 value={cooldown}
                 onChange={(v) => setCooldown(v ?? 3000)}
                 min={0}

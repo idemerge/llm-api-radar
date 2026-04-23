@@ -12,6 +12,8 @@ import {
   applyOutputScope,
   getStoredOutputScope,
   storeOutputScope,
+  getStoredMaxTokens,
+  storeMaxTokens,
 } from '../constants';
 import { useProviders } from '../hooks/useProviders';
 import { Button, Input, InputNumber, Switch, Segmented, Select, Tooltip } from '../antdImports';
@@ -60,7 +62,11 @@ export function ConfigPanel({ onStart, isRunning, currentProviders: _currentProv
 
   const [prompt, setPrompt] = useState(PRESET_PROMPTS[0].prompt);
   const promptTokenCount = useTokenCount(prompt);
-  const [maxTokens, setMaxTokens] = useState(4096);
+  const [maxTokens, setMaxTokensRaw] = useState(getStoredMaxTokens);
+  const setMaxTokens = (v: number) => {
+    setMaxTokensRaw(v);
+    storeMaxTokens(v);
+  };
   const [concurrency, setConcurrency] = useState(3);
   const [iterations, setIterations] = useState(5);
   const [streaming, setStreaming] = useState(true);
@@ -301,8 +307,9 @@ export function ConfigPanel({ onStart, isRunning, currentProviders: _currentProv
             </Tooltip>
             <QuickButtons options={QUICK_MAX_TOKENS} value={maxTokens} onChange={setMaxTokens} color="accent-teal" />
             <InputNumber
+              changeOnBlur
               value={maxTokens}
-              onChange={(v) => setMaxTokens(v ?? 4096)}
+              onChange={(v) => setMaxTokens(v ?? getStoredMaxTokens())}
               min={100}
               max={32000}
               size="small"
@@ -321,6 +328,7 @@ export function ConfigPanel({ onStart, isRunning, currentProviders: _currentProv
               color="accent-blue"
             />
             <InputNumber
+              changeOnBlur
               value={concurrency}
               onChange={(v) => setConcurrency(v ?? 3)}
               min={1}
@@ -336,6 +344,7 @@ export function ConfigPanel({ onStart, isRunning, currentProviders: _currentProv
             </Tooltip>
             <QuickButtons options={QUICK_ITERATIONS} value={iterations} onChange={setIterations} color="accent-teal" />
             <InputNumber
+              changeOnBlur
               value={iterations}
               onChange={(v) => setIterations(v ?? 5)}
               min={1}
@@ -383,6 +392,7 @@ export function ConfigPanel({ onStart, isRunning, currentProviders: _currentProv
                       color="accent-coral"
                     />
                     <InputNumber
+                      changeOnBlur
                       value={warmupRuns}
                       onChange={(v) => setWarmupRuns(v ?? 2)}
                       min={0}
@@ -403,6 +413,7 @@ export function ConfigPanel({ onStart, isRunning, currentProviders: _currentProv
                       color="accent-coral"
                     />
                     <InputNumber
+                      changeOnBlur
                       value={requestInterval}
                       onChange={(v) => setRequestInterval(v ?? 0)}
                       min={0}

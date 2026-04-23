@@ -131,14 +131,35 @@ export const QUICK_INTERVAL = [
   { label: '1000', value: 1000 },
 ];
 
+export const DEFAULT_MAX_TOKENS = 16384;
+
+const MAX_TOKENS_STORAGE_KEY = 'llm-radar:max-tokens';
+
+export function getStoredMaxTokens(): number {
+  try {
+    const v = localStorage.getItem(MAX_TOKENS_STORAGE_KEY);
+    return v !== null ? Number(v) : DEFAULT_MAX_TOKENS;
+  } catch {
+    return DEFAULT_MAX_TOKENS;
+  }
+}
+
+export function storeMaxTokens(v: number): void {
+  try {
+    localStorage.setItem(MAX_TOKENS_STORAGE_KEY, String(v));
+  } catch {
+    /* ignore */
+  }
+}
+
 const OUTPUT_SCOPE_STORAGE_KEY = 'llm-radar:output-scope';
 
 export function getStoredOutputScope(): number {
   try {
     const v = localStorage.getItem(OUTPUT_SCOPE_STORAGE_KEY);
-    return v !== null ? Number(v) : 0;
+    return v !== null ? Number(v) : -1;
   } catch {
-    return 0;
+    return -1;
   }
 }
 
@@ -154,15 +175,15 @@ export const OUTPUT_SCOPE_OPTIONS = [
   { label: 'First 3 docs', value: 3 },
   { label: 'First 5 docs', value: 5 },
   { label: 'First 10 docs', value: 10 },
-  { label: 'All docs', value: 0 },
+  { label: 'All docs', value: -1 },
 ];
 
 /**
  * Strip the trailing instruction from a long-context prompt and replace it
  * with one that limits the scope of reading (and therefore output length).
  *
- * scope > 0  → "Only read the first N documents …"
- * scope === 0 → "For each document above …" (all docs)
+ * scope > 0   → "Only read the first N documents …"
+ * scope === -1 → "For each document above …" (all docs)
  */
 export function applyOutputScope(prompt: string, scope: number): string {
   const idx = prompt.lastIndexOf('\n\n');

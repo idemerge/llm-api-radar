@@ -480,6 +480,7 @@ export function SettingsPage() {
                     <div>
                       <label className="text-[10px] text-text-tertiary mb-0.5 block">Context Size</label>
                       <InputNumber
+                        changeOnBlur
                         size="small"
                         style={{ width: '100%' }}
                         placeholder="128000"

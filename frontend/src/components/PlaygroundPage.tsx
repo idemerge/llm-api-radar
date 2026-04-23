@@ -28,6 +28,8 @@ import {
   applyOutputScope,
   getStoredOutputScope,
   storeOutputScope,
+  getStoredMaxTokens,
+  storeMaxTokens,
 } from '../constants';
 import { useTokenCount } from '../utils/tokenCount';
 
@@ -64,7 +66,11 @@ export function PlaygroundPage() {
   const [modelName, setModelName] = useState<string | null>(null);
   const [prompt, setPrompt] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
-  const [maxTokens, setMaxTokens] = useState(4096);
+  const [maxTokens, setMaxTokensRaw] = useState(getStoredMaxTokens);
+  const setMaxTokens = (v: number) => {
+    setMaxTokensRaw(v);
+    storeMaxTokens(v);
+  };
   const [useStreaming, setUseStreaming] = useState(true);
   const [hasRun, setHasRun] = useState(false);
   const [images, setImages] = useState<ImageInput[]>([]);
@@ -331,6 +337,7 @@ export function PlaygroundPage() {
             <div className="flex items-center gap-2">
               <label className="text-[12px] text-text-tertiary">Max Tokens</label>
               <InputNumber
+                changeOnBlur
                 min={1}
                 max={128000}
                 value={maxTokens}
