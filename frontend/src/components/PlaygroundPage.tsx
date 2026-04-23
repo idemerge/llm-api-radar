@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Select, Input, InputNumber, Switch, Collapse, Alert, Tooltip } from '../antdImports';
 import {
   SendOutlined,
@@ -38,7 +39,40 @@ const { TextArea } = Input;
 const STANDARD_PRESETS = PRESET_PROMPTS.filter((p) => p.category === 'standard');
 const SHAREGPT_PRESETS = PRESET_PROMPTS.filter((p) => p.category === 'long-context');
 
+const PROVIDER_STORAGE_KEY = 'llm-radar:playground-provider';
+const MODEL_STORAGE_KEY = 'llm-radar:playground-model';
+
+function getStoredProvider(): string | null {
+  try {
+    return localStorage.getItem(PROVIDER_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+function getStoredModel(): string | null {
+  try {
+    return localStorage.getItem(MODEL_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+function storeProvider(v: string) {
+  try {
+    localStorage.setItem(PROVIDER_STORAGE_KEY, v);
+  } catch {
+    /* ignore */
+  }
+}
+function storeModel(v: string) {
+  try {
+    localStorage.setItem(MODEL_STORAGE_KEY, v);
+  } catch {
+    /* ignore */
+  }
+}
+
 export function PlaygroundPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { providers, fetchProviders } = useProviders();
   const {
     loading,
@@ -62,8 +96,60 @@ export function PlaygroundPage() {
     clearAll,
   } = usePlaygroundHistory();
 
-  const [providerId, setProviderId] = useState<string | null>(null);
-  const [modelName, setModelName] = useState<string | null>(null);
+  const [providerId, setProviderIdRaw] = useState<string | null>(
+    () => searchParams.get('provider') || getStoredProvider(),
+  );
+  const [modelName, setModelNameRaw] = useState<string | null>(() => searchParams.get('model') || getStoredModel());
+
+  const setProviderId = useCallback(
+    (v: string | null) => {
+      setProviderIdRaw(v);
+      if (v) {
+        storeProvider(v);
+        setSearchParams(
+          (prev) => {
+            prev.set('provider', v);
+            return prev;
+          },
+          { replace: true },
+        );
+      } else {
+        setSearchParams(
+          (prev) => {
+            prev.delete('provider');
+            return prev;
+          },
+          { replace: true },
+        );
+      }
+    },
+    [setSearchParams],
+  );
+
+  const setModelName = useCallback(
+    (v: string | null) => {
+      setModelNameRaw(v);
+      if (v) {
+        storeModel(v);
+        setSearchParams(
+          (prev) => {
+            prev.set('model', v);
+            return prev;
+          },
+          { replace: true },
+        );
+      } else {
+        setSearchParams(
+          (prev) => {
+            prev.delete('model');
+            return prev;
+          },
+          { replace: true },
+        );
+      }
+    },
+    [setSearchParams],
+  );
   const [prompt, setPrompt] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
   const [maxTokens, setMaxTokensRaw] = useState(getStoredMaxTokens);
