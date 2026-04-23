@@ -46,6 +46,7 @@ interface TaskConfig {
   tags: Record<string, string>;
   _outputScope?: number; // UI-only: long-context output scope (0=all, N=first N docs)
   _isLongContext?: boolean; // UI-only: whether a long-context preset is active
+  _activePreset?: string; // UI-only: label of the currently selected preset
 }
 
 interface WorkflowConfigPanelProps {
@@ -497,7 +498,12 @@ export function WorkflowConfigPanel({
                     }
                     const finalText = isLC ? applyOutputScope(raw, scope) : raw;
                     const newTasks = [...tasks];
-                    const updated = { ...newTasks[index], _isLongContext: isLC, _outputScope: scope };
+                    const updated = {
+                      ...newTasks[index],
+                      _isLongContext: isLC,
+                      _outputScope: scope,
+                      _activePreset: preset.label,
+                    };
                     if (finalText.length > HEAVY_THRESHOLD) {
                       heavyPromptsRef.current.set(index, finalText);
                       setHeavyTaskIndexes((prev) => new Set(prev).add(index));
@@ -520,7 +526,7 @@ export function WorkflowConfigPanel({
                     setTasks(newTasks);
                   }}
                   className={`text-[10px] px-2 py-1 rounded border transition-all font-medium ${
-                    task.config.prompt === preset.prompt
+                    task._activePreset === preset.label
                       ? 'border-accent-teal/40 bg-accent-teal/8 text-accent-teal'
                       : 'border-border text-text-secondary hover:border-border-hover hover:text-text-primary'
                   }`}
@@ -592,6 +598,7 @@ export function WorkflowConfigPanel({
                     return s;
                   });
                   updateTaskConfig(index, { prompt: e.target.value });
+                  updateTask(index, { _activePreset: undefined } as any);
                 }}
                 readOnly={heavyTaskIndexes.has(index)}
                 autoSize={{ minRows: 3, maxRows: 8 }}

@@ -75,6 +75,7 @@ export function ConfigPanel({ onStart, isRunning, currentProviders: _currentProv
   const [randomizeInterval, setRandomizeInterval] = useState(false);
   const [isLongContext, setIsLongContext] = useState(false);
   const [outputScope, setOutputScope] = useState(getStoredOutputScope);
+  const [activePreset, setActivePreset] = useState<string | undefined>(PRESET_PROMPTS[0].label);
 
   const toggleModel = (provider: ProviderConfigResponse, modelName: string) => {
     const key = `${provider.id}:${modelName}`;
@@ -249,6 +250,7 @@ export function ConfigPanel({ onStart, isRunning, currentProviders: _currentProv
               onClick={async () => {
                 const isLC = !!preset.multiDoc;
                 setIsLongContext(isLC);
+                setActivePreset(preset.label);
                 if (preset.heavy) {
                   const bucket = preset.tokens >= 200_000 ? '256k' : preset.tokens >= 100_000 ? '150k' : '64k';
                   const raw = await loadHeavyPreset(bucket);
@@ -258,7 +260,7 @@ export function ConfigPanel({ onStart, isRunning, currentProviders: _currentProv
                 }
               }}
               className={`text-[11px] px-2.5 py-1.5 rounded-md border transition-all font-medium ${
-                prompt === preset.prompt
+                activePreset === preset.label
                   ? 'border-accent-teal/40 bg-accent-teal/8 text-accent-teal'
                   : 'border-border text-text-secondary hover:border-border-hover hover:text-text-primary'
               }`}
@@ -289,7 +291,10 @@ export function ConfigPanel({ onStart, isRunning, currentProviders: _currentProv
         )}
         <Input.TextArea
           value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
+          onChange={(e) => {
+            setPrompt(e.target.value);
+            setActivePreset(undefined);
+          }}
           autoSize={{ minRows: 3, maxRows: 6 }}
           placeholder="Enter your test prompt..."
           style={{ fontSize: 13 }}

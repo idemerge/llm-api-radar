@@ -78,6 +78,7 @@ export function PlaygroundPage() {
   const [showLongContext, setShowLongContext] = useState(true);
   const [isMultiDoc, setIsMultiDoc] = useState(false);
   const [outputScope, setOutputScope] = useState(getStoredOutputScope);
+  const [activePreset, setActivePreset] = useState<string | undefined>();
   const [copied, setCopied] = useState(false);
   const [enableThinking, setEnableThinking] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(true);
@@ -430,6 +431,7 @@ export function PlaygroundPage() {
                   fullPromptRef.current = null;
                   setIsHeavyPrompt(false);
                   setPrompt(e.target.value);
+                  setActivePreset(undefined);
                 }}
                 placeholder="Enter your prompt... (paste or drop images here)"
                 autoSize={{ minRows: 4, maxRows: 12 }}
@@ -498,9 +500,14 @@ export function PlaygroundPage() {
                       key={preset.label}
                       onClick={() => {
                         setIsMultiDoc(false);
+                        setActivePreset(preset.label);
                         setPromptSmart(preset.prompt);
                       }}
-                      className="text-[10px] px-2 py-0.5 rounded border border-border text-text-tertiary hover:text-text-secondary hover:border-accent-blue/40 transition-colors whitespace-nowrap"
+                      className={`text-[10px] px-2 py-0.5 rounded border transition-colors whitespace-nowrap ${
+                        activePreset === preset.label
+                          ? 'border-accent-blue/40 bg-accent-blue/8 text-accent-blue'
+                          : 'border-border text-text-tertiary hover:text-text-secondary hover:border-accent-blue/40'
+                      }`}
                     >
                       {preset.label}
                     </button>
@@ -519,6 +526,7 @@ export function PlaygroundPage() {
                         onClick={async () => {
                           const md = !!preset.multiDoc;
                           setIsMultiDoc(md);
+                          setActivePreset(preset.label);
                           let raw: string;
                           if (preset.heavy) {
                             const bucket =
@@ -529,7 +537,11 @@ export function PlaygroundPage() {
                           }
                           setPromptSmart(md ? applyOutputScope(raw, outputScope) : raw);
                         }}
-                        className="text-[10px] px-2 py-0.5 rounded border border-border text-text-tertiary hover:text-text-secondary hover:border-accent-blue/40 transition-colors whitespace-nowrap"
+                        className={`text-[10px] px-2 py-0.5 rounded border transition-colors whitespace-nowrap ${
+                          activePreset === preset.label
+                            ? 'border-accent-blue/40 bg-accent-blue/8 text-accent-blue'
+                            : 'border-border text-text-tertiary hover:text-text-secondary hover:border-accent-blue/40'
+                        }`}
                       >
                         {preset.label}
                       </button>
