@@ -391,26 +391,24 @@ export function WorkflowConfigPanel({
     color?: string;
   }) => (
     <div className="flex flex-wrap gap-1 mb-1.5">
-      {options.map((opt) => (
-        <button
-          key={opt.value}
-          onClick={() => onChange(opt.value)}
-          className={`text-[10px] px-2 py-1 rounded border transition-all font-medium font-mono ${
-            value === opt.value ? '' : 'border-border text-text-tertiary hover:border-border-hover'
-          }`}
-          style={{
-            ...(value === opt.value
-              ? {
-                  borderColor: `${color}66`,
-                  backgroundColor: `${color}14`,
-                  color,
-                }
-              : {}),
-          }}
-        >
-          {opt.label}
-        </button>
-      ))}
+      {options.map((opt) => {
+        const active = value === opt.value;
+        return (
+          <button
+            key={opt.value}
+            onClick={() => onChange(opt.value)}
+            className="text-[10px] px-2 py-0.5 rounded font-mono transition-all"
+            style={{
+              fontWeight: active ? 600 : 400,
+              border: active ? `1px solid ${color}50` : '1px solid transparent',
+              backgroundColor: active ? `${color}18` : 'transparent',
+              color: active ? color : 'rgba(255,255,255,0.35)',
+            }}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
     </div>
   );
 
@@ -484,10 +482,14 @@ export function WorkflowConfigPanel({
 
           {/* Row 2: Preset Prompt Buttons */}
           <div className="space-y-2">
-            <label className="text-[11px] text-text-secondary font-medium">Preset Prompts</label>
-            <Tooltip title="Click a preset to fill the prompt field with a pre-configured test prompt">
-              <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help ml-1" />
-            </Tooltip>
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-text-tertiary">
+                Preset Prompts
+              </span>
+              <Tooltip title="Click a preset to fill the prompt field with a pre-configured test prompt">
+                <InfoCircleOutlined className="text-[9px] text-text-tertiary cursor-help" />
+              </Tooltip>
+            </div>
             <div className="flex flex-wrap gap-1.5">
               {PRESET_PROMPTS.map((preset) => (
                 <button
@@ -652,10 +654,13 @@ export function WorkflowConfigPanel({
           </div>
 
           {/* Row 4: Core Parameters with QuickButtons */}
+          <div className="section-header" data-color="teal">
+            Core Parameters
+          </div>
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <div className="flex items-center gap-1">
-                <label className="text-[11px] text-text-secondary font-medium">Max Tokens</label>
+                <label className="param-chip-label">Max Tokens</label>
                 <Tooltip title="Maximum number of tokens in the model's response (50–32000)">
                   <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
                 </Tooltip>
@@ -686,7 +691,7 @@ export function WorkflowConfigPanel({
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-1">
-                <label className="text-[11px] text-text-secondary font-medium">Concurrency</label>
+                <label className="param-chip-label">Concurrency</label>
                 <Tooltip title="Number of parallel requests per iteration (1–200). Higher = more load.">
                   <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
                 </Tooltip>
@@ -710,7 +715,7 @@ export function WorkflowConfigPanel({
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-1">
-                <label className="text-[11px] text-text-secondary font-medium">Iterations</label>
+                <label className="param-chip-label">Iterations</label>
                 <Tooltip title="Number of times to repeat the benchmark (1–2000). More iterations = more reliable averages.">
                   <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
                 </Tooltip>
@@ -735,10 +740,13 @@ export function WorkflowConfigPanel({
           </div>
 
           {/* Advanced Parameters */}
+          <div className="section-header" data-color="amber">
+            Tuning
+          </div>
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <div className="flex items-center gap-1">
-                <label className="text-[11px] text-text-secondary font-medium">Warmup Runs</label>
+                <label className="param-chip-label">Warmup Runs</label>
                 <Tooltip title="Number of warmup requests before measuring (0–5). Discarded from results.">
                   <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
                 </Tooltip>
@@ -762,7 +770,7 @@ export function WorkflowConfigPanel({
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-1">
-                <label className="text-[11px] text-text-secondary font-medium">Request Interval (ms)</label>
+                <label className="param-chip-label">Interval (ms)</label>
                 <Tooltip title="Delay between consecutive requests in ms (0–10000). Helps avoid rate limiting.">
                   <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
                 </Tooltip>
@@ -786,7 +794,7 @@ export function WorkflowConfigPanel({
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-1">
-                <label className="text-[11px] text-text-secondary font-medium">Max QPS</label>
+                <label className="param-chip-label">Max QPS</label>
                 <Tooltip title="Global token bucket: max requests per second across all concurrent slots. 0 = unlimited.">
                   <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
                 </Tooltip>
@@ -813,10 +821,13 @@ export function WorkflowConfigPanel({
           </div>
 
           {/* Streaming + Cache Hit Rate + Custom Providers dropdown — one row */}
+          <div className="section-header" data-color="violet">
+            Options
+          </div>
           <div className="flex items-center gap-6 flex-wrap">
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1">
-                <span className="text-[11px] text-text-secondary font-medium">Streaming</span>
+                <span className="param-chip-label">Streaming</span>
                 <Tooltip title="Use streaming API for real-time token delivery. Recommended for accuracy.">
                   <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
                 </Tooltip>
@@ -834,7 +845,7 @@ export function WorkflowConfigPanel({
                 size="small"
               />
               <div className="flex items-center gap-1">
-                <span className="text-[11px] text-text-secondary font-medium">Cache Hit Rate</span>
+                <span className="param-chip-label">Cache Hit Rate</span>
                 <Tooltip title="Prepends a unique UUID to each request to control prefix-cache hit rate. K = iterations × (1 − rate) unique variants are generated and cycled round-robin.">
                   <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
                 </Tooltip>
@@ -935,7 +946,7 @@ export function WorkflowConfigPanel({
           {(task.config.requestInterval ?? 0) > 0 && (
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1">
-                <span className="text-[11px] text-text-secondary font-medium">Randomize Interval</span>
+                <span className="param-chip-label">Randomize Interval</span>
                 <Tooltip title="Add random jitter to the request interval (±50%) to simulate realistic traffic">
                   <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
                 </Tooltip>
