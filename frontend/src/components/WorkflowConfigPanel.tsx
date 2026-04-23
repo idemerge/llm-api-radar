@@ -803,6 +803,7 @@ export function WorkflowConfigPanel({
                         onChange={(v) => updateTaskConfig(index, { maxQps: v ?? 0 })}
                         min={0}
                         max={1000}
+                        step={0.1}
                         size="small"
                         className="font-mono"
                         style={{ width: '100%' }}
@@ -810,7 +811,8 @@ export function WorkflowConfigPanel({
                       />
                     </div>
                   </div>
-                  <div className="flex items-center gap-6">
+                  {/* Streaming + Cache Hit Rate + Using Global Providers — one row */}
+                  <div className="flex items-center gap-6 flex-wrap">
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1">
                         <span className="text-[11px] text-text-secondary font-medium">Streaming</span>
@@ -824,52 +826,32 @@ export function WorkflowConfigPanel({
                         size="small"
                       />
                     </div>
-                    {(task.config.requestInterval ?? 0) > 0 && (
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1">
-                          <span className="text-[11px] text-text-secondary font-medium">Randomize Interval</span>
-                          <Tooltip title="Add random jitter to the request interval (±50%) to simulate realistic traffic">
-                            <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
-                          </Tooltip>
-                        </div>
-                        <Switch
-                          checked={task.config.randomizeInterval ?? false}
-                          onChange={(v) => updateTaskConfig(index, { randomizeInterval: v })}
-                          size="small"
-                        />
-                      </div>
-                    )}
-                  </div>
-                  {/* Cache Hit Rate */}
-                  <div className="flex items-center gap-3">
-                    <Switch
-                      checked={task.config.targetCacheHitRate !== undefined}
-                      onChange={(v) => updateTaskConfig(index, { targetCacheHitRate: v ? 0.8 : undefined })}
-                      size="small"
-                    />
-                    <div className="flex items-center gap-1">
-                      <span className="text-[11px] text-text-secondary font-medium">Cache Hit Rate</span>
-                      <Tooltip title="Prepends a unique UUID to each request to control prefix-cache hit rate. K = iterations × (1 − rate) unique variants are generated and cycled round-robin.">
-                        <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
-                      </Tooltip>
-                    </div>
-                    {task.config.targetCacheHitRate !== undefined && (
-                      <InputNumber
-                        value={Math.round(task.config.targetCacheHitRate * 100)}
-                        onChange={(v) => updateTaskConfig(index, { targetCacheHitRate: (v ?? 80) / 100 })}
-                        min={0}
-                        max={99}
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={task.config.targetCacheHitRate !== undefined}
+                        onChange={(v) => updateTaskConfig(index, { targetCacheHitRate: v ? 0.8 : undefined })}
                         size="small"
-                        className="font-mono"
-                        style={{ width: 90 }}
-                        addonAfter="%"
                       />
-                    )}
-                  </div>
-
-                  {/* Task-level provider override */}
-                  <div className="pt-2 border-t border-border">
-                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1">
+                        <span className="text-[11px] text-text-secondary font-medium">Cache Hit Rate</span>
+                        <Tooltip title="Prepends a unique UUID to each request to control prefix-cache hit rate. K = iterations × (1 − rate) unique variants are generated and cycled round-robin.">
+                          <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
+                        </Tooltip>
+                      </div>
+                      {task.config.targetCacheHitRate !== undefined && (
+                        <InputNumber
+                          value={Math.round(task.config.targetCacheHitRate * 100)}
+                          onChange={(v) => updateTaskConfig(index, { targetCacheHitRate: (v ?? 80) / 100 })}
+                          min={0}
+                          max={99}
+                          size="small"
+                          className="font-mono"
+                          style={{ width: 90 }}
+                          addonAfter="%"
+                        />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
                       <span className="text-[11px] text-text-secondary font-medium">
                         {task.providers ? 'Custom Providers' : 'Using Global Providers'}
                       </span>
@@ -877,7 +859,6 @@ export function WorkflowConfigPanel({
                         checked={!!task.providers}
                         onChange={(checked) => {
                           if (checked) {
-                            // Initialize with empty array — user must select
                             updateTask(index, { providers: [] });
                           } else {
                             updateTask(index, { providers: undefined });
@@ -886,7 +867,31 @@ export function WorkflowConfigPanel({
                         size="small"
                       />
                     </div>
-                    {task.providers && (
+                  </div>
+
+                  {/* Randomize Interval (only when interval > 0) */}
+                  {(task.config.requestInterval ?? 0) > 0 && (
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
+                        <span className="text-[11px] text-text-secondary font-medium">Randomize Interval</span>
+                        <Tooltip title="Add random jitter to the request interval (±50%) to simulate realistic traffic">
+                          <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
+                        </Tooltip>
+                      </div>
+                      <Switch
+                        checked={task.config.randomizeInterval ?? false}
+                        onChange={(v) => updateTaskConfig(index, { randomizeInterval: v })}
+                        size="small"
+                      />
+                    </div>
+                  )}
+
+                  {/* Task-level provider override list */}
+                  {task.providers && (
+                    <div className="pt-2 border-t border-border">
+                      <div className="mb-2">
+                        <span className="text-[11px] text-text-secondary font-medium">Custom Providers</span>
+                      </div>
                       <div className="flex flex-wrap gap-1.5">
                         {configuredProviders.map((provider) => {
                           const activeModels = provider.models.filter((m) => m.isActive !== false);
@@ -918,8 +923,8 @@ export function WorkflowConfigPanel({
                           <span className="text-[10px] text-accent-rose/60">Select at least one model</span>
                         )}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
