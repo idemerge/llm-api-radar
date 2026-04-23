@@ -189,8 +189,14 @@ export function WorkflowConfigPanel({
     selectedModels.some((m) => m.providerId === providerId && m.modelName === modelName);
 
   const addTask = () => {
-    const newTask = DEFAULT_TASK();
-    newTask.name = `Task ${tasks.length + 1}`;
+    const lastTask = tasks[tasks.length - 1];
+    const newTask: TaskConfig = {
+      name: `Task ${tasks.length + 1}`,
+      description: '',
+      config: { ...lastTask.config },
+      providers: lastTask.providers ? [...lastTask.providers] : undefined,
+      tags: {},
+    };
     setTasks([...tasks, newTask]);
     setExpandedTask(tasks.length);
   };
