@@ -217,8 +217,8 @@ export function WorkflowProgress({ workflow, taskProgress, liveMetrics, cooldown
 
             return {
               color: getTimelineItemColor(status),
-              dot: getTimelineDot(status),
-              children: (
+              icon: getTimelineDot(status),
+              content: (
                 <>
                   <div
                     className={`flex items-center gap-3 p-2.5 rounded border transition-all ${
