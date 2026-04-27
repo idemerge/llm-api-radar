@@ -32,6 +32,23 @@ Key routing rules:
 - Login credentials are in `.env` (AUTH_USERNAME / AUTH_PASSWORD)
 - For browser testing, set `export CI=true` before using browse/gstack tools (root environment needs --no-sandbox)
 
+### Regression Test Flow
+
+Run in order before releases or after major changes:
+
+1. **Unit tests** (4s): `cd frontend && npm test && cd ../backend && npm test`
+2. **Type check** (seconds): `cd frontend && npx tsc --noEmit && cd ../backend && npx tsc --noEmit`
+3. **E2E QA** (5-10 min): `/qa` against localhost — covers UI interactions, console errors, visual checks
+
+Baseline (v2.11.0): 148 tests (frontend 56, backend 92), Health Score 9.30/10.
+
+### Test Conventions
+
+- Every QA-discovered bug must get a corresponding unit test before closing
+- Regression tests for HTML structure issues use DOM assertions (e.g., no nested buttons)
+- Regression tests for antd API changes use source file structural checks
+- QA reports are stored in `.gstack/qa-reports/` (not committed)
+
 ## Language Rules
 
 - All code, scripts, comments, commit messages, and documentation must be written in **English**, unless explicitly requested otherwise by the user.
