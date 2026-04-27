@@ -1,37 +1,16 @@
 /**
- * Redact sensitive information (provider names, API base URLs, API keys)
- * from the page DOM before taking screenshots or during recording.
+ * DEPRECATED safety-net DOM redactor.
  *
- * Exports:
- *   redactPage(page)            — one-shot DOM sweep (for screenshots)
- *   installRedactObserver(page) — persistent MutationObserver (for recording)
- *
- * To add new providers, append entries to PROVIDER_MAP and URL_PATTERNS.
+ * Primary masking now lives in `frontend/src/utils/demo.ts` (run dev with
+ * `VITE_DEMO_MODE=true`). This script is kept only so existing callers
+ * (`take-screenshots.mjs`, `record-demo.mjs`) continue to work; the rule
+ * tables are intentionally empty and should NOT be re-populated. If a leak
+ * appears, fix it at the hook level in `demo.ts`, not here.
  */
 
-// Map of real provider names → display replacements (order matters: longer first)
-const PROVIDER_MAP = [
-  ['ZAI-CN-OpenAI', 'Provider-D'],
-  ['ZAI-CN-Anthropic', 'Provider-E'],
-  ['ZAI-LiteLLM-FREE', 'Provider-F'],
-  ['ZAI-LiteLLM', 'Provider-C'],
-  ['ZAI-OpenAI', 'Provider-B'],
-  ['hwcloud', 'Cloud-A'],
-  ['Gemini', 'Provider-G'],
-  // Short provider prefix in model paths (e.g. "z-ai/glm-4.7")
-  ['z-ai', 'vendor-x'],
-];
-
-// URL patterns to mask (regex source strings)
-const URL_PATTERNS = [
-  ['api-ap-southeast-1\\.modelarts-maas\\.co[^\\s<"\']*', 'api.cloud-a.example.com/v1'],
-  ['generativelanguage\\.googleapis\\.com[^\\s<"\']*', 'api.provider-g.example.com/v1'],
-  ['api\\.z\\.ai/api/coding/paas/v\\d[^\\s<"\']*', 'api.provider-b.example.com/v1'],
-  ['open\\.bigmodel\\.cn/api/paas/v\\d[^\\s<"\']*', 'api.provider-d.example.com/v1'],
-];
-
-// API key pattern (partially masked keys like a618****AA0g)
-const KEY_PATTERN = ['[a-zA-Z0-9]{3,6}\\*{3,}[a-zA-Z0-9]{3,6}', 'sk-••••••••'];
+const PROVIDER_MAP = [];
+const URL_PATTERNS = [];
+const KEY_PATTERN = ['__never_match__\\b\\b\\b__\\b__nope__', ''];
 
 // ---- Browser-side redaction logic (serialized as string for injection) ----
 

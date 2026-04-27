@@ -1,12 +1,22 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { BenchmarkWorkflow, WorkflowTemplate } from '../types';
 import { apiFetch, sseUrl, downloadUrl } from '../services/api';
-import { maskProviderLabels } from '../utils/demo';
+import { maskProviderLabels, maskProviderSummaries, DEMO_MODE } from '../utils/demo';
 
-const maskWorkflow = (w: BenchmarkWorkflow): BenchmarkWorkflow => ({
-  ...w,
-  providerLabels: maskProviderLabels(w.providerLabels),
-});
+const maskWorkflow = (w: BenchmarkWorkflow): BenchmarkWorkflow => {
+  if (!DEMO_MODE) return w;
+  const masked: BenchmarkWorkflow = {
+    ...w,
+    providerLabels: maskProviderLabels(w.providerLabels),
+  };
+  if (w.summary) {
+    masked.summary = {
+      ...w.summary,
+      providerSummaries: maskProviderSummaries(w.summary.providerSummaries) ?? w.summary.providerSummaries,
+    };
+  }
+  return masked;
+};
 
 /** Per-task iteration progress aggregated across all providers */
 export interface TaskIterationProgress {

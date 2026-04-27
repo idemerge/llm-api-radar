@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { apiFetch } from '../services/api';
-import { maskProviderName } from '../utils/demo';
+import { maskProviderName, maskModelName } from '../utils/demo';
 
 export interface PingResult {
   id: number;
@@ -51,7 +51,13 @@ export function useMonitor() {
     try {
       const res = await apiFetch('/api/monitor/status');
       const data = (await res.json()) as PingResult[];
-      setStatuses(data.map((s) => ({ ...s, providerName: maskProviderName(s.providerName, s.providerId) })));
+      setStatuses(
+        data.map((s) => ({
+          ...s,
+          providerName: maskProviderName(s.providerName, s.providerId),
+          modelName: maskModelName(s.modelName),
+        })),
+      );
     } catch {
       /* ignore */
     }
@@ -61,7 +67,13 @@ export function useMonitor() {
     try {
       const res = await apiFetch(`/api/monitor/history?hours=${hours}`);
       const data = (await res.json()) as PingResult[];
-      setHistory(data.map((s) => ({ ...s, providerName: maskProviderName(s.providerName, s.providerId) })));
+      setHistory(
+        data.map((s) => ({
+          ...s,
+          providerName: maskProviderName(s.providerName, s.providerId),
+          modelName: maskModelName(s.modelName),
+        })),
+      );
     } catch {
       /* ignore */
     }
@@ -71,7 +83,13 @@ export function useMonitor() {
     try {
       const res = await apiFetch('/api/monitor/targets');
       const data = (await res.json()) as MonitorTarget[];
-      setTargets(data.map((t) => ({ ...t, providerName: maskProviderName(t.providerName, t.providerId) })));
+      setTargets(
+        data.map((t) => ({
+          ...t,
+          providerName: maskProviderName(t.providerName, t.providerId),
+          modelName: maskModelName(t.modelName),
+        })),
+      );
     } catch {
       /* ignore */
     }
@@ -125,7 +143,14 @@ export function useMonitor() {
       const res = await apiFetch('/api/monitor/run', { method: 'POST' });
       const data = await res.json();
       if (data.success) {
-        setStatuses(data.results || []);
+        const results = (data.results || []) as PingResult[];
+        setStatuses(
+          results.map((s) => ({
+            ...s,
+            providerName: maskProviderName(s.providerName, s.providerId),
+            modelName: maskModelName(s.modelName),
+          })),
+        );
       }
       await fetchHistory(24);
     } catch {
