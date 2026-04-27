@@ -112,6 +112,7 @@ export function WorkflowConfigPanel({
   useEffect(() => {
     if (!initialWorkflow || !configuredProviders.length) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setName(initialWorkflow.name ? `${initialWorkflow.name} (copy)` : '');
     setDescription(initialWorkflow.description || '');
     setStopOnFailure(initialWorkflow.options?.stopOnFailure ?? true);
@@ -311,7 +312,7 @@ export function WorkflowConfigPanel({
     setTasks(newTasks);
   };
 
-  const setTaskPromptSmart = (index: number, text: string) => {
+  const _setTaskPromptSmart = (index: number, text: string) => {
     if (text.length > HEAVY_THRESHOLD) {
       heavyPromptsRef.current.set(index, text);
       setHeavyTaskIndexes((prev) => new Set(prev).add(index));

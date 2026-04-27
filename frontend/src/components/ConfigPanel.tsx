@@ -51,6 +51,55 @@ interface SelectedModel {
   color: string;
 }
 
+function QuickButtons({
+  options,
+  value,
+  onChange,
+  color = 'accent-teal',
+}: {
+  options: { label: string; value: number }[];
+  value: number;
+  onChange: (v: number) => void;
+  color?: string;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1 mb-1.5">
+      {options.map((opt) => (
+        <button
+          key={opt.value}
+          onClick={() => onChange(opt.value)}
+          className={`text-[11px] px-2.5 py-1.5 rounded border transition-all font-medium font-mono ${
+            value === opt.value
+              ? `border-${color}/40 bg-${color}/8 text-${color}`
+              : 'border-border text-text-tertiary hover:border-border-hover'
+          }`}
+          style={{
+            ...(value === opt.value
+              ? {
+                  borderColor:
+                    color === 'accent-teal'
+                      ? 'rgba(115,191,105,0.4)'
+                      : color === 'accent-blue'
+                        ? 'rgba(61,113,217,0.4)'
+                        : 'rgba(255,152,48,0.4)',
+                  backgroundColor:
+                    color === 'accent-teal'
+                      ? 'rgba(115,191,105,0.08)'
+                      : color === 'accent-blue'
+                        ? 'rgba(61,113,217,0.08)'
+                        : 'rgba(255,152,48,0.08)',
+                  color: color === 'accent-teal' ? '#73bf69' : color === 'accent-blue' ? '#4096ff' : '#ff9830',
+                }
+              : {}),
+          }}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function ConfigPanel({ onStart, isRunning, currentProviders: _currentProviders, onCancel }: ConfigPanelProps) {
   const { providers: configuredProviders, loading: providersLoading, fetchProviders } = useProviders();
   const [selectedModels, setSelectedModels] = useState<SelectedModel[]>([]);
@@ -109,53 +158,6 @@ export function ConfigPanel({ onStart, isRunning, currentProviders: _currentProv
       {},
     );
   };
-
-  const QuickButtons = ({
-    options,
-    value,
-    onChange,
-    color = 'accent-teal',
-  }: {
-    options: { label: string; value: number }[];
-    value: number;
-    onChange: (v: number) => void;
-    color?: string;
-  }) => (
-    <div className="flex flex-wrap gap-1 mb-1.5">
-      {options.map((opt) => (
-        <button
-          key={opt.value}
-          onClick={() => onChange(opt.value)}
-          className={`text-[11px] px-2.5 py-1.5 rounded border transition-all font-medium font-mono ${
-            value === opt.value
-              ? `border-${color}/40 bg-${color}/8 text-${color}`
-              : 'border-border text-text-tertiary hover:border-border-hover'
-          }`}
-          style={{
-            ...(value === opt.value
-              ? {
-                  borderColor:
-                    color === 'accent-teal'
-                      ? 'rgba(115,191,105,0.4)'
-                      : color === 'accent-blue'
-                        ? 'rgba(61,113,217,0.4)'
-                        : 'rgba(255,152,48,0.4)',
-                  backgroundColor:
-                    color === 'accent-teal'
-                      ? 'rgba(115,191,105,0.08)'
-                      : color === 'accent-blue'
-                        ? 'rgba(61,113,217,0.08)'
-                        : 'rgba(255,152,48,0.08)',
-                  color: color === 'accent-teal' ? '#73bf69' : color === 'accent-blue' ? '#4096ff' : '#ff9830',
-                }
-              : {}),
-          }}
-        >
-          {opt.label}
-        </button>
-      ))}
-    </div>
-  );
 
   return (
     <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} className="glass-card p-7 space-y-7">

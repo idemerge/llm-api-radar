@@ -11,6 +11,7 @@ import { HistoryDetailPage } from './components/HistoryDetailPage';
 import { WorkflowConfigPanel } from './components/WorkflowConfigPanel';
 import { WorkflowProgress } from './components/WorkflowProgress';
 import { WorkflowResults } from './components/WorkflowResults';
+import { WorkflowHeader } from './components/WorkflowHeader';
 import { SettingsPage } from './components/SettingsPage';
 import { PlaygroundPage } from './components/PlaygroundPage';
 import { MonitorPage } from './components/MonitorPage';
@@ -87,6 +88,8 @@ function App() {
     reconnectActiveWorkflow,
     workflowsLoaded,
     taskProgress,
+    liveMetrics,
+    cooldown,
   } = useWorkflow();
 
   const navigate = useNavigate();
@@ -496,7 +499,17 @@ function App() {
                   />
 
                   {/* Live Progress & Results */}
-                  {currentWorkflow && <WorkflowProgress workflow={currentWorkflow} taskProgress={taskProgress} />}
+                  {currentWorkflow && (
+                    <WorkflowHeader workflow={currentWorkflow} onCancel={cancelWorkflow} onExport={exportWorkflow} />
+                  )}
+                  {currentWorkflow && (
+                    <WorkflowProgress
+                      workflow={currentWorkflow}
+                      taskProgress={taskProgress}
+                      liveMetrics={liveMetrics}
+                      cooldown={cooldown}
+                    />
+                  )}
                   {currentWorkflow?.summary && <WorkflowResults workflow={currentWorkflow} onExport={exportWorkflow} />}
 
                   {/* Recent Workflows */}

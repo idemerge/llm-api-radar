@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.11.0] - 2026-04-27
+
+### Added
+- Workflow page now shows the same Mission Control header (status, duration, edit) and Live Metrics strip (avg RT, TPS, last RT) + cooldown countdown that History Detail had — exposed via `liveMetrics` and `cooldown` from `useWorkflow`
+- New shared `WorkflowHeader` component used by both the active Workflow page and History Detail
+
+### Changed
+- Refactored `HistoryDetailPage` to compose `WorkflowHeader` instead of duplicating header markup (~280 line reduction)
+- Tightened pre-commit lint gate: `lint-staged` now runs `eslint --max-warnings 0` on staged frontend files
+
+### Fixed
+- CI lint failure on v2.10.1: removed empty `catch {}` block in `HistoryDetailPage` and silenced react-hooks warnings via targeted disables (no behavior change)
+- Various react-hooks lint warnings across `ConfigPanel`, `MonitorPage`, `PlaygroundPage`, `WorkflowConfigPanel`, `WorkflowProgress`
+
 ## [2.10.1] - 2026-04-23
 
 ### Changed

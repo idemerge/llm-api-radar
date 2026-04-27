@@ -11,6 +11,12 @@ export interface TaskIterationProgress {
   total: number;
 }
 
+export interface LiveMetric {
+  avgRT: number;
+  avgTPS: number;
+  recentRT: number;
+}
+
 interface UseWorkflowReturn {
   workflows: BenchmarkWorkflow[];
   currentWorkflow: BenchmarkWorkflow | null;
@@ -19,6 +25,10 @@ interface UseWorkflowReturn {
   error: string | null;
   /** Real-time iteration progress per task (keyed by taskId) */
   taskProgress: Record<string, TaskIterationProgress>;
+  /** Real-time metrics per task from latest SSE iteration results */
+  liveMetrics: Record<string, LiveMetric>;
+  /** Current cooldown between tasks */
+  cooldown: { taskId: string; remainingMs: number } | null;
   startWorkflow: (data: CreateWorkflowData) => Promise<void>;
   fetchWorkflows: () => Promise<void>;
   fetchWorkflow: (id: string) => Promise<void>;
@@ -68,6 +78,8 @@ export function useWorkflow(): UseWorkflowReturn {
   const [error, setError] = useState<string | null>(null);
   const [workflowsLoaded, setWorkflowsLoaded] = useState(false);
   const [taskProgress, setTaskProgress] = useState<Record<string, TaskIterationProgress>>({});
+  const [liveMetrics, setLiveMetrics] = useState<Record<string, LiveMetric>>({});
+  const [cooldown, setCooldown] = useState<{ taskId: string; remainingMs: number } | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   const activeRunIdRef = useRef<string | null>(null);
   // Track per-provider progress within each task to compute aggregated counts
@@ -117,6 +129,8 @@ export function useWorkflow(): UseWorkflowReturn {
       activeRunIdRef.current = id;
       setIsRunning(true);
       setTaskProgress({});
+      setLiveMetrics({});
+      setCooldown(null);
       providerProgressRef.current = {};
 
       const url = await sseUrl(`/api/workflows/${id}/stream`);
@@ -147,6 +161,30 @@ export function useWorkflow(): UseWorkflowReturn {
               },
             }));
           }
+          // Extract latest iteration metrics for live display
+          if (taskId && parsed.data?.data?.latestResults?.length) {
+            const results = parsed.data.data.latestResults as Array<{
+              success: boolean;
+              responseTime: number;
+              tokensPerSecond: number;
+            }>;
+            const successResults = results.filter((r) => r.success);
+            if (successResults.length) {
+              setLiveMetrics((prev) => ({
+                ...prev,
+                [taskId]: {
+                  avgRT: Math.round(successResults.reduce((a, r) => a + r.responseTime, 0) / successResults.length),
+                  avgTPS: Math.round(successResults.reduce((a, r) => a + r.tokensPerSecond, 0) / successResults.length),
+                  recentRT: successResults[successResults.length - 1].responseTime,
+                },
+              }));
+            }
+          }
+        }
+
+        if (parsed.type === 'cooldown') {
+          setCooldown({ taskId: parsed.data.nextTaskId, remainingMs: parsed.data.remainingMs });
+          fetchWorkflow(id);
         }
 
         if (
@@ -154,9 +192,9 @@ export function useWorkflow(): UseWorkflowReturn {
           parsed.type === 'task:start' ||
           parsed.type === 'task:progress' ||
           parsed.type === 'task:complete' ||
-          parsed.type === 'task:error' ||
-          parsed.type === 'cooldown'
+          parsed.type === 'task:error'
         ) {
+          if (parsed.type === 'task:start') setCooldown(null);
           fetchWorkflow(id);
         }
 
@@ -165,6 +203,8 @@ export function useWorkflow(): UseWorkflowReturn {
           eventSourceRef.current = null;
           setIsRunning(false);
           setTaskProgress({});
+          setLiveMetrics({});
+          setCooldown(null);
           providerProgressRef.current = {};
           fetchWorkflow(id);
           fetchWorkflows();
@@ -323,5 +363,7 @@ export function useWorkflow(): UseWorkflowReturn {
     reconnectActiveWorkflow,
     workflowsLoaded,
     taskProgress,
+    liveMetrics,
+    cooldown,
   };
 }

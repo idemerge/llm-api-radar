@@ -59,7 +59,7 @@ export function SettingsPage() {
     updateProvider,
     deleteProvider,
     testConnection,
-    testRawConnection,
+    testRawConnection: _testRawConnection,
   } = useProviders();
 
   const [showForm, setShowForm] = useState(false);

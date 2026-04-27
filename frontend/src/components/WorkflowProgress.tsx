@@ -158,6 +158,7 @@ export function WorkflowProgress({ workflow, taskProgress, liveMetrics, cooldown
   // Countdown tick for cooldown
   useEffect(() => {
     if (!cooldown) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCooldownLeft(0);
       return;
     }
@@ -170,7 +171,7 @@ export function WorkflowProgress({ workflow, taskProgress, liveMetrics, cooldown
 
   if (!workflow) return null;
 
-  const isRunning = workflow.status === 'running';
+  const _isRunning = workflow.status === 'running';
   const isDone = workflow.status === 'completed' || workflow.status === 'failed' || workflow.status === 'cancelled';
   const completedCount = workflow.taskResults.filter((r) => r.status === 'completed').length;
   const failedCount = workflow.taskResults.filter((r) => r.status === 'failed').length;

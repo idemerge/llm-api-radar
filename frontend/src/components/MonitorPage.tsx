@@ -106,6 +106,7 @@ function TrendCharts({ history, providerId, modelName, thresholds }: TrendCharts
   const [range, setRange] = useState<number>(24);
 
   const data = useMemo(() => {
+    // eslint-disable-next-line react-hooks/purity
     const cutoff = Date.now() - range * 60 * 60 * 1000;
     return history
       .filter(

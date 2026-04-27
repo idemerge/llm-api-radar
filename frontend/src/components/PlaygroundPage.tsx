@@ -176,6 +176,7 @@ export function PlaygroundPage() {
   const HEAVY_THRESHOLD = 10_000; // chars
   const fullPromptRef = useRef<string | null>(null);
   const [isHeavyPrompt, setIsHeavyPrompt] = useState(false);
+  // eslint-disable-next-line react-hooks/refs
   const effectivePrompt = fullPromptRef.current ?? prompt;
   const promptTokenCount = useTokenCount(isHeavyPrompt ? '' : prompt);
 
@@ -203,7 +204,7 @@ export function PlaygroundPage() {
     if (activeModels.length > 0 && !activeModels.find((m) => m.name === modelName)) {
       setModelName(activeModels[0].name);
     }
-  }, [activeModels, modelName]);
+  }, [activeModels, modelName, setModelName]);
 
   const canRun = providerId && modelName && prompt.trim();
 

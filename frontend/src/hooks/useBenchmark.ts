@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { BenchmarkConfig, BenchmarkRun } from '../types';
 import { apiFetch, sseUrl, downloadUrl } from '../services/api';
 
@@ -20,7 +20,7 @@ export function useBenchmark(): UseBenchmarkReturn {
   const [currentRun, setCurrentRun] = useState<BenchmarkRun | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const eventSourceRef = { current: null as EventSource | null };
+  const eventSourceRef = useRef<EventSource | null>(null);
 
   const fetchBenchmarks = useCallback(async (): Promise<BenchmarkRun[]> => {
     try {
@@ -28,7 +28,7 @@ export function useBenchmark(): UseBenchmarkReturn {
       const data = await res.json();
       setBenchmarks(data);
       return data;
-    } catch (err) {
+    } catch {
       setError('Failed to fetch benchmarks');
       return [];
     }
@@ -39,7 +39,7 @@ export function useBenchmark(): UseBenchmarkReturn {
       const res = await apiFetch(`/api/benchmarks/${id}`);
       const data = await res.json();
       setCurrentRun(data);
-    } catch (err) {
+    } catch {
       setError('Failed to fetch benchmark');
     }
   }, []);
@@ -127,7 +127,7 @@ export function useBenchmark(): UseBenchmarkReturn {
           return true;
         }
         return false;
-      } catch (err) {
+      } catch {
         setError('Failed to cancel benchmark');
         return false;
       }

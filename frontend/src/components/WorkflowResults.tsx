@@ -16,14 +16,6 @@ function formatNumber(n: number, decimals = 0): string {
   return n.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
-function formatDuration(ms: number): string {
-  if (ms < 1000) return `${ms}ms`;
-  const s = Math.floor(ms / 1000);
-  if (s < 60) return `${s}s`;
-  const m = Math.floor(s / 60);
-  return `${m}m ${s % 60}s`;
-}
-
 /** Collapsible prompt preview */
 function PromptPreview({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
@@ -171,7 +163,7 @@ function providerColumns(hasP95: boolean) {
   return cols;
 }
 
-export function WorkflowResults({ workflow, onExport }: WorkflowResultsProps) {
+export function WorkflowResults({ workflow, onExport: _onExport }: WorkflowResultsProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
 
   if (!workflow || !workflow.summary) return null;

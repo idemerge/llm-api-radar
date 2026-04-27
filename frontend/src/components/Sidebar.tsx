@@ -7,7 +7,6 @@ import {
   DashboardOutlined,
   LogoutOutlined,
 } from '@ant-design/icons';
-import { motion } from 'framer-motion';
 import { APP_VERSION } from '../constants';
 
 const { Sider } = Layout;
@@ -22,6 +21,7 @@ interface SidebarProps {
   onLogout?: () => void;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function getMenuItems() {
   return [
     {

@@ -8,7 +8,11 @@
     "prettier": "^3.8.2"
   },
   "lint-staged": {
-    "frontend/**/*.{ts,tsx,js,jsx}": [
+    "frontend/**/*.{ts,tsx}": [
+      "prettier --write",
+      "bash -c 'cd frontend && npx eslint . --max-warnings 0'"
+    ],
+    "frontend/**/*.{js,jsx}": [
       "prettier --write"
     ],
     "backend/**/*.{ts,js}": [
