@@ -74,10 +74,18 @@ export function PlaygroundHistorySidebar({
           </div>
         )}
         {items.map((item) => (
-          <button
+          <div
             key={item.id}
+            role="button"
+            tabIndex={0}
             onClick={() => onSelect(item.id)}
-            className={`w-full text-left rounded border p-2.5 transition-colors group ${
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onSelect(item.id);
+              }
+            }}
+            className={`w-full text-left rounded border p-2.5 transition-colors group cursor-pointer ${
               selectedId === item.id
                 ? 'border-accent-blue/40 bg-accent-blue/5'
                 : 'border-border hover:border-border-hover bg-transparent'
@@ -107,7 +115,7 @@ export function PlaygroundHistorySidebar({
                 <DeleteOutlined />
               </button>
             </div>
-          </button>
+          </div>
         ))}
       </div>
     </div>
