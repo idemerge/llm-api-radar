@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- Demo mode now masks vendor-prefixed model names (e.g. `z-ai/glm-4.7` → `ProviderX/glm-4.7`) and workflow `providerSummaries`, sharing a single id-stable letter namespace across providers and vendors
+- Masking is fully applied at the React hook fetch boundary (`useWorkflow`, `useMonitor`, `usePlaygroundHistory`, `useProviders`); the legacy DOM regex redactor is now a deprecated no-op safety net
+- Regenerated all 6 README screenshots and `docs/demo.gif` under `VITE_DEMO_MODE=true`
+
+### Fixed
+- Workflow result table no longer leaks raw provider names through `summary.providerSummaries[*].provider` (previously masked only by the DOM regex layer)
+
 ## [2.11.1] - 2026-04-27
 
 ### Added
