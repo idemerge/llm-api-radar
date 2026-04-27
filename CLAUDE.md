@@ -22,6 +22,11 @@ Key routing rules:
 
 - All screenshots in `docs/screenshots/` must be **1100×720** pixels
 - Use puppeteer with `defaultViewport: { width: 1100, height: 720 }`
+- Always run the dev server in **Demo Mode** before capturing screenshots so Provider names, endpoints, and API keys are sanitized:
+  ```bash
+  cd frontend && VITE_DEMO_MODE=true npm run dev
+  ```
+  Demo Mode rewrites display values only (no DB writes). Mapping: id-stable `ProviderA/B/C…`, `https://api.provider-a.example.com/v1`, `sk-****`. Implementation: `frontend/src/utils/demo.ts`.
 
 ## GitHub Rules
 

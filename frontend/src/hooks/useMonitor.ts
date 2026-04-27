@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { apiFetch } from '../services/api';
+import { maskProviderName } from '../utils/demo';
 
 export interface PingResult {
   id: number;
@@ -49,8 +50,8 @@ export function useMonitor() {
   const fetchStatus = useCallback(async () => {
     try {
       const res = await apiFetch('/api/monitor/status');
-      const data = await res.json();
-      setStatuses(data);
+      const data = (await res.json()) as PingResult[];
+      setStatuses(data.map((s) => ({ ...s, providerName: maskProviderName(s.providerName, s.providerId) })));
     } catch {
       /* ignore */
     }
@@ -59,8 +60,8 @@ export function useMonitor() {
   const fetchHistory = useCallback(async (hours = 24) => {
     try {
       const res = await apiFetch(`/api/monitor/history?hours=${hours}`);
-      const data = await res.json();
-      setHistory(data);
+      const data = (await res.json()) as PingResult[];
+      setHistory(data.map((s) => ({ ...s, providerName: maskProviderName(s.providerName, s.providerId) })));
     } catch {
       /* ignore */
     }
@@ -69,8 +70,8 @@ export function useMonitor() {
   const fetchTargets = useCallback(async () => {
     try {
       const res = await apiFetch('/api/monitor/targets');
-      const data = await res.json();
-      setTargets(data);
+      const data = (await res.json()) as MonitorTarget[];
+      setTargets(data.map((t) => ({ ...t, providerName: maskProviderName(t.providerName, t.providerId) })));
     } catch {
       /* ignore */
     }

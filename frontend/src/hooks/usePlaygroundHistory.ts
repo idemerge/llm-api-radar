@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { apiFetch } from '../services/api';
 import { PlaygroundMetrics } from './usePlayground';
+import { maskProviderName } from '../utils/demo';
 
 export interface PlaygroundHistoryItem {
   id: string;
@@ -39,8 +40,8 @@ export function usePlaygroundHistory() {
     try {
       const res = await apiFetch('/api/playground/history');
       if (res.ok) {
-        const data = await res.json();
-        setItems(data);
+        const data = (await res.json()) as PlaygroundHistoryItem[];
+        setItems(data.map((it) => ({ ...it, providerName: maskProviderName(it.providerName, it.providerId) })));
       }
     } catch {
       /* ignore */
@@ -52,7 +53,10 @@ export function usePlaygroundHistory() {
   const getDetail = useCallback(async (id: string): Promise<PlaygroundHistoryDetail | null> => {
     try {
       const res = await apiFetch(`/api/playground/history/${id}`);
-      if (res.ok) return await res.json();
+      if (res.ok) {
+        const detail = (await res.json()) as PlaygroundHistoryDetail;
+        return { ...detail, providerName: maskProviderName(detail.providerName, detail.providerId) };
+      }
     } catch {
       /* ignore */
     }

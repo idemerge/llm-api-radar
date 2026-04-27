@@ -1,6 +1,12 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { BenchmarkWorkflow, WorkflowTemplate } from '../types';
 import { apiFetch, sseUrl, downloadUrl } from '../services/api';
+import { maskProviderLabels } from '../utils/demo';
+
+const maskWorkflow = (w: BenchmarkWorkflow): BenchmarkWorkflow => ({
+  ...w,
+  providerLabels: maskProviderLabels(w.providerLabels),
+});
 
 /** Per-task iteration progress aggregated across all providers */
 export interface TaskIterationProgress {
@@ -88,8 +94,8 @@ export function useWorkflow(): UseWorkflowReturn {
   const fetchWorkflows = useCallback(async () => {
     try {
       const res = await apiFetch('/api/workflows');
-      const data = await res.json();
-      setWorkflows(data);
+      const data = (await res.json()) as BenchmarkWorkflow[];
+      setWorkflows(data.map(maskWorkflow));
       setWorkflowsLoaded(true);
     } catch {
       setError('Failed to fetch workflows');
@@ -99,7 +105,7 @@ export function useWorkflow(): UseWorkflowReturn {
   const fetchWorkflow = useCallback(async (id: string) => {
     try {
       const res = await apiFetch(`/api/workflows/${id}`);
-      const data = await res.json();
+      const data = maskWorkflow((await res.json()) as BenchmarkWorkflow);
       if (activeRunIdRef.current === id) {
         setCurrentWorkflow(data);
       }
@@ -213,7 +219,7 @@ export function useWorkflow(): UseWorkflowReturn {
           (async () => {
             try {
               const res = await apiFetch(`/api/workflows/${id}`);
-              const data = await res.json();
+              const data = maskWorkflow((await res.json()) as BenchmarkWorkflow);
               setCurrentWorkflow(data);
             } catch {
               /* fetchWorkflows below will still refresh the list */
@@ -232,7 +238,7 @@ export function useWorkflow(): UseWorkflowReturn {
         (async () => {
           try {
             const res = await apiFetch(`/api/workflows/${id}`);
-            const data = await res.json();
+            const data = maskWorkflow((await res.json()) as BenchmarkWorkflow);
             setCurrentWorkflow(data);
           } catch {
             /* ignore */
