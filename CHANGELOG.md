@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.11.2] - 2026-04-27
 
 ### Changed
 - Demo mode now masks vendor-prefixed model names (e.g. `z-ai/glm-4.7` → `ProviderX/glm-4.7`) and workflow `providerSummaries`, sharing a single id-stable letter namespace across providers and vendors
