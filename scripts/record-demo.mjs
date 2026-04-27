@@ -13,6 +13,7 @@
 
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
+import { installRedactObserver } from './redact-sensitive.mjs';
 
 // Resolve puppeteer from frontend/node_modules regardless of cwd
 const __puppeteerEntry = path.resolve(
@@ -99,6 +100,9 @@ async function main() {
   });
 
   const page = await browser.newPage();
+
+  // Install persistent DOM redaction before any navigation
+  await installRedactObserver(page);
 
   // Start screencast recording
   const recorder = await page.screencast({ path: OUTPUT, speed: 1 });

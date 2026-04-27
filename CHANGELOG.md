@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.11.1] - 2026-04-27
+
+### Added
+- Sensitive info redaction module (`scripts/redact-sensitive.mjs`) for screenshots and GIF recording — provider names, API URLs, and keys are automatically replaced with generic labels
+- Screenshot script (`take-screenshots.mjs`) now calls `redactPage()` before each capture
+- Demo recorder (`record-demo.mjs`) installs a persistent `MutationObserver` to redact text as React re-renders during screencast
+
+### Fixed
+- Playground: disable image upload button for non-vision models and clear uploaded images when switching to a non-vision model
+- Workflow SSE: fix race condition where `activeRunIdRef` was cleared after `fetchWorkflow`, causing stale state — now fetches final workflow state directly before clearing ref
+
+### Changed
+- Regenerated all 6 screenshots and demo GIF with redacted sensitive information
+- Removed `prettier` from frontend and backend devDependencies (unused)
+
 ## [2.11.0] - 2026-04-27
 
 ### Added

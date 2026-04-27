@@ -11,7 +11,7 @@ Run all cases during `/qa` regression testing. Mark each as PASS/FAIL/SKIP.
 - [ ] returnTo parameter → redirect to correct page after login
 - [ ] Sign out → redirect to login with returnTo
 
-## Workflow (8 cases)
+## Workflow (9 cases)
 
 - [ ] Empty name + no model → Start button disabled
 - [ ] Fill name + select model → Start button enabled with correct count
@@ -21,6 +21,7 @@ Run all cases during `/qa` regression testing. Mark each as PASS/FAIL/SKIP.
 - [ ] Stop on Failure switch → toggles correctly
 - [ ] Cooldown spinner → accepts value changes
 - [ ] Model toggle (select/deselect) → updates model count in Start button
+- [ ] Run workflow → completes with results displayed
 
 ## Playground (10 cases)
 
@@ -33,7 +34,7 @@ Run all cases during `/qa` regression testing. Mark each as PASS/FAIL/SKIP.
 - [ ] History sidebar: select entry → loads prompt + response
 - [ ] History sidebar: delete entry → count decreases
 - [ ] History sidebar: no nested button errors in console
-- [ ] Clear all history button → clears sidebar entries
+- [ ] Send prompt + receive streaming response
 
 ## History (6 cases)
 
@@ -71,7 +72,7 @@ Run all cases during `/qa` regression testing. Mark each as PASS/FAIL/SKIP.
 
 ---
 
-**Total: 43 cases**
+**Total: 44 cases**
 
 ## Regression Checks (run after bug fixes)
 

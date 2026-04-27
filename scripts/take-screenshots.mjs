@@ -9,6 +9,7 @@
 
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
+import { redactPage } from './redact-sensitive.mjs';
 
 const __puppeteerEntry = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -70,6 +71,7 @@ async function main() {
     console.log(`  -> ${p.name}`);
     await page.goto(`${BASE_URL}${p.path}`, { waitUntil: 'networkidle0' });
     await sleep(1500);
+    await redactPage(page);
     await page.screenshot({
       path: path.join(SCREENSHOTS_DIR, `${p.name}.png`),
       fullPage: false,
@@ -85,6 +87,7 @@ async function main() {
     await firstRow.click();
     await sleep(1500);
   }
+  await redactPage(page);
   await page.screenshot({
     path: path.join(SCREENSHOTS_DIR, 'screenshot-detail.png'),
     fullPage: false,

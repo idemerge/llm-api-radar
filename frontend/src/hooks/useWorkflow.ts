@@ -206,9 +206,20 @@ export function useWorkflow(): UseWorkflowReturn {
           setLiveMetrics({});
           setCooldown(null);
           providerProgressRef.current = {};
-          fetchWorkflow(id);
-          fetchWorkflows();
+          // Clear ref BEFORE fetch so fetchWorkflow skips the stale ref check.
+          // Use the captured `id` (closure) to fetch final state directly.
           activeRunIdRef.current = null;
+          // Fetch final workflow state — bypass activeRunIdRef guard
+          (async () => {
+            try {
+              const res = await apiFetch(`/api/workflows/${id}`);
+              const data = await res.json();
+              setCurrentWorkflow(data);
+            } catch {
+              /* fetchWorkflows below will still refresh the list */
+            }
+          })();
+          fetchWorkflows();
         }
       };
 
@@ -216,8 +227,17 @@ export function useWorkflow(): UseWorkflowReturn {
         eventSource.close();
         eventSourceRef.current = null;
         setIsRunning(false);
-        fetchWorkflow(id);
         activeRunIdRef.current = null;
+        // Fetch latest state directly — bypass activeRunIdRef guard
+        (async () => {
+          try {
+            const res = await apiFetch(`/api/workflows/${id}`);
+            const data = await res.json();
+            setCurrentWorkflow(data);
+          } catch {
+            /* ignore */
+          }
+        })();
       };
     },
     [fetchWorkflow, fetchWorkflows],

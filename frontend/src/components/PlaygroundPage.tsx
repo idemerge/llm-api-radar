@@ -206,6 +206,16 @@ export function PlaygroundPage() {
     }
   }, [activeModels, modelName, setModelName]);
 
+  const selectedModel = useMemo(() => activeModels.find((m) => m.name === modelName), [activeModels, modelName]);
+  const supportsVision = selectedModel?.supportsVision ?? false;
+
+  // Clear uploaded images when switching to a non-vision model
+  useEffect(() => {
+    if (!supportsVision && images.length > 0) {
+      setImages([]);
+    }
+  }, [supportsVision]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const canRun = providerId && modelName && prompt.trim();
 
   const setPromptSmart = (text: string) => {
@@ -566,13 +576,22 @@ export function PlaygroundPage() {
                   onChange={handleFileUpload}
                   className="hidden"
                 />
-                <Tooltip title="Add images (or paste / drag-and-drop)">
+                <Tooltip
+                  title={
+                    supportsVision
+                      ? 'Add images (or paste / drag-and-drop)'
+                      : 'This model does not support vision / image input'
+                  }
+                >
                   <button
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => supportsVision && fileInputRef.current?.click()}
+                    disabled={!supportsVision}
                     className={`flex items-center gap-1 text-[12px] px-2 py-1 rounded transition-colors ${
-                      images.length > 0
-                        ? 'text-accent-teal bg-accent-teal/10'
-                        : 'text-text-tertiary hover:text-text-secondary hover:bg-white/5'
+                      !supportsVision
+                        ? 'text-text-tertiary/40 cursor-not-allowed'
+                        : images.length > 0
+                          ? 'text-accent-teal bg-accent-teal/10'
+                          : 'text-text-tertiary hover:text-text-secondary hover:bg-white/5'
                     }`}
                   >
                     <PictureOutlined />
