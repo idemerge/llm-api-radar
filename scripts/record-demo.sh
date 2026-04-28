@@ -64,9 +64,9 @@ if [ "$SKIP_SERVER" = false ]; then
     PORT="$BACKEND_PORT" npx tsx src/index.ts > /dev/null 2>&1 &
     PIDS+=($!)
 
-    echo "🚀 Starting frontend (dev)..."
+    echo "🚀 Starting frontend (dev, demo mode)..."
     cd "${ROOT}/frontend" && npm install --silent 2>/dev/null
-    npx vite --port "$FRONTEND_PORT" > /dev/null 2>&1 &
+    VITE_DEMO_MODE=true npx vite --port "$FRONTEND_PORT" > /dev/null 2>&1 &
     PIDS+=($!)
   else
     # Production mode: build everything
