@@ -121,7 +121,7 @@ describe('Validation Schemas', () => {
   describe('ProviderConfigInputSchema', () => {
     it('should accept valid provider config', () => {
       const result = ProviderConfigInputSchema.safeParse({
-        name: 'My Provider',
+        name: 'My-Provider',
         endpoint: 'https://api.openai.com',
         apiKey: 'sk-test',
         format: 'openai',
@@ -143,7 +143,7 @@ describe('Validation Schemas', () => {
 
     it('should reject empty models array', () => {
       const result = ProviderConfigInputSchema.safeParse({
-        name: 'My Provider',
+        name: 'My-Provider',
         endpoint: 'https://api.test.com',
         apiKey: 'key',
         format: 'openai',
@@ -151,17 +151,69 @@ describe('Validation Schemas', () => {
       });
       expect(result.success).toBe(false);
     });
+
+    it('should reject provider name with spaces', () => {
+      const result = ProviderConfigInputSchema.safeParse({
+        name: 'My Provider',
+        endpoint: 'https://api.openai.com',
+        apiKey: 'sk-test',
+        format: 'openai',
+        models: [{ name: 'gpt-4', contextSize: 128000, supportsVision: true, supportsTools: true }],
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('should accept model ID with slash (LiteLLM format)', () => {
+      const result = ProviderConfigInputSchema.safeParse({
+        name: 'LiteLLM-Proxy',
+        endpoint: 'https://api.example.com',
+        apiKey: 'sk-test',
+        format: 'openai',
+        models: [{ name: 'z-ai/glm-4.7', contextSize: 128000, supportsVision: false, supportsTools: false }],
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('should accept model with displayName', () => {
+      const result = ProviderConfigInputSchema.safeParse({
+        name: 'Test-Provider',
+        endpoint: 'https://api.example.com',
+        apiKey: 'sk-test',
+        format: 'openai',
+        models: [
+          {
+            name: 'glm-5.1',
+            displayName: 'GLM 5.1',
+            contextSize: 128000,
+            supportsVision: false,
+            supportsTools: false,
+          },
+        ],
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject model ID longer than 64 chars', () => {
+      const result = ProviderConfigInputSchema.safeParse({
+        name: 'Test-Provider',
+        endpoint: 'https://api.example.com',
+        apiKey: 'sk-test',
+        format: 'openai',
+        models: [{ name: 'a'.repeat(65), contextSize: 4096, supportsVision: false, supportsTools: false }],
+      });
+      expect(result.success).toBe(false);
+    });
   });
 
   describe('ProviderConfigUpdateSchema', () => {
     it('should accept partial update with only name', () => {
-      const result = ProviderConfigUpdateSchema.safeParse({ name: 'New Name' });
+      const result = ProviderConfigUpdateSchema.safeParse({ name: 'New-Name' });
       expect(result.success).toBe(true);
     });
 
     it('should accept full update', () => {
       const result = ProviderConfigUpdateSchema.safeParse({
-        name: 'My Provider',
+        name: 'My-Provider',
         endpoint: 'https://api.openai.com',
         apiKey: 'sk-test',
         format: 'openai',

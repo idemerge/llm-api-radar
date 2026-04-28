@@ -1,5 +1,22 @@
 import { z, ZodSchema } from 'zod';
 
+// --- Shared naming rules ---
+// Model ID: alphanumeric, dash, underscore, dot, slash (for LiteLLM vendor/model), 1-64 chars
+const modelIdRegex = /^[a-zA-Z0-9][a-zA-Z0-9._/-]{0,63}$/;
+const modelIdRule = z.string().regex(modelIdRegex, 'Model ID: 1-64 chars, alphanumeric/dash/underscore/dot/slash');
+
+// Provider name: alphanumeric, dash, underscore, NO spaces, 1-64 chars
+const providerNameRegex = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/;
+const providerNameRule = z
+  .string()
+  .regex(providerNameRegex, 'Provider name: 1-64 chars, alphanumeric/dash/underscore, no spaces');
+
+// Display name: alphanumeric, space, dash, underscore, dot, 1-64 chars
+const displayNameRegex = /^[a-zA-Z0-9][a-zA-Z0-9 ._-]{0,63}$/;
+const displayNameRule = z
+  .string()
+  .regex(displayNameRegex, 'Display name: 1-64 chars, alphanumeric/space/dash/underscore/dot');
+
 // Auth schemas
 export const LoginSchema = z.object({
   username: z.string().min(1, 'Username is required'),
@@ -43,8 +60,8 @@ export const StartBenchmarkSchema = z.object({
 // Provider schemas
 const ModelConfigSchema = z.object({
   id: z.string().min(1).optional(),
-  name: z.string().min(1, 'Model name is required'),
-  displayName: z.string().optional(),
+  name: modelIdRule,
+  displayName: displayNameRule.optional(),
   contextSize: z.number().int().min(1),
   supportsVision: z.boolean(),
   supportsTools: z.boolean(),
@@ -53,7 +70,7 @@ const ModelConfigSchema = z.object({
 });
 
 export const ProviderConfigInputSchema = z.object({
-  name: z.string().min(1, 'Provider name is required'),
+  name: providerNameRule,
   endpoint: z.string().min(1, 'Endpoint URL is required'),
   apiKey: z.string().min(1, 'API key is required'),
   format: z.enum(['openai', 'anthropic', 'gemini', 'custom']),
@@ -62,7 +79,7 @@ export const ProviderConfigInputSchema = z.object({
 
 // Partial schema for updates — all fields optional except models (when provided must be non-empty)
 export const ProviderConfigUpdateSchema = z.object({
-  name: z.string().min(1, 'Provider name is required').optional(),
+  name: providerNameRule.optional(),
   endpoint: z.string().min(1, 'Endpoint URL is required').optional(),
   apiKey: z.string().min(1, 'API key is required').optional(),
   format: z.enum(['openai', 'anthropic', 'gemini', 'custom']).optional(),
@@ -73,7 +90,7 @@ export const TestConnectionSchema = z.object({
   endpoint: z.string().min(1, 'Endpoint URL is required'),
   apiKey: z.string().min(1, 'API key is required'),
   format: z.enum(['openai', 'anthropic', 'gemini', 'custom']),
-  modelName: z.string().min(1, 'Model name is required'),
+  modelName: modelIdRule,
 });
 
 // Workflow schemas
@@ -124,8 +141,8 @@ export const MonitorConfigSchema = z.object({
 
 export const MonitorTargetSchema = z.object({
   providerId: z.string().min(1),
-  modelName: z.string().min(1),
-  providerName: z.string().min(1),
+  modelName: modelIdRule,
+  providerName: providerNameRule,
   intervalMinutes: z.number().int().min(0),
 });
 
@@ -134,7 +151,7 @@ export const MonitorTargetsArraySchema = z.array(MonitorTargetSchema).min(1, 'At
 // Playground schemas
 export const PlaygroundRunSchema = z.object({
   providerId: z.string().min(1, 'Provider ID is required'),
-  modelName: z.string().min(1, 'Model name is required'),
+  modelName: modelIdRule,
   prompt: z.string().min(1, 'Prompt is required'),
   systemPrompt: z.string().optional(),
   maxTokens: z.number().int().min(1).max(1000000),
