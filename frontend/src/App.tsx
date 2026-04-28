@@ -465,7 +465,7 @@ function App() {
                   className="space-y-6"
                 >
                   {/* Getting Started Hint */}
-                  {!currentWorkflow && !isWorkflowRunning && workflows.length === 0 && (
+                  {!currentWorkflow && !isWorkflowRunning && workflowsLoaded && workflows.length === 0 && (
                     <div className="p-4 rounded-md border border-accent-blue/20 bg-accent-blue/5 flex items-start gap-3">
                       <svg
                         width="18"

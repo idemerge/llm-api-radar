@@ -365,7 +365,7 @@ export function PlaygroundPage() {
               <Select
                 className="w-full"
                 placeholder="Select provider"
-                value={providerId}
+                value={providers.length > 0 ? providerId : undefined}
                 onChange={(val) => {
                   setProviderId(val);
                   setModelName(null);
