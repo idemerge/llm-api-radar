@@ -138,7 +138,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: idemerge/llm-api-radar
+          images: idemerge/llm-api-bench
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern=v{{version}}

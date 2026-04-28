@@ -1,10 +1,10 @@
-# LLM API Radar
+# LLM API Bench
 
 **English** | [中文](README-cn.md)
 
-[![GitHub Stars](https://img.shields.io/github/stars/idemerge/llm-api-radar?style=flat-square)](https://github.com/idemerge/llm-api-radar/stargazers)
-[![GitHub Release](https://img.shields.io/github/v/release/idemerge/llm-api-radar?style=flat-square)](https://github.com/idemerge/llm-api-radar/releases)
-[![Docker Pulls](https://img.shields.io/docker/pulls/idemerge/llm-api-radar?style=flat-square)](https://hub.docker.com/r/idemerge/llm-api-radar)
+[![GitHub Stars](https://img.shields.io/github/stars/idemerge/llm-api-bench?style=flat-square)](https://github.com/idemerge/llm-api-bench/stargazers)
+[![GitHub Release](https://img.shields.io/github/v/release/idemerge/llm-api-bench?style=flat-square)](https://github.com/idemerge/llm-api-bench/releases)
+[![Docker Pulls](https://img.shields.io/docker/pulls/idemerge/llm-api-bench?style=flat-square)](https://hub.docker.com/r/idemerge/llm-api-bench)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
 **Self-hosted LLM performance testing and monitoring platform.**
@@ -13,9 +13,9 @@ Benchmark, monitor, and compare LLM API providers in one place — measure laten
 
 ---
 
-## Why LLM API Radar?
+## Why LLM API Bench?
 
-Running LLMs in production means juggling multiple providers, each with different latency profiles, rate limits, and reliability. Public benchmarks don't reflect **your** network, **your** prompts, or **your** traffic patterns. LLM API Radar is a self-hosted tool that lets you:
+Running LLMs in production means juggling multiple providers, each with different latency profiles, rate limits, and reliability. Public benchmarks don't reflect **your** network, **your** prompts, or **your** traffic patterns. LLM API Bench is a self-hosted tool that lets you:
 
 - **Benchmark** — Compare providers head-to-head with identical prompts, configurable concurrency (1–5000), and warmup runs
 - **Monitor** — Continuously health-check your providers with four-tier status (healthy / slow / very slow / down) and 24h history
@@ -26,7 +26,7 @@ Running LLMs in production means juggling multiple providers, each with differen
 ## Demo
 
 <p align="center">
-  <img src="docs/demo.gif" alt="LLM API Radar Demo" width="960" />
+  <img src="docs/demo.gif" alt="LLM API Bench Demo" width="960" />
 </p>
 
 ## Screenshots
@@ -131,8 +131,8 @@ Running LLMs in production means juggling multiple providers, each with differen
 ### Option 1: One-Click Script (Production)
 
 ```bash
-git clone https://github.com/idemerge/llm-api-radar.git
-cd llm-api-radar
+git clone https://github.com/idemerge/llm-api-bench.git
+cd llm-api-bench
 cp .env.example .env    # edit .env to set credentials
 chmod +x start.sh && ./start.sh
 ```
@@ -140,8 +140,8 @@ chmod +x start.sh && ./start.sh
 ### Option 2: Docker Compose (Production)
 
 ```bash
-git clone https://github.com/idemerge/llm-api-radar.git
-cd llm-api-radar
+git clone https://github.com/idemerge/llm-api-bench.git
+cd llm-api-bench
 cp .env.example .env    # edit .env to set credentials
 docker compose up -d
 ```
@@ -149,8 +149,8 @@ docker compose up -d
 ### Option 3: Development
 
 ```bash
-git clone https://github.com/idemerge/llm-api-radar.git
-cd llm-api-radar
+git clone https://github.com/idemerge/llm-api-bench.git
+cd llm-api-bench
 cp .env.example .env
 
 # Backend
@@ -233,7 +233,7 @@ The entire stack runs as a **single Node.js process** — no Redis, no Postgres,
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=idemerge/llm-api-radar&type=Date)](https://star-history.com/#idemerge/llm-api-radar&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=idemerge/llm-api-bench&type=Date)](https://star-history.com/#idemerge/llm-api-bench&Date)
 
 ## Contributing
 

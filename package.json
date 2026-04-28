@@ -1,5 +1,5 @@
 {
-  "name": "llm-api-radar",
+  "name": "llm-api-bench",
   "private": true,
   "description": "Root package for git hooks and shared tooling",
   "devDependencies": {

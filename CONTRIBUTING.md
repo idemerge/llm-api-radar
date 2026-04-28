@@ -1,4 +1,4 @@
-# Contributing to LLM API Radar
+# Contributing to LLM API Bench
 
 Thanks for your interest in contributing! This guide will help you get started.
 
@@ -13,7 +13,7 @@ Thanks for your interest in contributing! This guide will help you get started.
 ### Local Development
 
 ```bash
-git clone https://github.com/idemerge/llm-api-radar.git
+git clone https://github.com/idemerge/llm-api-bench.git
 cd llm-benchmark
 cp .env.example .env
 
@@ -55,7 +55,7 @@ docker compose up -d
 
 ### Reporting Bugs
 
-1. Search [existing issues](https://github.com/idemerge/llm-api-radar/issues) first
+1. Search [existing issues](https://github.com/idemerge/llm-api-bench/issues) first
 2. Use the **Bug Report** issue template
 3. Include steps to reproduce, expected vs actual behavior, and screenshots if applicable
 
@@ -89,7 +89,7 @@ docker compose up -d
 
 ## Adding a New Provider Adapter
 
-LLM API Radar supports adding custom LLM providers. To add one:
+LLM API Bench supports adding custom LLM providers. To add one:
 
 1. Create a new adapter in `backend/src/services/` following the existing pattern (see `openai-adapter` as reference)
 2. Implement the standard interface: `chat`, `chatStream`, `listModels`

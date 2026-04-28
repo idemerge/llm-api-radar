@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Puppeteer demo recorder for LLM API Radar.
+ * Puppeteer demo recorder for LLM API Bench.
  *
  * Launches a headless browser, logs in, navigates through every major page,
  * and records a screencast saved as WebM. The companion shell script

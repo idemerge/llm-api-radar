@@ -1,4 +1,4 @@
-# LLM API Radar
+# LLM API Bench
 
 ## Skill routing
 

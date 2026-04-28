@@ -380,7 +380,7 @@ function App() {
                 </svg>
               </div>
               <div>
-                <div className="text-[13px] font-semibold text-text-primary leading-none">LLM API Radar</div>
+                <div className="text-[13px] font-semibold text-text-primary leading-none">LLM API Bench</div>
                 <div className="text-[9px] text-text-tertiary mt-0.5 font-mono">{APP_VERSION}</div>
               </div>
             </div>

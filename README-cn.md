@@ -1,10 +1,10 @@
-# LLM API Radar
+# LLM API Bench
 
 [English](README.md) | **中文**
 
-[![GitHub Stars](https://img.shields.io/github/stars/idemerge/llm-api-radar?style=flat-square)](https://github.com/idemerge/llm-api-radar/stargazers)
-[![GitHub Release](https://img.shields.io/github/v/release/idemerge/llm-api-radar?style=flat-square)](https://github.com/idemerge/llm-api-radar/releases)
-[![Docker Pulls](https://img.shields.io/docker/pulls/idemerge/llm-api-radar?style=flat-square)](https://hub.docker.com/r/idemerge/llm-api-radar)
+[![GitHub Stars](https://img.shields.io/github/stars/idemerge/llm-api-bench?style=flat-square)](https://github.com/idemerge/llm-api-bench/stargazers)
+[![GitHub Release](https://img.shields.io/github/v/release/idemerge/llm-api-bench?style=flat-square)](https://github.com/idemerge/llm-api-bench/releases)
+[![Docker Pulls](https://img.shields.io/docker/pulls/idemerge/llm-api-bench?style=flat-square)](https://hub.docker.com/r/idemerge/llm-api-bench)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
 **自托管的 LLM 性能测试与监控平台。**
@@ -13,9 +13,9 @@
 
 ---
 
-## 为什么选择 LLM API Radar？
+## 为什么选择 LLM API Bench？
 
-在生产环境中使用 LLM 意味着要同时管理多家服务商，它们各自有着不同的延迟特征、速率限制和稳定性表现。公开的基准测试并不能反映**你的**网络环境、**你的**提示词、或**你的**流量模式。LLM API Radar 是一个自托管工具，让你可以：
+在生产环境中使用 LLM 意味着要同时管理多家服务商，它们各自有着不同的延迟特征、速率限制和稳定性表现。公开的基准测试并不能反映**你的**网络环境、**你的**提示词、或**你的**流量模式。LLM API Bench 是一个自托管工具，让你可以：
 
 - **基准测试** — 使用相同提示词对比各服务商，支持可配置并发数（1–5000）和预热运行
 - **健康监控** — 持续检查服务商健康状态，四级评估（健康 / 较慢 / 很慢 / 宕机），24 小时历史记录
@@ -26,7 +26,7 @@
 ## 演示
 
 <p align="center">
-  <img src="docs/demo.gif" alt="LLM API Radar 演示" width="960" />
+  <img src="docs/demo.gif" alt="LLM API Bench 演示" width="960" />
 </p>
 
 ## 截图
@@ -131,8 +131,8 @@
 ### 方式一：一键脚本（生产环境）
 
 ```bash
-git clone https://github.com/idemerge/llm-api-radar.git
-cd llm-api-radar
+git clone https://github.com/idemerge/llm-api-bench.git
+cd llm-api-bench
 cp .env.example .env    # 编辑 .env 设置凭证
 chmod +x start.sh && ./start.sh
 ```
@@ -140,8 +140,8 @@ chmod +x start.sh && ./start.sh
 ### 方式二：Docker Compose（生产环境）
 
 ```bash
-git clone https://github.com/idemerge/llm-api-radar.git
-cd llm-api-radar
+git clone https://github.com/idemerge/llm-api-bench.git
+cd llm-api-bench
 cp .env.example .env    # 编辑 .env 设置凭证
 docker compose up -d
 ```
@@ -149,8 +149,8 @@ docker compose up -d
 ### 方式三：开发环境
 
 ```bash
-git clone https://github.com/idemerge/llm-api-radar.git
-cd llm-api-radar
+git clone https://github.com/idemerge/llm-api-bench.git
+cd llm-api-bench
 cp .env.example .env
 
 # 后端
@@ -233,7 +233,7 @@ cd ../frontend && npm install && npm run dev
 
 ## Star 趋势
 
-[![Star History Chart](https://api.star-history.com/svg?repos=idemerge/llm-api-radar&type=Date)](https://star-history.com/#idemerge/llm-api-radar&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=idemerge/llm-api-bench&type=Date)](https://star-history.com/#idemerge/llm-api-bench&Date)
 
 ## 参与贡献
 

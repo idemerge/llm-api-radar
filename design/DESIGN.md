@@ -1,4 +1,4 @@
-# LLM API Radar — Design Document
+# LLM API Bench — Design Document
 
 > Version: v1.2.0 | Last updated: 2026-04-03
 
@@ -27,7 +27,7 @@
 
 ## 1. Overview
 
-LLM API Radar is a self-hosted web application for measuring and comparing LLM API performance. It supports OpenAI, Anthropic, Google Gemini, and any OpenAI-compatible endpoint. Users configure providers, create benchmark workflows, and view results with real-time charts and radar comparisons.
+LLM API Bench is a self-hosted web application for measuring and comparing LLM API performance. It supports OpenAI, Anthropic, Google Gemini, and any OpenAI-compatible endpoint. Users configure providers, create benchmark workflows, and view results with real-time charts and radar comparisons.
 
 **Key capabilities:**
 
@@ -84,12 +84,12 @@ The `DynamicProvider` class (`backend/src/providers/adapter.ts`) handles all LLM
 
 **Supported formats:**
 
-| Format | Endpoint | Auth | Streaming | Vision |
-|--------|----------|------|-----------|--------|
-| `openai` | `/chat/completions` | `Bearer` token | Yes | URL + base64 |
-| `anthropic` | `/messages` | `x-api-key` header | Yes | base64 only |
-| `gemini` | `/models/{model}:generateContent` | Query param `key` | No | base64 only |
-| `custom` | `/chat/completions` | `Bearer` token | Yes | URL + base64 |
+| Format      | Endpoint                          | Auth               | Streaming | Vision       |
+| ----------- | --------------------------------- | ------------------ | --------- | ------------ |
+| `openai`    | `/chat/completions`               | `Bearer` token     | Yes       | URL + base64 |
+| `anthropic` | `/messages`                       | `x-api-key` header | Yes       | base64 only  |
+| `gemini`    | `/models/{model}:generateContent` | Query param `key`  | No        | base64 only  |
+| `custom`    | `/chat/completions`               | `Bearer` token     | Yes       | URL + base64 |
 
 **Key methods:**
 
@@ -106,8 +106,8 @@ The `DynamicProvider` class (`backend/src/providers/adapter.ts`) handles all LLM
   outputTokens: number;
   reasoningTokens: number;
   totalTokens: number;
-  responseTime: number;        // Total latency in ms
-  firstTokenLatency: number;   // TTFT in ms
+  responseTime: number; // Total latency in ms
+  firstTokenLatency: number; // TTFT in ms
   estimatedCost: number;
   model: string;
 }
@@ -201,55 +201,55 @@ Tables are auto-created on startup. Schema migrations use `ALTER TABLE` with try
 
 ### 4.1 Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | React 19 + TypeScript |
-| Build | Vite 8 |
-| Styling | Tailwind CSS v4 |
+| Layer      | Technology                |
+| ---------- | ------------------------- |
+| Framework  | React 19 + TypeScript     |
+| Build      | Vite 8                    |
+| Styling    | Tailwind CSS v4           |
 | UI Library | Ant Design 6 (dark theme) |
-| Charts | Recharts 3 |
-| Animation | Framer Motion 12 |
-| Routing | react-router-dom 7 |
+| Charts     | Recharts 3                |
+| Animation  | Framer Motion 12          |
+| Routing    | react-router-dom 7        |
 
 ### 4.2 Page Structure
 
-| Path | Page | Description |
-|------|------|-------------|
-| `/workflow` | Workflow | Configure and run multi-task benchmarks |
-| `/history` | History | Browse past workflow runs |
-| `/history/:id` | Detail | View single workflow results with charts |
-| `/monitor` | Monitor | Real-time API health dashboard |
-| `/playground` | Playground | Interactive model testing (streaming, vision) |
-| `/settings` | Settings | Provider management (CRUD, connection test) |
+| Path           | Page       | Description                                   |
+| -------------- | ---------- | --------------------------------------------- |
+| `/workflow`    | Workflow   | Configure and run multi-task benchmarks       |
+| `/history`     | History    | Browse past workflow runs                     |
+| `/history/:id` | Detail     | View single workflow results with charts      |
+| `/monitor`     | Monitor    | Real-time API health dashboard                |
+| `/playground`  | Playground | Interactive model testing (streaming, vision) |
+| `/settings`    | Settings   | Provider management (CRUD, connection test)   |
 
 ### 4.3 Component Map
 
-| Component | Purpose |
-|-----------|---------|
-| `Sidebar.tsx` | Fixed left navigation with status indicator |
-| `WorkflowConfigPanel.tsx` | Workflow config form with templates |
-| `WorkflowProgress.tsx` | Live execution progress |
-| `WorkflowResults.tsx` | Post-run results with charts and radar |
-| `HistoryPanel.tsx` | Workflow history list with actions |
-| `HistoryDetailPage.tsx` | Detailed single-run view |
-| `MonitorPage.tsx` | Health dashboard with status cards |
-| `PlaygroundPage.tsx` | Model testing with streaming/vision |
-| `SettingsPage.tsx` | Provider CRUD with connection test |
-| `LiveChart.tsx` | Real-time area chart (Recharts) |
-| `MetricCard.tsx` | KPI metric display card |
-| `RadarComparison.tsx` | Multi-dimension radar chart |
-| `NeonGauge.tsx` | Custom gauge visualization |
+| Component                 | Purpose                                     |
+| ------------------------- | ------------------------------------------- |
+| `Sidebar.tsx`             | Fixed left navigation with status indicator |
+| `WorkflowConfigPanel.tsx` | Workflow config form with templates         |
+| `WorkflowProgress.tsx`    | Live execution progress                     |
+| `WorkflowResults.tsx`     | Post-run results with charts and radar      |
+| `HistoryPanel.tsx`        | Workflow history list with actions          |
+| `HistoryDetailPage.tsx`   | Detailed single-run view                    |
+| `MonitorPage.tsx`         | Health dashboard with status cards          |
+| `PlaygroundPage.tsx`      | Model testing with streaming/vision         |
+| `SettingsPage.tsx`        | Provider CRUD with connection test          |
+| `LiveChart.tsx`           | Real-time area chart (Recharts)             |
+| `MetricCard.tsx`          | KPI metric display card                     |
+| `RadarComparison.tsx`     | Multi-dimension radar chart                 |
+| `NeonGauge.tsx`           | Custom gauge visualization                  |
 
 ### 4.4 State Management
 
 No global state library. Each page uses custom hooks:
 
-| Hook | State Managed |
-|------|--------------|
-| `useWorkflow` | Workflows list, current workflow, templates, SSE connection |
-| `useProviders` | Provider list, CRUD operations |
-| `usePlayground` | Prompt execution, streaming, metrics, abort |
-| `useMonitor` | Statuses, history, targets, global config, auto-refresh |
+| Hook            | State Managed                                               |
+| --------------- | ----------------------------------------------------------- |
+| `useWorkflow`   | Workflows list, current workflow, templates, SSE connection |
+| `useProviders`  | Provider list, CRUD operations                              |
+| `usePlayground` | Prompt execution, streaming, metrics, abort                 |
+| `useMonitor`    | Statuses, history, targets, global config, auto-refresh     |
 
 ---
 
@@ -257,77 +257,77 @@ No global state library. Each page uses custom hooks:
 
 ### Table: `benchmarks`
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | TEXT PK | Benchmark ID (bench_xxxxxxxx) |
-| `status` | TEXT | pending / running / completed / failed |
-| `providers` | TEXT (JSON) | Provider key array |
-| `config` | TEXT (JSON) | BenchmarkConfig |
-| `results` | TEXT (JSON) | Per-provider results |
-| `capability_tests` | TEXT (JSON) | Optional capability test results |
-| `created_at` | TEXT | ISO timestamp |
-| `completed_at` | TEXT | ISO timestamp |
+| Column             | Type        | Description                            |
+| ------------------ | ----------- | -------------------------------------- |
+| `id`               | TEXT PK     | Benchmark ID (bench_xxxxxxxx)          |
+| `status`           | TEXT        | pending / running / completed / failed |
+| `providers`        | TEXT (JSON) | Provider key array                     |
+| `config`           | TEXT (JSON) | BenchmarkConfig                        |
+| `results`          | TEXT (JSON) | Per-provider results                   |
+| `capability_tests` | TEXT (JSON) | Optional capability test results       |
+| `created_at`       | TEXT        | ISO timestamp                          |
+| `completed_at`     | TEXT        | ISO timestamp                          |
 
 ### Table: `workflows`
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | TEXT PK | Workflow ID (wf_xxxxxxxx) |
-| `name` | TEXT | Display name |
-| `description` | TEXT | Optional description |
-| `status` | TEXT | draft / running / completed / failed / cancelled |
-| `providers` | TEXT (JSON) | Provider key array |
-| `provider_labels` | TEXT (JSON) | Display name map |
-| `tasks` | TEXT (JSON) | WorkflowTask array |
-| `options` | TEXT (JSON) | WorkflowOptions |
-| `task_results` | TEXT (JSON) | WorkflowTaskResult array |
-| `summary` | TEXT (JSON) | Optional aggregated summary |
-| `created_at` / `updated_at` | TEXT | ISO timestamps |
-| `started_at` / `completed_at` | TEXT | ISO timestamps |
+| Column                        | Type        | Description                                      |
+| ----------------------------- | ----------- | ------------------------------------------------ |
+| `id`                          | TEXT PK     | Workflow ID (wf_xxxxxxxx)                        |
+| `name`                        | TEXT        | Display name                                     |
+| `description`                 | TEXT        | Optional description                             |
+| `status`                      | TEXT        | draft / running / completed / failed / cancelled |
+| `providers`                   | TEXT (JSON) | Provider key array                               |
+| `provider_labels`             | TEXT (JSON) | Display name map                                 |
+| `tasks`                       | TEXT (JSON) | WorkflowTask array                               |
+| `options`                     | TEXT (JSON) | WorkflowOptions                                  |
+| `task_results`                | TEXT (JSON) | WorkflowTaskResult array                         |
+| `summary`                     | TEXT (JSON) | Optional aggregated summary                      |
+| `created_at` / `updated_at`   | TEXT        | ISO timestamps                                   |
+| `started_at` / `completed_at` | TEXT        | ISO timestamps                                   |
 
 ### Table: `providers`
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | TEXT PK | UUID |
-| `name` | TEXT | Display name |
-| `endpoint` | TEXT | API base URL |
-| `api_key_encrypted` | TEXT | AES-256 encrypted API key |
-| `format` | TEXT | openai / anthropic / gemini / custom |
-| `models` | TEXT (JSON) | ModelConfig array |
-| `created_at` / `updated_at` | TEXT | ISO timestamps |
+| Column                      | Type        | Description                          |
+| --------------------------- | ----------- | ------------------------------------ |
+| `id`                        | TEXT PK     | UUID                                 |
+| `name`                      | TEXT        | Display name                         |
+| `endpoint`                  | TEXT        | API base URL                         |
+| `api_key_encrypted`         | TEXT        | AES-256 encrypted API key            |
+| `format`                    | TEXT        | openai / anthropic / gemini / custom |
+| `models`                    | TEXT (JSON) | ModelConfig array                    |
+| `created_at` / `updated_at` | TEXT        | ISO timestamps                       |
 
 ### Table: `monitor_pings`
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | INTEGER PK | Auto-increment |
-| `provider_id` | TEXT | Provider config ID |
-| `provider_name` | TEXT | Display name |
-| `model_name` | TEXT | Model identifier |
-| `status` | TEXT | ok / error / timeout |
-| `latency_ms` | INTEGER | Total response time |
-| `ttft_ms` | INTEGER | Time to first token |
-| `output_tokens` | INTEGER | Tokens generated |
-| `response_text` | TEXT | First 200 chars |
-| `error_message` | TEXT | Error details |
-| `checked_at` | TEXT | ISO timestamp |
+| Column          | Type       | Description          |
+| --------------- | ---------- | -------------------- |
+| `id`            | INTEGER PK | Auto-increment       |
+| `provider_id`   | TEXT       | Provider config ID   |
+| `provider_name` | TEXT       | Display name         |
+| `model_name`    | TEXT       | Model identifier     |
+| `status`        | TEXT       | ok / error / timeout |
+| `latency_ms`    | INTEGER    | Total response time  |
+| `ttft_ms`       | INTEGER    | Time to first token  |
+| `output_tokens` | INTEGER    | Tokens generated     |
+| `response_text` | TEXT       | First 200 chars      |
+| `error_message` | TEXT       | Error details        |
+| `checked_at`    | TEXT       | ISO timestamp        |
 
 ### Table: `monitor_targets`
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `provider_id` | TEXT PK | Provider config ID |
-| `model_name` | TEXT PK | Model identifier |
-| `provider_name` | TEXT | Display name |
+| Column             | Type    | Description                         |
+| ------------------ | ------- | ----------------------------------- |
+| `provider_id`      | TEXT PK | Provider config ID                  |
+| `model_name`       | TEXT PK | Model identifier                    |
+| `provider_name`    | TEXT    | Display name                        |
 | `interval_minutes` | INTEGER | Check interval (0 = global default) |
-| `enabled` | INTEGER | 1 = active |
+| `enabled`          | INTEGER | 1 = active                          |
 
 ### Table: `monitor_config`
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `key` | TEXT PK | Config key (global) |
+| Column  | Type        | Description                                    |
+| ------- | ----------- | ---------------------------------------------- |
+| `key`   | TEXT PK     | Config key (global)                            |
 | `value` | TEXT (JSON) | `{ defaultIntervalMinutes, healthThresholds }` |
 
 ---
@@ -336,62 +336,62 @@ No global state library. Each page uses custom hooks:
 
 ### Benchmarks
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/benchmarks` | Start benchmark run |
-| GET | `/api/benchmarks` | List all runs |
-| GET | `/api/benchmarks/:id` | Get run details |
-| GET | `/api/benchmarks/:id/stream` | SSE live progress |
-| GET | `/api/benchmarks/:id/export` | Export (JSON/CSV) |
-| POST | `/api/benchmarks/:id/cancel` | Cancel run |
+| Method | Path                         | Description         |
+| ------ | ---------------------------- | ------------------- |
+| POST   | `/api/benchmarks`            | Start benchmark run |
+| GET    | `/api/benchmarks`            | List all runs       |
+| GET    | `/api/benchmarks/:id`        | Get run details     |
+| GET    | `/api/benchmarks/:id/stream` | SSE live progress   |
+| GET    | `/api/benchmarks/:id/export` | Export (JSON/CSV)   |
+| POST   | `/api/benchmarks/:id/cancel` | Cancel run          |
 
 ### Workflows
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/workflows` | Create and start workflow |
-| GET | `/api/workflows` | List all workflows |
-| GET | `/api/workflows/templates` | Get built-in templates |
-| GET | `/api/workflows/active` | Get running workflow |
-| GET | `/api/workflows/:id` | Get workflow details |
-| GET | `/api/workflows/:id/stream` | SSE live progress |
-| POST | `/api/workflows/:id/cancel` | Cancel workflow |
-| GET | `/api/workflows/:id/export` | Export results |
-| POST | `/api/workflows/:id/duplicate` | Duplicate config |
-| DELETE | `/api/workflows/:id` | Delete workflow |
+| Method | Path                           | Description               |
+| ------ | ------------------------------ | ------------------------- |
+| POST   | `/api/workflows`               | Create and start workflow |
+| GET    | `/api/workflows`               | List all workflows        |
+| GET    | `/api/workflows/templates`     | Get built-in templates    |
+| GET    | `/api/workflows/active`        | Get running workflow      |
+| GET    | `/api/workflows/:id`           | Get workflow details      |
+| GET    | `/api/workflows/:id/stream`    | SSE live progress         |
+| POST   | `/api/workflows/:id/cancel`    | Cancel workflow           |
+| GET    | `/api/workflows/:id/export`    | Export results            |
+| POST   | `/api/workflows/:id/duplicate` | Duplicate config          |
+| DELETE | `/api/workflows/:id`           | Delete workflow           |
 
 ### Providers
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/providers` | List providers |
-| POST | `/api/providers` | Create provider |
-| GET | `/api/providers/:id` | Get provider |
-| PUT | `/api/providers/:id` | Update provider |
-| DELETE | `/api/providers/:id` | Delete provider |
-| POST | `/api/providers/:id/test` | Test saved provider |
-| POST | `/api/providers/test-connection` | Test before saving |
+| Method | Path                             | Description         |
+| ------ | -------------------------------- | ------------------- |
+| GET    | `/api/providers`                 | List providers      |
+| POST   | `/api/providers`                 | Create provider     |
+| GET    | `/api/providers/:id`             | Get provider        |
+| PUT    | `/api/providers/:id`             | Update provider     |
+| DELETE | `/api/providers/:id`             | Delete provider     |
+| POST   | `/api/providers/:id/test`        | Test saved provider |
+| POST   | `/api/providers/test-connection` | Test before saving  |
 
 ### Playground
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/playground/run` | Non-streaming request |
-| POST | `/api/playground/stream` | SSE streaming request |
+| Method | Path                     | Description           |
+| ------ | ------------------------ | --------------------- |
+| POST   | `/api/playground/run`    | Non-streaming request |
+| POST   | `/api/playground/stream` | SSE streaming request |
 
 ### Monitor
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/monitor/config` | Global config |
-| PUT | `/api/monitor/config` | Update config |
-| GET | `/api/monitor/targets` | List targets |
-| PUT | `/api/monitor/targets` | Replace all targets |
-| POST | `/api/monitor/targets` | Add target |
-| DELETE | `/api/monitor/targets/:pid/:model` | Remove target |
-| GET | `/api/monitor/status` | Latest ping per target |
-| GET | `/api/monitor/history?hours=24` | Recent pings |
-| POST | `/api/monitor/run` | Manual trigger |
+| Method | Path                               | Description            |
+| ------ | ---------------------------------- | ---------------------- |
+| GET    | `/api/monitor/config`              | Global config          |
+| PUT    | `/api/monitor/config`              | Update config          |
+| GET    | `/api/monitor/targets`             | List targets           |
+| PUT    | `/api/monitor/targets`             | Replace all targets    |
+| POST   | `/api/monitor/targets`             | Add target             |
+| DELETE | `/api/monitor/targets/:pid/:model` | Remove target          |
+| GET    | `/api/monitor/status`              | Latest ping per target |
+| GET    | `/api/monitor/history?hours=24`    | Recent pings           |
+| POST   | `/api/monitor/run`                 | Manual trigger         |
 
 ---
 
