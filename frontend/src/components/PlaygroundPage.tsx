@@ -389,7 +389,7 @@ export function PlaygroundPage() {
                 className="w-full"
                 placeholder={providerId ? 'Select model' : 'Select provider first'}
                 disabled={!providerId}
-                value={modelName}
+                value={activeModels.length > 0 ? modelName : undefined}
                 onChange={setModelName}
                 options={activeModels.map((m) => ({
                   value: m.name,
