@@ -111,8 +111,11 @@ export function PlaygroundPage() {
   const enrichedHistoryItems = useMemo(
     () =>
       historyItems.map((it) => {
-        const raw = it.modelName.includes('/') ? it.modelName.split('/').pop()! : it.modelName;
-        const display = modelDisplayNames[raw] || it.modelName;
+        // Look up by full model name first (e.g. "z-ai/glm-4.7"), then by stripped name
+        const display =
+          modelDisplayNames[it.modelName] ||
+          modelDisplayNames[it.modelName.includes('/') ? it.modelName.split('/').pop()! : it.modelName] ||
+          it.modelName;
         return display !== it.modelName ? { ...it, modelName: display } : it;
       }),
     [historyItems, modelDisplayNames],
