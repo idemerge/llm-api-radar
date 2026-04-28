@@ -22,14 +22,19 @@ Key routing rules:
 
 - All screenshots in `docs/screenshots/` must be **1100×720** pixels
 - Use puppeteer with `defaultViewport: { width: 1100, height: 720 }`
-- Always run the dev server in **Demo Mode** before capturing screenshots or recording GIFs so Provider names, endpoints, and API keys are sanitized.
-- **Preferred method**: create `frontend/.env.local` with `VITE_DEMO_MODE=true` — Vite picks this up reliably. Inline env vars (`VITE_DEMO_MODE=true npx vite`) may not propagate in all shell contexts.
+- **Demo Mode is for screenshots/GIF only** — do NOT leave it on during normal development.
+- To enable: create `frontend/.env.local` with `VITE_DEMO_MODE=true`, then start/restart the dev server. To disable: delete the file and restart.
   ```bash
+  # Enable (before screenshots/recording)
   echo "VITE_DEMO_MODE=true" > frontend/.env.local
   cd frontend && npm run dev
+
+  # Disable (after screenshots/recording)
+  rm frontend/.env.local
+  # restart dev server
   ```
-- `record-demo.sh --dev` starts its own Vite server — it reads `frontend/.env.local` automatically. When using `--skip-server`, ensure the external Vite server was started with demo mode.
-- Demo Mode rewrites display values only (no DB writes). Mapping: id-stable `ProviderA/B/C…`, `https://api.provider-a.example.com/v1`, `sk-****`. Implementation: `frontend/src/utils/demo.ts`.
+- `record-demo.sh --dev` starts its own Vite server — it reads `frontend/.env.local` automatically. When using `--skip-server`, ensure the external Vite server has demo mode enabled.
+- Demo Mode rewrites display values at the React hook level (no DB writes). Mapping: id-stable `ProviderA/B/C…`, `https://api.provider-a.example.com/v1`, `sk-****`. Implementation: `frontend/src/utils/demo.ts`.
 - **Do NOT commit** `frontend/.env.local` — it is in `.gitignore`.
 
 ## GitHub Rules
