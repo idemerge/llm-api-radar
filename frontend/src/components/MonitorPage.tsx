@@ -720,7 +720,9 @@ export function MonitorPage() {
                     <div className="text-[13px] font-medium text-text-primary">{provider.name}</div>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <Tag style={{ fontSize: 10, margin: 0 }}>{provider.format}</Tag>
-                      <span className="text-[10px] text-text-tertiary">{providerTargets.length} models</span>
+                      <span className="text-[10px] text-text-tertiary">
+                        {providerTargets.length} model{providerTargets.length !== 1 ? 's' : ''}
+                      </span>
                     </div>
                   </div>
                 </div>

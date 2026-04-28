@@ -33,7 +33,7 @@ export function PlaygroundHistorySidebar({
   selectedId,
 }: Props) {
   return (
-    <div className="w-80 shrink-0 glass-card p-4 space-y-3 self-start sticky top-4">
+    <div className="w-full md:w-80 shrink-0 glass-card p-4 space-y-3 self-start sticky top-4 fixed md:static inset-0 z-50 md:z-auto overflow-y-auto md:overflow-visible bg-bg-primary md:bg-transparent">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

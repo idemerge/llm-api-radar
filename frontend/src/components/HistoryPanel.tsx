@@ -174,12 +174,11 @@ export function HistoryPanel({
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-      {/* Header */}
+      {/* Toolbar */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-base font-semibold text-text-primary">
-          History
-          <span className="ml-2 text-sm text-text-secondary font-normal font-mono">({sorted.length})</span>
-        </h2>
+        <span className="text-sm text-text-secondary font-mono">
+          {sorted.length} workflow{sorted.length !== 1 ? 's' : ''}
+        </span>
         {onRefresh && (
           <button
             onClick={onRefresh}

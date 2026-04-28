@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.12.1] - 2026-04-28
+
+### Fixed
+- Touch targets undersized: removed `size="small"` from Settings buttons, increased model tag padding
+- Heading scale too flat: increased H1 from 20px to 24px
+- Capability tags (T/S/V) nearly illegible: increased font from 8px to 10px with larger padding
+- Mobile parameter labels overflow: responsive grid for Core Parameters section
+- Playground history panel overlaps form on mobile: full-screen overlay on mobile
+- Grammar: "1 models" now correctly pluralized across Monitor and History pages
+- antd deprecation: replaced Alert `message` prop with `title` (5 instances)
+- History page duplicate heading: removed redundant H2 title (topbar already shows page name)
+
 ## [2.12.0] - 2026-04-28
 
 ### Added

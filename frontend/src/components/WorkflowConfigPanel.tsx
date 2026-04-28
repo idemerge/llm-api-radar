@@ -666,7 +666,7 @@ export function WorkflowConfigPanel({
           <div className="section-header" data-color="teal">
             Core Parameters
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <div className="flex items-center gap-1">
                 <label className="param-chip-label">Max Tokens</label>
@@ -1101,7 +1101,7 @@ export function WorkflowConfigPanel({
                           <button
                             key={model.id}
                             onClick={() => toggleModel(provider, model.name)}
-                            className={`text-[10px] px-2 py-1 rounded border transition-all font-medium font-mono ${
+                            className={`text-[10px] px-2.5 py-1.5 rounded border transition-all font-medium font-mono min-h-[28px] ${
                               selected ? '' : 'text-text-tertiary hover:border-border-hover'
                             }`}
                             style={{

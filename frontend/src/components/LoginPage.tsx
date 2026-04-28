@@ -81,7 +81,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
 
               {changeError && (
                 <Alert
-                  message={changeError}
+                  title={changeError}
                   type="error"
                   showIcon
                   closable
@@ -130,14 +130,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
               <h2 className="text-text-primary text-base font-medium mb-4">Sign in</h2>
 
               {error && (
-                <Alert
-                  message={error}
-                  type="error"
-                  showIcon
-                  closable
-                  onClose={clearError}
-                  style={{ marginBottom: 16 }}
-                />
+                <Alert title={error} type="error" showIcon closable onClose={clearError} style={{ marginBottom: 16 }} />
               )}
 
               <form onSubmit={handleSubmit}>

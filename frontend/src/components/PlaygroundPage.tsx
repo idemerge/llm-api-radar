@@ -729,7 +729,7 @@ export function PlaygroundPage() {
         </div>
 
         {/* Error */}
-        {error && <Alert type="error" message={error} closable onClose={() => reset()} showIcon />}
+        {error && <Alert type="error" title={error} closable onClose={() => reset()} showIcon />}
 
         {/* Response */}
         {(hasRun || loading) && (

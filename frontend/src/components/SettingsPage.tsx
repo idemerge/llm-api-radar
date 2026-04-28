@@ -195,12 +195,12 @@ export function SettingsPage() {
               endpoints.
             </p>
           </div>
-          <Button type="primary" ghost icon={<PlusOutlined />} onClick={openCreateForm} size="small">
+          <Button type="primary" ghost icon={<PlusOutlined />} onClick={openCreateForm}>
             Add Provider
           </Button>
         </div>
 
-        {providerError && <Alert type="error" message={providerError} showIcon closable />}
+        {providerError && <Alert type="error" title={providerError} showIcon closable />}
 
         {loading && providers.length === 0 && (
           <div className="text-center py-8 text-text-tertiary text-[13px]">Loading providers...</div>
@@ -236,9 +236,7 @@ export function SettingsPage() {
                       <div className="text-[14px] font-semibold text-text-primary truncate">{provider.name}</div>
                       <Tag>{provider.format}</Tag>
                     </div>
-                    <Button size="small" onClick={() => openEditForm(provider)}>
-                      Edit
-                    </Button>
+                    <Button onClick={() => openEditForm(provider)}>Edit</Button>
                   </div>
 
                   {/* Info rows */}
@@ -268,7 +266,7 @@ export function SettingsPage() {
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
                     <Alert
                       type={testResult.success ? 'success' : 'error'}
-                      message={
+                      title={
                         testResult.success
                           ? `Connection successful (${testResult.latencyMs}ms)`
                           : `Connection failed: ${testResult.error}`
@@ -308,17 +306,17 @@ export function SettingsPage() {
                                 : model.contextSize}
                             </span>
                             {model.supportsVision && (
-                              <Tag color="blue" style={{ fontSize: 8, padding: '0 4px', lineHeight: '16px' }}>
+                              <Tag color="blue" style={{ fontSize: 10, padding: '0 6px', lineHeight: '20px' }}>
                                 V
                               </Tag>
                             )}
                             {model.supportsTools && (
-                              <Tag color="purple" style={{ fontSize: 8, padding: '0 4px', lineHeight: '16px' }}>
+                              <Tag color="purple" style={{ fontSize: 10, padding: '0 6px', lineHeight: '20px' }}>
                                 T
                               </Tag>
                             )}
                             {model.supportsStreaming && (
-                              <Tag color="green" style={{ fontSize: 8, padding: '0 4px', lineHeight: '16px' }}>
+                              <Tag color="green" style={{ fontSize: 10, padding: '0 6px', lineHeight: '20px' }}>
                                 S
                               </Tag>
                             )}
@@ -334,7 +332,6 @@ export function SettingsPage() {
                   <Button
                     type="primary"
                     ghost
-                    size="small"
                     icon={<ApiOutlined />}
                     onClick={() => handleTest(provider.id)}
                     loading={testingId === provider.id}
@@ -349,7 +346,7 @@ export function SettingsPage() {
                     cancelText="Cancel"
                     okButtonProps={{ danger: true }}
                   >
-                    <Button size="small" danger ghost>
+                    <Button danger ghost>
                       Delete
                     </Button>
                   </Popconfirm>
