@@ -390,28 +390,36 @@ export function WorkflowConfigPanel({
     value: number;
     onChange: (v: number) => void;
     color?: string;
-  }) => (
-    <div className="flex flex-wrap gap-1 mb-1.5">
-      {options.map((opt) => {
-        const active = value === opt.value;
-        return (
-          <button
-            key={opt.value}
-            onClick={() => onChange(opt.value)}
-            className="text-[10px] px-2 py-0.5 rounded font-mono transition-all"
-            style={{
-              fontWeight: active ? 600 : 400,
-              border: active ? `1px solid ${color}50` : '1px solid transparent',
-              backgroundColor: active ? `${color}18` : 'transparent',
-              color: active ? color : 'rgba(255,255,255,0.35)',
-            }}
-          >
-            {opt.label}
-          </button>
-        );
-      })}
-    </div>
-  );
+  }) => {
+    // Adaptive sizing: shrink when many options to stay on one line
+    const compact = options.length > 7;
+    const fontSize = compact ? '9px' : '10px';
+    const px = compact ? '0.25rem' : '0.5rem';
+    return (
+      <div className="flex flex-nowrap gap-0.5 mb-1.5">
+        {options.map((opt) => {
+          const active = value === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => onChange(opt.value)}
+              className="rounded font-mono transition-all whitespace-nowrap shrink-0"
+              style={{
+                fontSize,
+                padding: `2px ${px}`,
+                fontWeight: active ? 600 : 400,
+                border: active ? `1px solid ${color}50` : '1px solid transparent',
+                backgroundColor: active ? `${color}18` : 'transparent',
+                color: active ? color : 'rgba(255,255,255,0.35)',
+              }}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
 
   const collapseItems = tasks.map((task, index) => {
     return {

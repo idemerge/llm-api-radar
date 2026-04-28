@@ -62,18 +62,24 @@ function QuickButtons({
   onChange: (v: number) => void;
   color?: string;
 }) {
+  // Adaptive sizing: shrink when many options to stay on one line
+  const compact = options.length > 7;
+  const fontSize = compact ? '10px' : '11px';
+  const padding = compact ? '3px 0.35rem' : '6px 0.625rem';
   return (
-    <div className="flex flex-wrap gap-1 mb-1.5">
+    <div className="flex flex-nowrap gap-0.5 mb-1.5">
       {options.map((opt) => (
         <button
           key={opt.value}
           onClick={() => onChange(opt.value)}
-          className={`text-[11px] px-2.5 py-1.5 rounded border transition-all font-medium font-mono ${
+          className={`rounded border transition-all font-medium font-mono whitespace-nowrap shrink-0 ${
             value === opt.value
               ? `border-${color}/40 bg-${color}/8 text-${color}`
               : 'border-border text-text-tertiary hover:border-border-hover'
           }`}
           style={{
+            fontSize,
+            padding,
             ...(value === opt.value
               ? {
                   borderColor:
