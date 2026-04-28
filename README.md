@@ -17,7 +17,7 @@ Benchmark, monitor, and compare LLM API providers in one place — measure laten
 
 Running LLMs in production means juggling multiple providers, each with different latency profiles, rate limits, and reliability. Public benchmarks don't reflect **your** network, **your** prompts, or **your** traffic patterns. LLM API Radar is a self-hosted tool that lets you:
 
-- **Benchmark** — Compare providers head-to-head with identical prompts, configurable concurrency (1–50), and warmup runs
+- **Benchmark** — Compare providers head-to-head with identical prompts, configurable concurrency (1–5000), and warmup runs
 - **Monitor** — Continuously health-check your providers with four-tier status (healthy / slow / very slow / down) and 24h history
 - **Playground** — Interactively test any model with streaming, vision, and full token-level metrics
 - **Track** — Persistent history of all runs with side-by-side comparison and CSV/JSON export
@@ -81,7 +81,7 @@ Running LLMs in production means juggling multiple providers, each with differen
 
 - Multi-task workflows with sequential execution
 - Per-task prompt, concurrency, and iteration config
-- Quick presets — 512 / 4K / 16K tokens, 1–10 concurrency
+- Quick presets — 512 / 4K / 16K tokens, up to 5000 concurrency, up to 10M iterations
 - Warmup runs to eliminate cold-start bias
 
 ### Playground
@@ -132,7 +132,7 @@ Running LLMs in production means juggling multiple providers, each with differen
 
 ```bash
 git clone https://github.com/idemerge/llm-api-radar.git
-cd llm-benchmark
+cd llm-api-radar
 cp .env.example .env    # edit .env to set credentials
 chmod +x start.sh && ./start.sh
 ```
@@ -141,7 +141,7 @@ chmod +x start.sh && ./start.sh
 
 ```bash
 git clone https://github.com/idemerge/llm-api-radar.git
-cd llm-benchmark
+cd llm-api-radar
 cp .env.example .env    # edit .env to set credentials
 docker compose up -d
 ```
@@ -150,7 +150,7 @@ docker compose up -d
 
 ```bash
 git clone https://github.com/idemerge/llm-api-radar.git
-cd llm-benchmark
+cd llm-api-radar
 cp .env.example .env
 
 # Backend

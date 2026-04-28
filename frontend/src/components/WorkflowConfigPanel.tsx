@@ -693,7 +693,7 @@ export function WorkflowConfigPanel({
             <div className="space-y-2">
               <div className="flex items-center gap-1">
                 <label className="param-chip-label">Concurrency</label>
-                <Tooltip title="Number of parallel requests per iteration (1–200). Higher = more load.">
+                <Tooltip title="Number of parallel requests per iteration (1–5000). Higher = more load.">
                   <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
                 </Tooltip>
               </div>
@@ -708,7 +708,7 @@ export function WorkflowConfigPanel({
                 value={task.config.concurrency}
                 onChange={(v) => updateTaskConfig(index, { concurrency: v ?? 1 })}
                 min={1}
-                max={1000}
+                max={5000}
                 size="small"
                 className="font-mono"
                 style={{ width: '100%' }}
@@ -717,7 +717,7 @@ export function WorkflowConfigPanel({
             <div className="space-y-2">
               <div className="flex items-center gap-1">
                 <label className="param-chip-label">Iterations</label>
-                <Tooltip title="Number of times to repeat the benchmark (1–2000). More iterations = more reliable averages.">
+                <Tooltip title="Number of times to repeat the benchmark (1–10M). More iterations = more reliable averages.">
                   <InfoCircleOutlined className="text-[10px] text-text-tertiary cursor-help" />
                 </Tooltip>
               </div>
@@ -732,7 +732,7 @@ export function WorkflowConfigPanel({
                 value={task.config.iterations}
                 onChange={(v) => updateTaskConfig(index, { iterations: v ?? 10 })}
                 min={1}
-                max={1000000}
+                max={10000000}
                 size="small"
                 className="font-mono"
                 style={{ width: '100%' }}

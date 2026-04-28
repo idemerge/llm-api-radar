@@ -109,6 +109,8 @@ export const QUICK_CONCURRENCY = [
   { label: '200', value: 200 },
   { label: '500', value: 500 },
   { label: '1K', value: 1000 },
+  { label: '2K', value: 2000 },
+  { label: '5K', value: 5000 },
 ];
 
 export const QUICK_ITERATIONS = [
@@ -120,6 +122,8 @@ export const QUICK_ITERATIONS = [
   { label: '10K', value: 10000 },
   { label: '100K', value: 100000 },
   { label: '1M', value: 1000000 },
+  { label: '5M', value: 5000000 },
+  { label: '10M', value: 10000000 },
 ];
 
 export const QUICK_WARMUP = [

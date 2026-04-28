@@ -17,7 +17,7 @@
 
 在生产环境中使用 LLM 意味着要同时管理多家服务商，它们各自有着不同的延迟特征、速率限制和稳定性表现。公开的基准测试并不能反映**你的**网络环境、**你的**提示词、或**你的**流量模式。LLM API Radar 是一个自托管工具，让你可以：
 
-- **基准测试** — 使用相同提示词对比各服务商，支持可配置并发数（1–50）和预热运行
+- **基准测试** — 使用相同提示词对比各服务商，支持可配置并发数（1–5000）和预热运行
 - **健康监控** — 持续检查服务商健康状态，四级评估（健康 / 较慢 / 很慢 / 宕机），24 小时历史记录
 - **Playground** — 交互式测试任意模型，支持流式输出、多模态，完整的 Token 级指标
 - **历史追踪** — 持久化存储所有测试记录，支持并排对比和 CSV/JSON 导出
@@ -81,7 +81,7 @@
 
 - 多任务工作流，顺序执行
 - 每个任务独立配置提示词、并发数和迭代次数
-- 快捷预设 — 512 / 4K / 16K Token，1–10 并发
+- 快捷预设 — 512 / 4K / 16K Token，最高 5000 并发，最高 1000 万次迭代
 - 预热运行，消除冷启动偏差
 
 ### Playground
@@ -132,7 +132,7 @@
 
 ```bash
 git clone https://github.com/idemerge/llm-api-radar.git
-cd llm-benchmark
+cd llm-api-radar
 cp .env.example .env    # 编辑 .env 设置凭证
 chmod +x start.sh && ./start.sh
 ```
@@ -141,7 +141,7 @@ chmod +x start.sh && ./start.sh
 
 ```bash
 git clone https://github.com/idemerge/llm-api-radar.git
-cd llm-benchmark
+cd llm-api-radar
 cp .env.example .env    # 编辑 .env 设置凭证
 docker compose up -d
 ```
@@ -150,7 +150,7 @@ docker compose up -d
 
 ```bash
 git clone https://github.com/idemerge/llm-api-radar.git
-cd llm-benchmark
+cd llm-api-radar
 cp .env.example .env
 
 # 后端

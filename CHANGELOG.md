@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.11.3] - 2026-04-28
+
+### Changed
+- Raised max concurrency from 1000 to 5000 (frontend InputNumber, backend validation schemas, route caps)
+- Raised max iterations from 1M to 10M (frontend InputNumber, backend validation schemas, route caps)
+- Added quick-select buttons for 2K/5K concurrency and 5M/10M iterations
+- Updated README (EN/CN) with corrected `cd` path and new concurrency/iterations limits
+- Fixed Quick Start instructions: `cd llm-benchmark` → `cd llm-api-radar`
+
 ## [2.11.2] - 2026-04-27
 
 ### Changed

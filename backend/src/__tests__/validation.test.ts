@@ -70,13 +70,40 @@ describe('Validation Schemas', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should reject concurrency above 200', () => {
+    it('should reject concurrency above 5000', () => {
       const result = StartBenchmarkSchema.safeParse({
         providers: ['openai'],
-        config: { prompt: 'test', maxTokens: 100, concurrency: 201, iterations: 5 },
+        config: { prompt: 'test', maxTokens: 100, concurrency: 5001, iterations: 5 },
         apiKeys: {},
       });
       expect(result.success).toBe(false);
+    });
+
+    it('should accept concurrency up to 5000', () => {
+      const result = StartBenchmarkSchema.safeParse({
+        providers: ['openai'],
+        config: { prompt: 'test', maxTokens: 100, concurrency: 5000, iterations: 5 },
+        apiKeys: {},
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject iterations above 10000000', () => {
+      const result = StartBenchmarkSchema.safeParse({
+        providers: ['openai'],
+        config: { prompt: 'test', maxTokens: 100, concurrency: 1, iterations: 10000001 },
+        apiKeys: {},
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('should accept iterations up to 10000000', () => {
+      const result = StartBenchmarkSchema.safeParse({
+        providers: ['openai'],
+        config: { prompt: 'test', maxTokens: 100, concurrency: 1, iterations: 10000000 },
+        apiKeys: {},
+      });
+      expect(result.success).toBe(true);
     });
 
     it('should accept request without apiKeys (optional with default)', () => {
