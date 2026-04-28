@@ -63,7 +63,7 @@ describe('PlaygroundHistorySidebar', () => {
     it('displays model name and prompt snippet', () => {
       const items = [makeItem({ modelName: 'claude-3', promptSnippet: 'Test prompt' })];
       render(<PlaygroundHistorySidebar {...defaultProps} items={items} />);
-      expect(screen.getByText('claude-3')).toBeInTheDocument();
+      expect(screen.getByText('OpenAI/claude-3')).toBeInTheDocument();
       expect(screen.getByText('Test prompt')).toBeInTheDocument();
     });
 
@@ -99,7 +99,7 @@ describe('PlaygroundHistorySidebar', () => {
       const items = [makeItem({ id: 'click-test' })];
       render(<PlaygroundHistorySidebar {...defaultProps} items={items} onSelect={onSelect} />);
 
-      const item = screen.getByText('gpt-4').closest('[role="button"]')!;
+      const item = screen.getByText('OpenAI/gpt-4').closest('[role="button"]')!;
       fireEvent.click(item);
       expect(onSelect).toHaveBeenCalledWith('click-test');
     });
@@ -109,7 +109,7 @@ describe('PlaygroundHistorySidebar', () => {
       const items = [makeItem({ id: 'key-test' })];
       render(<PlaygroundHistorySidebar {...defaultProps} items={items} onSelect={onSelect} />);
 
-      const item = screen.getByText('gpt-4').closest('[role="button"]')!;
+      const item = screen.getByText('OpenAI/gpt-4').closest('[role="button"]')!;
       fireEvent.keyDown(item, { key: 'Enter' });
       expect(onSelect).toHaveBeenCalledWith('key-test');
     });
@@ -119,7 +119,7 @@ describe('PlaygroundHistorySidebar', () => {
       const items = [makeItem({ id: 'space-test' })];
       render(<PlaygroundHistorySidebar {...defaultProps} items={items} onSelect={onSelect} />);
 
-      const item = screen.getByText('gpt-4').closest('[role="button"]')!;
+      const item = screen.getByText('OpenAI/gpt-4').closest('[role="button"]')!;
       fireEvent.keyDown(item, { key: ' ' });
       expect(onSelect).toHaveBeenCalledWith('space-test');
     });
@@ -152,7 +152,7 @@ describe('PlaygroundHistorySidebar', () => {
       const items = [makeItem({ id: 'sel-1' }), makeItem({ id: 'sel-2', modelName: 'gpt-3.5' })];
       render(<PlaygroundHistorySidebar {...defaultProps} items={items} selectedId="sel-1" />);
 
-      const selectedItem = screen.getByText('gpt-4').closest('[role="button"]')!;
+      const selectedItem = screen.getByText('OpenAI/gpt-4').closest('[role="button"]')!;
       expect(selectedItem.className).toContain('border-accent-blue');
     });
   });
@@ -164,7 +164,7 @@ describe('PlaygroundHistorySidebar', () => {
       const items = [makeItem()];
       render(<PlaygroundHistorySidebar {...defaultProps} items={items} />);
 
-      const itemContainer = screen.getByText('gpt-4').closest('[role="button"]')!;
+      const itemContainer = screen.getByText('OpenAI/gpt-4').closest('[role="button"]')!;
       expect(itemContainer.tagName).not.toBe('BUTTON');
       // Should be a div with role="button"
       expect(itemContainer.tagName).toBe('DIV');
@@ -198,7 +198,7 @@ describe('PlaygroundHistorySidebar', () => {
       const items = [makeItem()];
       render(<PlaygroundHistorySidebar {...defaultProps} items={items} />);
 
-      const itemContainer = screen.getByText('gpt-4').closest('[role="button"]')!;
+      const itemContainer = screen.getByText('OpenAI/gpt-4').closest('[role="button"]')!;
       expect(itemContainer.getAttribute('tabindex')).toBe('0');
     });
   });

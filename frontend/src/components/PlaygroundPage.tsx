@@ -96,6 +96,28 @@ export function PlaygroundPage() {
     clearAll,
   } = usePlaygroundHistory();
 
+  // Build model ID → displayName lookup from loaded providers
+  const modelDisplayNames = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const p of providers) {
+      for (const m of p.models ?? []) {
+        if (m.displayName) map[m.name] = m.displayName;
+      }
+    }
+    return map;
+  }, [providers]);
+
+  // Enrich history items with display names
+  const enrichedHistoryItems = useMemo(
+    () =>
+      historyItems.map((it) => {
+        const raw = it.modelName.includes('/') ? it.modelName.split('/').pop()! : it.modelName;
+        const display = modelDisplayNames[raw] || it.modelName;
+        return display !== it.modelName ? { ...it, modelName: display } : it;
+      }),
+    [historyItems, modelDisplayNames],
+  );
+
   const [providerId, setProviderIdRaw] = useState<string | null>(
     () => searchParams.get('provider') || getStoredProvider(),
   );
@@ -816,7 +838,7 @@ export function PlaygroundPage() {
       {/* History Sidebar */}
       {historyOpen && (
         <PlaygroundHistorySidebar
-          items={historyItems}
+          items={enrichedHistoryItems}
           loading={historyLoading}
           onSelect={handleSelectHistory}
           onDelete={deleteEntry}
