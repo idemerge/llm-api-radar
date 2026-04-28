@@ -93,7 +93,7 @@ export function PlaygroundHistorySidebar({
           >
             <div className="flex items-center justify-between mb-1">
               <span className="font-mono text-[11px] text-text-primary truncate max-w-[180px]">
-                {item.modelName.includes('/') ? item.modelName.split('/').pop() : item.modelName}
+                {item.providerName}/{item.modelName.includes('/') ? item.modelName.split('/').pop() : item.modelName}
               </span>
               <div className="flex items-center gap-1.5">
                 {item.responseTime && (
