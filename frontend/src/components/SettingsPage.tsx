@@ -5,6 +5,7 @@ import { useProviders } from '../hooks/useProviders';
 import { Button, Input, InputNumber, Select, Checkbox, Popconfirm, Alert, Tag, Modal } from '../antdImports';
 import { PlusOutlined, ApiOutlined } from '@ant-design/icons';
 import { APP_VERSION } from '../constants';
+import { validateProviderName, validateModelId, validateDisplayName } from '../utils/validation';
 
 const FORMAT_OPTIONS: { value: ProviderFormat; label: string }[] = [
   { value: 'openai', label: 'OpenAI Compatible' },
@@ -165,12 +166,18 @@ export function SettingsPage() {
     }));
   };
 
+  const providerNameError = validateProviderName(form.name.trim());
+  const modelErrors = form.models.map((m) => ({
+    name: validateModelId(m.name.trim()),
+    displayName: validateDisplayName(m.displayName.trim()),
+  }));
+
   const isFormValid =
-    form.name.trim() &&
+    !providerNameError &&
     form.endpoint.trim() &&
     (editingId || form.apiKey.trim()) &&
     form.models.length > 0 &&
-    form.models.every((m) => m.name.trim());
+    modelErrors.every((e) => !e.name && !e.displayName);
 
   const isNameDuplicate =
     form.name.trim() &&
@@ -369,13 +376,16 @@ export function SettingsPage() {
               <div>
                 <label className="text-[11px] text-text-secondary mb-1 block">Provider Name</label>
                 <Input
-                  placeholder="e.g. My OpenAI"
+                  placeholder="e.g. My-OpenAI"
                   value={form.name}
-                  status={isNameDuplicate ? 'error' : undefined}
+                  status={isNameDuplicate || (form.name && providerNameError) ? 'error' : undefined}
                   onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
                 />
                 {isNameDuplicate && (
                   <span className="text-[10px] text-accent-rose mt-0.5 block">Provider name already exists</span>
+                )}
+                {!isNameDuplicate && form.name && providerNameError && (
+                  <span className="text-[10px] text-accent-rose mt-0.5 block">{providerNameError}</span>
                 )}
               </div>
               <div>
@@ -464,8 +474,12 @@ export function SettingsPage() {
                           size="small"
                           placeholder="e.g. gpt-4o"
                           value={model.name}
+                          status={model.name && modelErrors[idx]?.name ? 'error' : undefined}
                           onChange={(e) => updateModel(idx, 'name', e.target.value)}
                         />
+                        {model.name && modelErrors[idx]?.name && (
+                          <span className="text-[9px] text-accent-rose mt-0.5 block">{modelErrors[idx].name}</span>
+                        )}
                       </div>
                       <div>
                         <label className="text-[10px] text-text-tertiary mb-0.5 block">Display Name</label>
@@ -473,8 +487,14 @@ export function SettingsPage() {
                           size="small"
                           placeholder="e.g. GPT-4o (optional)"
                           value={model.displayName}
+                          status={model.displayName && modelErrors[idx]?.displayName ? 'error' : undefined}
                           onChange={(e) => updateModel(idx, 'displayName', e.target.value)}
                         />
+                        {model.displayName && modelErrors[idx]?.displayName && (
+                          <span className="text-[9px] text-accent-rose mt-0.5 block">
+                            {modelErrors[idx].displayName}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div>

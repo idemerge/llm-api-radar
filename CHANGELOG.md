@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.12.0] - 2026-04-28
+
+### Added
+- Naming validation rules for Provider name, Model ID, and DisplayName (backend + frontend)
+  - Provider name: alphanumeric/dash/underscore, no spaces, 1-64 chars
+  - Model ID: alphanumeric/dash/underscore/dot/slash, 1-64 chars (LiteLLM compatible)
+  - DisplayName: alphanumeric/space/dash/underscore/dot, 1-64 chars
+- Frontend real-time validation with error hints on Settings provider form
+- Frontend validation unit tests (16 cases)
+- Backend validation boundary tests (4 cases)
+
+### Changed
+- Renamed project from LLM API Radar to **LLM API Bench** (repo, UI, docs, Docker image)
+- Playground history sidebar now shows `ProviderName/DisplayName` instead of raw model ID
+- Backend stores model displayName in playground history for friendly display
+- Adaptive QuickButtons sizing: auto-shrink when >7 options to prevent line wrapping
+
+### Fixed
+- Getting Started hint no longer flashes on page refresh (waits for data load)
+- Playground provider/model selectors no longer flash raw IDs before names load
+- Playground history correctly resolves model displayName from provider data
+
 ## [2.11.3] - 2026-04-28
 
 ### Changed
