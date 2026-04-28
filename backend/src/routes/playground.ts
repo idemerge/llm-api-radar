@@ -184,7 +184,7 @@ router.post('/run', async (req: Request, res: ExpressResponse) => {
     playgroundHistoryStore.create({
       providerId,
       providerName: config.name,
-      modelName: model.name,
+      modelName: model.displayName || model.name,
       prompt,
       systemPrompt,
       maxTokens,
@@ -204,7 +204,7 @@ router.post('/run', async (req: Request, res: ExpressResponse) => {
     playgroundHistoryStore.create({
       providerId,
       providerName: config.name,
-      modelName: model.name,
+      modelName: model.displayName || model.name,
       prompt,
       systemPrompt,
       maxTokens,
@@ -363,7 +363,7 @@ router.post('/stream', async (req: Request, res: ExpressResponse) => {
     playgroundHistoryStore.create({
       providerId,
       providerName: config.name,
-      modelName: model.name,
+      modelName: model.displayName || model.name,
       prompt,
       systemPrompt,
       maxTokens,
